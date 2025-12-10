@@ -1,0 +1,601 @@
+openapi: 3.1.0
+info:
+  title: Tafawoq Exam API
+  version: 1.0.0
+  description: |
+    API contracts for full integrated exam generation and session management.
+    These operations use Next.js API routes with Supabase for data persistence.
+
+servers:
+  - url: /api
+    description: Next.js API routes
+
+paths:
+  /exams:
+    post:
+      operationId: createExamSession
+      summary: Generate and start a new full exam
+      description: |
+        Generates 96 questions via Gemini API based on user's academic track,
+        creates an exam session, and returns the initial exam data.
+
+        Requirements:
+        - User must be authenticated
+        - Free users limited to 3 exams per week
+        - Premium users have unlimited access
+      tags:
+        - Exams
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExamRequest'
+      responses:
+        '201':
+          description: Exam session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSession'
+        '402':
+          description: Free tier limit reached (3 exams/week)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionLimitError'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Exam generation failed (Gemini API error)
+
+  /exams/{sessionId}:
+    get:
+      operationId: getExamSession
+      summary: Get exam session details
+      description: Retrieves current exam session with all questions and answers
+      tags:
+        - Exams
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exam session data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSession'
+        '404':
+          description: Session not found
+        '403':
+          description: Access denied (not owner)
+
+    patch:
+      operationId: updateExamSession
+      summary: Update exam session status
+      description: |
+        Update session status to completed or abandoned.
+        Triggers score calculation when completing.
+      tags:
+        - Exams
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExamRequest'
+      responses:
+        '200':
+          description: Session updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSession'
+        '400':
+          description: Invalid status transition
+        '404':
+          description: Session not found
+
+  /exams/{sessionId}/answers:
+    post:
+      operationId: submitAnswer
+      summary: Submit or update an answer
+      description: |
+        Records user's answer for a specific question.
+        Provides immediate feedback (correct/incorrect).
+        Auto-saved to database for session recovery.
+      tags:
+        - Exams
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswerRequest'
+      responses:
+        '200':
+          description: Answer recorded with feedback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerFeedback'
+        '400':
+          description: Invalid question index or answer
+        '404':
+          description: Session not found
+        '409':
+          description: Session already completed
+
+  /exams/{sessionId}/answers/{questionIndex}/explanation:
+    get:
+      operationId: getExplanation
+      summary: Get explanation for a question
+      description: |
+        Retrieves explanation, solving strategy, and tip for a question.
+
+        Access rules:
+        - Premium users: immediate access
+        - Free users: 24-hour delay after exam completion
+      tags:
+        - Exams
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: questionIndex
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 95
+      responses:
+        '200':
+          description: Explanation data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExplanationResponse'
+        '403':
+          description: Free user, 24-hour wait period not elapsed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExplanationLockedError'
+        '404':
+          description: Session or question not found
+
+  /exams/{sessionId}/results:
+    get:
+      operationId: getExamResults
+      summary: Get comprehensive exam results
+      description: |
+        Returns complete exam results including:
+        - Verbal, quantitative, and overall scores
+        - Strength and weakness categories
+        - Personalized recommendations
+        - Historical comparison (premium only)
+      tags:
+        - Exams
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exam results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamResults'
+        '400':
+          description: Exam not yet completed
+        '404':
+          description: Session not found
+
+  /exams/{sessionId}/timer:
+    patch:
+      operationId: updateTimer
+      summary: Update timer state (pause/resume)
+      description: |
+        Handles timer pause on network disconnect and resume on reconnect.
+        Tracks total paused time for session management.
+      tags:
+        - Exams
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimerUpdateRequest'
+      responses:
+        '200':
+          description: Timer state updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimerState'
+        '404':
+          description: Session not found
+
+components:
+  securitySchemes:
+    supabaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth JWT token
+
+  schemas:
+    CreateExamRequest:
+      type: object
+      required:
+        - track
+      properties:
+        track:
+          type: string
+          enum: [scientific, literary]
+          description: Academic track determines question distribution
+
+    ExamSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        track:
+          type: string
+          enum: [scientific, literary]
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+          minItems: 96
+          maxItems: 96
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Answer'
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        timePausedSeconds:
+          type: integer
+          default: 0
+        remainingSeconds:
+          type: integer
+          description: Calculated remaining time (120min - elapsed - paused)
+
+    Question:
+      type: object
+      required:
+        - id
+        - section
+        - topic
+        - difficulty
+        - question_type
+        - stem
+        - choices
+        - answer_index
+        - explanation
+      properties:
+        id:
+          type: string
+        section:
+          type: string
+          enum: [quantitative, verbal]
+        topic:
+          type: string
+          enum:
+            - algebra
+            - geometry
+            - statistics
+            - ratio-proportion
+            - probability
+            - speed-time-distance
+            - reading-comprehension
+            - sentence-completion
+            - context-error
+            - analogy
+            - association-difference
+            - vocabulary
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        question_type:
+          type: string
+          enum: [mcq, diagram, chart, text-only, reading-passage]
+        stem:
+          type: string
+          description: Question text in Arabic
+        choices:
+          type: array
+          items:
+            type: string
+          minItems: 4
+          maxItems: 4
+        answer_index:
+          type: integer
+          minimum: 0
+          maximum: 3
+        explanation:
+          type: string
+        solving_strategy:
+          type: string
+        tip:
+          type: string
+        passage:
+          type: string
+          description: Reading passage text (for reading-comprehension)
+        passage_id:
+          type: string
+          description: Shared passage reference
+        diagram:
+          $ref: '#/components/schemas/Diagram'
+        tags:
+          type: array
+          items:
+            type: string
+
+    Diagram:
+      type: object
+      required:
+        - type
+        - data
+        - render_hint
+      properties:
+        type:
+          type: string
+          enum:
+            - circle
+            - triangle
+            - rectangle
+            - composite-shape
+            - bar-chart
+            - pie-chart
+            - line-graph
+            - custom
+        data:
+          type: object
+          additionalProperties: true
+          description: Type-specific rendering parameters
+        render_hint:
+          type: string
+          enum: [SVG, Canvas, Chart.js]
+        caption:
+          type: string
+
+    Answer:
+      type: object
+      properties:
+        questionIndex:
+          type: integer
+        selectedAnswer:
+          type: integer
+          minimum: 0
+          maximum: 3
+          nullable: true
+        isCorrect:
+          type: boolean
+        timeSpentSeconds:
+          type: integer
+        explanationViewed:
+          type: boolean
+
+    SubmitAnswerRequest:
+      type: object
+      required:
+        - questionIndex
+        - selectedAnswer
+      properties:
+        questionIndex:
+          type: integer
+          minimum: 0
+          maximum: 95
+        selectedAnswer:
+          type: integer
+          minimum: 0
+          maximum: 3
+        timeSpentSeconds:
+          type: integer
+          minimum: 0
+
+    AnswerFeedback:
+      type: object
+      properties:
+        questionIndex:
+          type: integer
+        selectedAnswer:
+          type: integer
+        isCorrect:
+          type: boolean
+        correctAnswer:
+          type: integer
+          description: Index of correct answer (always revealed)
+
+    UpdateExamRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [completed, abandoned]
+
+    TimerUpdateRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum: [pause, resume]
+        pauseDuration:
+          type: integer
+          description: Seconds paused (for resume action)
+
+    TimerState:
+      type: object
+      properties:
+        isPaused:
+          type: boolean
+        totalPausedSeconds:
+          type: integer
+        remainingSeconds:
+          type: integer
+
+    ExplanationResponse:
+      type: object
+      properties:
+        explanation:
+          type: string
+        solvingStrategy:
+          type: string
+        tip:
+          type: string
+        correctAnswer:
+          type: integer
+
+    ExplanationLockedError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: EXPLANATION_LOCKED
+        message:
+          type: string
+          example: Free users must wait 24 hours after exam completion
+        unlocksAt:
+          type: string
+          format: date-time
+
+    ExamResults:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        verbalScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        quantitativeScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        overallScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        scoreColors:
+          type: object
+          properties:
+            verbal:
+              type: string
+              enum: [gold, green, grey, warm]
+            quantitative:
+              type: string
+              enum: [gold, green, grey, warm]
+            overall:
+              type: string
+              enum: [gold, green, grey, warm]
+        strengths:
+          type: array
+          items:
+            type: string
+          maxItems: 3
+        weaknesses:
+          type: array
+          items:
+            type: string
+          maxItems: 3
+        recommendations:
+          type: array
+          items:
+            type: string
+        historicalComparison:
+          type: object
+          description: Premium only - comparison with previous exams
+          properties:
+            previousAverage:
+              type: number
+            trend:
+              type: string
+              enum: [improving, stable, declining]
+            percentile:
+              type: number
+
+    SubscriptionLimitError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: WEEKLY_LIMIT_REACHED
+        message:
+          type: string
+          example: Free tier allows 3 exams per week. Upgrade to premium for unlimited access.
+        examsRemaining:
+          type: integer
+          example: 0
+        resetsAt:
+          type: string
+          format: date-time

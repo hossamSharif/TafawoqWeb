@@ -27,7 +27,7 @@ Enable students to effectively prepare for aptitude exams by providing:
 #### Free Plan (الخطة المجانية)
 **Access Level**: Limited exploratory access
 - **Included Features**:
-  - One (1) full integrated exam attempt per week
+  - Three (3) full integrated exam attempts per week
   - Customized practice sessions limited to 5 questions maximum
   - Access to previous practice result analytics (read-only)
   - Basic profile and progress tracking
@@ -104,6 +104,53 @@ All exam and practice questions support the following formats:
 
 ---
 
+## AI QUESTION GENERATION SYSTEM
+
+### Generation Objectives
+The AI generates questions to measure:
+- **القدرات العقلية**: Mental and cognitive abilities
+- **التحليل والاستدلال**: Analytical and reasoning skills
+- **التفكير النقدي**: Critical thinking (NOT memorization)
+
+### Shared Quality Standards (Full Exams & Practices)
+
+#### Question Format Standards
+- **Type**: Multiple choice with 4 options (single correct answer)
+- **Calculator**: NOT permitted (questions designed for mental calculation)
+- **Language**: Clear Arabic (فصحى) with proper grammar
+- **Scenarios**: Real-life familiar situations for relatability
+- **Complexity**: No complex formula memorization required
+- **Foundation**: Based on general high school skills, not specific curriculum
+
+#### Quantitative Section (القسم الكمي) - Topics
+
+| Topic | Scientific Track (المسار العلمي) | Literary Track (المسار الأدبي) |
+|-------|----------------------------------|-------------------------------|
+| **الجبر (Algebra)** | Linear/quadratic equations, expression simplification, inequalities | Simple equations, basic arithmetic |
+| **الهندسة (Geometry)** | Angles, areas, volumes, shape properties - *may include diagrams* | Elementary concepts (perimeter, area) |
+| **الإحصاء (Statistics)** | Tables, graphs, mean, median, standard deviation - *may include diagrams* | Mean, mode, simple graph reading |
+| **النسب والكسور (Ratios/Fractions)** | Real-life application problems | Practical daily scenarios |
+| **الاحتمالات (Probability)** | Counting principles, calculations | Basic probability concepts |
+| **السرعة/الزمن/المسافة** | Applied mathematical relationships | Simple relationships |
+
+#### Verbal Section (القسم اللفظي) - Topics
+**Unified for both academic tracks:**
+- **الاستيعاب القرائي**: Analytical and inferential questions from text passages
+- **إكمال الجمل**: Context-appropriate word selection
+- **الخطأ السياقي**: Identifying inappropriate words in sentences
+- **التناظر اللفظي**: Finding parallel relationships between word pairs
+- **الارتباط والاختلاف**: Identifying different or most related words
+- **المفردات**: Understanding word meanings and contextual usage
+
+#### Content Generation Guidelines
+- Use familiar real-life scenarios
+- Varied formats: text, diagrams, tables, graphs
+- Diverse text lengths and domains (literary, scientific, social)
+- Graduated difficulty levels within each category
+- Focus on reasoning, not memorization
+
+---
+
 ## REGISTRATION & ONBOARDING WORKFLOW
 
 ### Complete User Acquisition Funnel
@@ -138,20 +185,25 @@ All exam and practice questions support the following formats:
 
 **Academic Track Selection (الفئة الأكاديمية)**
 - **Radio Button Options**:
-  - **Scientific Track** (المسار العلمي): 
+  - **Scientific Track** (المسار العلمي):
+    - Full exam composition: 60% quantitative (~57 questions) / 40% verbal (~39 questions)
     - Content optimized for quantitative emphasis
-    - Geometry and advanced mathematics focus
+    - Advanced algebra, geometry, statistics, and probability focus
     - Target audience: STEM-focused students
   - **Literary Track** (المسار الأدبي):
+    - Full exam composition: 30% quantitative (~29 questions) / 70% verbal (~67 questions)
     - Content optimized for verbal emphasis
-    - Language comprehension and reading focus
+    - Language comprehension, reading, and vocabulary focus
     - Target audience: Humanities-focused students
-- **Selection Impact**: 
+- **Selection Impact**:
+  - Determines exam question distribution (quantitative vs verbal ratio)
+  - Adjusts quantitative section complexity (advanced vs basic math)
+  - Verbal section remains unified across both tracks
   - Determines default category recommendations in practice
   - Influences personalized content ordering
   - Adjusts difficulty scaling based on track strengths
   - Customizes practice suggestions and improvement paths
-- **Later Modification**: Users can change academic track in settings (triggers content re-recommendation)
+- **Later Modification**: Users can change academic track in settings (triggers content re-recommendation and exam recalibration)
 
 **Subscription Tier Selection**
 - **Display Two Options**:
@@ -187,7 +239,7 @@ All exam and practice questions support the following formats:
 
 **Screen 1: Full Exam vs. Customized Practice**
 - Illustration: Side-by-side exam comparison
-- Text: Explanation of integrated exam (امتحان متكامل) vs. targeted practice (تدريب مخصص)
+- Text: Explanation of integrated exam (امتحان شامل) vs. targeted practice (تدريب مخصص)
 - Call-to-Action: "Next → Learn More"
 
 **Screen 2: Academic Track Optimization**
@@ -206,55 +258,218 @@ All exam and practice questions support the following formats:
 
 ## EXAM & PRACTICE CREATION SYSTEM
 
-### Option 1: Full Integrated Exam (امتحان قدرات متكامل)
-A complete standardized exam covering both sections:
-- **Structure**: Combines Verbal (القسم اللفظي) and Quantitative (القسم الكمي) sections in single exam
-- **Duration**: Full exam duration as per standard guidelines
-- **Scoring**: No advance options - follows standard evaluation methodology
-- **Question Distribution**: 
-  - Mixed text and text-with-image formats based on question type
-  - Geometry questions include diagrams for clarity
-  - Reading comprehension includes full passage text
+### Option 1: Full Integrated Exam (امتحان قدرات شامل)
+A complete AI-generated standardized exam simulating actual Saudi Aptitude Test (قدرات) conditions:
+
+#### Exam Configuration Standards
+- **Total Questions**: 96 questions per full exam
+- **Duration**: 120 minutes (2 hours)
+- **Question Format**: Multiple choice with 4 options (single correct answer)
+- **Calculator**: NOT permitted (questions designed for mental calculation)
+- **Question Order**: Randomly distributed (NOT ordered by difficulty)
+- **Scoring**: Equal weight per question; NO penalty for incorrect answers
+
+#### Academic Track-Based Question Distribution
+
+| Academic Track | Quantitative (الكمي) | Verbal (اللفظي) |
+|----------------|---------------------|-----------------|
+| **Scientific (المسار العلمي)** | 60% (~57 questions) | 40% (~39 questions) |
+| **Literary (المسار الأدبي)** | 30% (~29 questions) | 70% (~67 questions) |
+
+#### Quantitative Section (القسم الكمي) - AI Generation Topics
+
+**For Scientific Track (المسار العلمي):**
+- **الجبر (Algebra)**: Linear and quadratic equations, expression simplification, inequality analysis
+- **الهندسة (Geometry)**: Angles, areas, volumes, shape properties - *may includes diagram-based questions*
+- **الإحصاء والتحليل البياني (Statistics & Data Analysis)**: Tables, graphs, mean, median, standard deviation  *may includes diagram-based  questions*
+- **النسبة والتناسب والنسب المئوية والكسور (Ratios, Percentages, Fractions)**: Real-life application problems
+- **الاحتمالات (Probability)**: Probability calculations using counting principles
+- **السرعة والزمن والمسافة (Speed, Time, Distance)**: Applied mathematical relationship problems
+
+**For Literary Track (المسار الأدبي):**
+- **الجبر (Algebra)**: Simple equations, basic arithmetic operations
+- **الهندسة (Geometry)**: Elementary concepts (perimeter, area)
+- **الإحصاء (Statistics)**: Mean, mode, simple graph reading
+- **النسبة والتناسب والنسب المئوية والكسور**: Practical daily-life scenarios
+- **الاحتمالات (Probability)**: Basic probability concepts
+- **السرعة والزمن والمسافة**: Simple mathematical relationships
+
+#### Verbal Section (القسم اللفظي) - AI Generation Topics
+**Unified content for both academic tracks:**
+- **الاستيعاب القرائي (Reading Comprehension)**: Analytical and inferential questions based on text passages
+- **إكمال الجمل (Sentence Completion)**: Context-appropriate word selection
+- **الخطأ السياقي (Contextual Error)**: Identifying inappropriate words in sentences
+- **التناظر اللفظي (Verbal Analogies)**: Finding parallel relationships between word pairs
+- **الارتباط والاختلاف (Association & Difference)**: Identifying different or most related words
+- **المفردات (Vocabulary)**: Understanding word meanings and contextual usage
+
+#### AI Generation
+Questions generated following the shared **AI QUESTION GENERATION SYSTEM** standards defined above.
+
+#### Exam Structure
+- **Sections**: Combines Verbal (القسم اللفظي) and Quantitative (القسم الكمي) in single exam
+- **Question Distribution**: Mixed text and text-with-image formats based on question type
+- **Visual Elements**: Geometry questions include diagrams; reading comprehension includes full passages
 - **Purpose**: Simulate actual exam conditions and assess overall aptitude level
-- **Access**: 
-  - Free Plan: 3 attempt per week maximum
-  - Premium Plan: Unlimited attempts
+
+#### Access Control
+- **Free Plan**: 3 attempts per week maximum
+- **Premium Plan**: Unlimited attempts
 - **Subscription Requirements**: Enforced at exam launch - upgrade prompt for free users exceeding limit
 
+#### Exam Launch Flow
+- **One-Click Start**: User clicks "Start Full Exam" → Exam generates immediately based on user's academic track
+- **No Section Selection Required**: Full exam automatically includes both كمي and لفظي sections
+- **Pre-Launch Confirmation**: Brief modal showing exam details (96 questions, 120 minutes, track-based distribution)
+
+---
+
+## EXAM & PRACTICE TAKING EXPERIENCE
+
+### Real-Time Question Feedback System
+During exam/practice sessions, each question provides instant learning feedback:
+
+#### Immediate Answer Feedback
+After user selects an answer for each question:
+- **Correct Answer Highlight**: The correct answer option is immediately highlighted in green (Saudi Deep Green #1E5631)
+- **User Selection Indicator**:
+  - If correct: User's selection shows success state (green highlight with checkmark)
+  - If incorrect: User's selection shows error state (soft red indicator) + correct answer highlighted
+- **Visual Transition**: Smooth animation (0.3s) from neutral to feedback state
+
+#### Answer Explanation System (توضيح الإجابة)
+Expandable explanation panel available after answering:
+
+**Explanation Content Structure:**
+- **الإجابة الصحيحة (Correct Answer)**: Clear statement of the correct option
+- **شرح الإجابة (Answer Explanation)**: Detailed reasoning why this answer is correct
+- **استراتيجية الحل (Solving Strategy)**: Step-by-step approach for this question type
+- **نصيحة (Tip)**: Quick tip for similar questions in future
+
+**UI Components:**
+- **Expand Button**: "عرض التوضيح" (Show Explanation) - collapsible panel
+- **Collapse Button**: "إخفاء التوضيح" (Hide Explanation)
+- **Explanation Card**: Styled card with clear sections and Arabic RTL layout
+- **Strategy Badge**: Visual indicator showing question type strategy
+
+**Access by Subscription:**
+- **Free Plan**: Explanations available with 24-hour delay after exam completion
+- **Premium Plan**: Instant access to explanations immediately after each answer
+
+#### Question Navigation During Exam/Practice
+- **Next Question**: Proceed to next question (available after answering)
+- **Question Progress Bar**: Visual indicator showing answered/remaining questions
+- **Timer Display**: Countdown timer (for full exams) or elapsed time (for practices)
+- **Pause/Resume**: Available for practices only (not for full exams)
+
+---
+
 ### Option 2: Customized Practice (تدريب مخصص)
-Targeted practice sessions with advanced configuration options:
+Targeted AI-generated practice sessions with advanced configuration options.
 
-**Step 1: Section Selection**
-User must select one or both sections:
-- القسم اللفظي (Verbal Section)
-- القسم الكمي (Quantitative Section)
+#### Access Requirement
+- **Registered Users Only**: Customized practice is NOT available to guests
+- **Authentication Required**: User must be logged in to access practice creation
+- **Guest Prompt**: Guests attempting to access practice see "Create Account" or "Sign In" prompt
 
-**Step 2: Category Selection**
-Under each selected section, user chooses one or more categories:
+#### Practice Creation Flow (Multi-Step Wizard)
 
-**Quantitative Section (القسم الكمي) Categories:**
-- العمليات الأساسية (Basic Operations)
-- قسم الهندسة (Geometry) - *includes image-based questions*
-- قسم الأسس والجذور (Roots & Exponents)
+**Step 1: Section Selection (MANDATORY)**
+Initial screen showing two section cards:
+- **القسم الكمي (Quantitative Section)**: Card with math icon
+- **القسم اللفظي (Verbal Section)**: Card with text/language icon
 
-**Verbal Section (القسم اللفظي) Categories:**
-- التناظر اللفظي (Analogies)
-- إكمال الجمل (Sentence Completion)
-- الخطأ السياقي (Contextual Error)
-- المفردة الشاذة (Odd Word Out)
-- استيعاب المقروء (Reading Comprehension) - *text-only format*
+**UI Behavior:**
+- User taps to select one or both sections (toggle selection)
+- Selected cards show highlighted state (Saudi Deep Green border)
+- **Validation**: "التالي" (Next) button disabled until at least one section is selected
+- **Multi-Select**: User CAN select both sections for mixed practice
 
-**Step 3: Difficulty Level & Question Count**
-- Select difficulty level: Easy (سهل), Medium (متوسط), Hard (صعب)
-- Specify question count:
-  - Free Plan: Maximum 5 questions per practice
-  - Premium Plan: 5, 10, 20, 30, custom up to 100 questions
-- Practice session generates dynamically based on selections with appropriate image inclusion
+---
 
-**Step 4: Subscription Verification**
-- Free users attempting >5 questions: Upgrade prompt with feature highlight
-- Paid users: Direct practice generation without restrictions
-- Trial users: Full access with "subscription ends in X days" reminder
+**Step 2: Subject/Category Selection (CONDITIONAL DISPLAY)**
+After Step 1, categories appear ONLY for the selected section(s):
+
+**If القسم الكمي Selected → Show Quantitative Categories:**
+| Category | Description |
+|----------|-------------|
+| **الجبر (Algebra)** | Equations, expressions, inequalities |
+| **الهندسة (Geometry)** | Shapes, angles, areas, volumes - *includes diagrams* |
+| **الإحصاء والتحليل البياني (Statistics)** | Tables, graphs, averages - *includes diagrams* |
+| **النسبة والتناسب (Ratios & Proportions)** | Percentages, fractions, real-world applications |
+| **الاحتمالات (Probability)** | Counting principles and probability calculations |
+| **السرعة والزمن والمسافة (Speed, Time, Distance)** | Applied mathematical relationships |
+
+**If القسم اللفظي Selected → Show Verbal Categories:**
+| Category | Description |
+|----------|-------------|
+| **الاستيعاب القرائي (Reading Comprehension)** | Passage analysis and inference |
+| **إكمال الجمل (Sentence Completion)** | Context-appropriate word selection |
+| **الخطأ السياقي (Contextual Error)** | Identifying inappropriate words |
+| **التناظر اللفظي (Verbal Analogies)** | Word pair relationships |
+| **الارتباط والاختلاف (Association & Difference)** | Related/different word identification |
+| **المفردات (Vocabulary)** | Word meanings and usage |
+
+**If Both Sections Selected → Show Both Category Groups:**
+- Quantitative categories displayed first (collapsible group)
+- Verbal categories displayed second (collapsible group)
+- User can select from both groups
+
+**UI Behavior:**
+- Categories displayed as selectable chips or checkboxes
+- User can select multiple categories within each section
+- **Free Plan Limit**: Maximum 2 categories total per session
+- **Premium Plan**: Unlimited category selection
+- **Validation**: "التالي" (Next) button disabled until at least one category is selected
+- **Back Button**: "السابق" to return to Step 1
+
+---
+
+**Step 3: Difficulty & Question Count**
+Final configuration screen:
+
+**Difficulty Level Selection (مستوى الصعوبة):**
+- **سهل (Easy)**: Beginner-level questions
+- **متوسط (Medium)**: Intermediate-level questions (default selected)
+- **صعب (Hard)**: Advanced-level questions
+- UI: Three toggle buttons, single selection required
+
+**Question Count Selection (عدد الأسئلة):**
+- **Free Plan Options**: 5 questions only (fixed)
+- **Premium Plan Options**: 5, 10, 20, 30, 50, or custom input up to 100
+- UI: Preset buttons + custom input field (Premium only)
+
+**Practice Summary Preview:**
+- Selected sections displayed
+- Selected categories listed
+- Difficulty level shown
+- Question count confirmed
+- Estimated time displayed (~1.5 min per question)
+
+**Action Button:**
+- "ابدأ التدريب" (Start Practice) - generates practice immediately
+- **Academic Track Awareness**: Question complexity auto-adjusted based on user's track
+
+---
+
+**Step 4: AI Generation & Launch**
+Upon clicking "ابدأ التدريب":
+- Questions generated following the shared **AI QUESTION GENERATION SYSTEM** standards
+- **Generation Parameters**:
+  - Difficulty: User-selected level determines question complexity
+  - Categories: Only user-selected categories included
+  - Question Count: User-defined (not fixed 96)
+  - Track Awareness: Quantitative complexity matches user's academic track
+- Practice session launches immediately after generation
+- **Time**: Self-paced (no enforced duration, elapsed time displayed)
+
+---
+
+**Subscription Verification (Applied Throughout Flow)**
+- **Step 2 Enforcement**: Free users see "Premium" badge on categories beyond 2-selection limit
+- **Step 3 Enforcement**: Free users cannot adjust question count beyond 5
+- **Upgrade Prompts**: Contextual upgrade suggestions at restriction points
+- **Trial Users**: Full access with "subscription ends in X days" reminder banner
 
 ---
 
@@ -266,10 +481,17 @@ Results include three distinct percentage scores:
 2. **الكمي Score (Quantitative)**: Percentage for quantitative section performance
 3. **Overall Average**: Combined average of both section scores
 
-**Calculation Method**:
+**Scoring Methodology**:
+- **Equal Weight**: All 96 questions carry equal point value
+- **No Penalty**: Incorrect answers do NOT deduct points (encourages attempting all questions)
 - Each section scored independently (0-100%)
 - Overall Average = (اللفظي% + الكمي%) / 2
 - Weighted scoring available for premium analytics
+
+**Score Distribution by Track**:
+- Scientific Track: 57 quantitative + 39 verbal questions
+- Literary Track: 29 quantitative + 67 verbal questions
+- Section percentages calculated based on track-specific question counts
 
 **Result Display Locations:**
 - Exam result screen (immediate feedback upon completion)

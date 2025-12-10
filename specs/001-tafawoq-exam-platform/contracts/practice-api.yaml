@@ -1,0 +1,628 @@
+openapi: 3.1.0
+info:
+  title: Tafawoq Practice API
+  version: 1.0.0
+  description: |
+    API contracts for customized practice session creation and management.
+    Practice sessions allow users to focus on specific categories and difficulty levels.
+
+servers:
+  - url: /api
+    description: Next.js API routes
+
+paths:
+  /practice:
+    post:
+      operationId: createPracticeSession
+      summary: Create a customized practice session
+      description: |
+        Generates practice questions based on user selections:
+        - Sections (quantitative, verbal, or both)
+        - Categories within selected sections
+        - Difficulty level
+        - Question count
+
+        Free user restrictions:
+        - Maximum 2 categories
+        - Fixed 5 questions
+
+        Premium users:
+        - Unlimited categories
+        - Up to 100 questions
+      tags:
+        - Practice
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePracticeRequest'
+      responses:
+        '201':
+          description: Practice session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeSession'
+        '400':
+          description: Invalid configuration (e.g., free user exceeding limits)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Question generation failed
+
+  /practice/{sessionId}:
+    get:
+      operationId: getPracticeSession
+      summary: Get practice session details
+      description: Retrieves current practice session with all questions and answers
+      tags:
+        - Practice
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Practice session data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeSession'
+        '404':
+          description: Session not found
+        '403':
+          description: Access denied (not owner)
+
+    patch:
+      operationId: updatePracticeSession
+      summary: Update practice session status
+      description: |
+        Mark session as completed or abandoned.
+        On completion, updates user's total practice hours.
+      tags:
+        - Practice
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePracticeRequest'
+      responses:
+        '200':
+          description: Session updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeSession'
+        '400':
+          description: Invalid status transition
+        '404':
+          description: Session not found
+
+  /practice/{sessionId}/answers:
+    post:
+      operationId: submitPracticeAnswer
+      summary: Submit an answer in practice session
+      description: |
+        Records user's answer with immediate feedback.
+        Practice answers include full explanation access immediately (no 24-hour wait).
+      tags:
+        - Practice
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPracticeAnswerRequest'
+      responses:
+        '200':
+          description: Answer recorded with full feedback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeAnswerFeedback'
+        '400':
+          description: Invalid question index or answer
+        '404':
+          description: Session not found
+
+  /practice/{sessionId}/results:
+    get:
+      operationId: getPracticeResults
+      summary: Get practice session results
+      description: |
+        Returns practice results including:
+        - Overall score (single percentage)
+        - Per-category breakdown
+        - Time spent
+
+        Note: Practice scores do NOT affect profile percentages.
+      tags:
+        - Practice
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Practice results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeResults'
+        '400':
+          description: Practice not yet completed
+        '404':
+          description: Session not found
+
+  /practice/categories:
+    get:
+      operationId: getCategories
+      summary: Get available practice categories
+      description: |
+        Returns all available categories organized by section.
+        Used to populate the practice creation wizard.
+      tags:
+        - Practice
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: section
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [quantitative, verbal]
+          description: Filter categories by section
+      responses:
+        '200':
+          description: Available categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesResponse'
+
+  /practice/history:
+    get:
+      operationId: getPracticeHistory
+      summary: Get user's practice session history
+      description: Returns paginated list of past practice sessions
+      tags:
+        - Practice
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category
+      responses:
+        '200':
+          description: Practice history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeHistoryResponse'
+
+components:
+  securitySchemes:
+    supabaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreatePracticeRequest:
+      type: object
+      required:
+        - sections
+        - categories
+        - difficulty
+        - questionCount
+      properties:
+        sections:
+          type: array
+          items:
+            type: string
+            enum: [quantitative, verbal]
+          minItems: 1
+          maxItems: 2
+          description: Selected sections
+        categories:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: |
+            Selected categories. Free users limited to 2.
+            Valid values depend on selected sections.
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        questionCount:
+          type: integer
+          minimum: 5
+          maximum: 100
+          description: |
+            Number of questions. Free users fixed at 5.
+            Premium users can select 5, 10, 20, 30, 50, or custom up to 100.
+      example:
+        sections: ["quantitative"]
+        categories: ["geometry", "algebra"]
+        difficulty: "medium"
+        questionCount: 10
+
+    PracticeSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        track:
+          type: string
+          enum: [scientific, literary]
+          description: User's academic track (affects question complexity)
+        sections:
+          type: array
+          items:
+            type: string
+        categories:
+          type: array
+          items:
+            type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        questionCount:
+          type: integer
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PracticeQuestion'
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PracticeAnswer'
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        elapsedSeconds:
+          type: integer
+          description: Time spent (count up, not countdown)
+
+    PracticeQuestion:
+      type: object
+      required:
+        - id
+        - section
+        - topic
+        - difficulty
+        - question_type
+        - stem
+        - choices
+        - answer_index
+        - explanation
+        - solving_strategy
+        - tip
+      properties:
+        id:
+          type: string
+        section:
+          type: string
+          enum: [quantitative, verbal]
+        topic:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        question_type:
+          type: string
+          enum: [mcq, diagram, chart, text-only, reading-passage]
+        stem:
+          type: string
+        choices:
+          type: array
+          items:
+            type: string
+          minItems: 4
+          maxItems: 4
+        answer_index:
+          type: integer
+          minimum: 0
+          maximum: 3
+        explanation:
+          type: string
+        solving_strategy:
+          type: string
+          description: Step-by-step solving approach
+        tip:
+          type: string
+          description: Quick tip for similar questions
+        passage:
+          type: string
+        passage_id:
+          type: string
+        diagram:
+          $ref: '#/components/schemas/Diagram'
+        tags:
+          type: array
+          items:
+            type: string
+
+    Diagram:
+      type: object
+      properties:
+        type:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        render_hint:
+          type: string
+          enum: [SVG, Canvas, Chart.js]
+        caption:
+          type: string
+
+    PracticeAnswer:
+      type: object
+      properties:
+        questionIndex:
+          type: integer
+        selectedAnswer:
+          type: integer
+          nullable: true
+        isCorrect:
+          type: boolean
+        timeSpentSeconds:
+          type: integer
+        explanationViewed:
+          type: boolean
+
+    SubmitPracticeAnswerRequest:
+      type: object
+      required:
+        - questionIndex
+        - selectedAnswer
+      properties:
+        questionIndex:
+          type: integer
+          minimum: 0
+        selectedAnswer:
+          type: integer
+          minimum: 0
+          maximum: 3
+        timeSpentSeconds:
+          type: integer
+          minimum: 0
+
+    PracticeAnswerFeedback:
+      type: object
+      properties:
+        questionIndex:
+          type: integer
+        selectedAnswer:
+          type: integer
+        isCorrect:
+          type: boolean
+        correctAnswer:
+          type: integer
+        explanation:
+          type: string
+          description: Immediate access (no delay for practice)
+        solvingStrategy:
+          type: string
+        tip:
+          type: string
+
+    UpdatePracticeRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [completed, abandoned]
+        elapsedSeconds:
+          type: integer
+          description: Final elapsed time
+
+    PracticeResults:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Single percentage score
+        scoreColor:
+          type: string
+          enum: [gold, green, grey, warm]
+        totalQuestions:
+          type: integer
+        correctAnswers:
+          type: integer
+        elapsedSeconds:
+          type: integer
+        categoryBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              correct:
+                type: integer
+              total:
+                type: integer
+              percentage:
+                type: number
+        practiceHoursAdded:
+          type: number
+          format: float
+          description: Hours added to user's total practice time
+
+    CategoriesResponse:
+      type: object
+      properties:
+        quantitative:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        verbal:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Category identifier (e.g., "algebra")
+        nameAr:
+          type: string
+          description: Arabic display name
+        nameEn:
+          type: string
+          description: English display name
+        description:
+          type: string
+          description: Brief description in Arabic
+        hasVisuals:
+          type: boolean
+          description: Whether this category includes diagrams/charts
+        premiumOnly:
+          type: boolean
+          description: Whether category requires premium (always false for now)
+      example:
+        id: "geometry"
+        nameAr: "الهندسة"
+        nameEn: "Geometry"
+        description: "أشكال، زوايا، مساحات، حجوم"
+        hasVisuals: true
+        premiumOnly: false
+
+    PracticeHistoryResponse:
+      type: object
+      properties:
+        practices:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              categories:
+                type: array
+                items:
+                  type: string
+              difficulty:
+                type: string
+              questionCount:
+                type: integer
+              score:
+                type: number
+              completedAt:
+                type: string
+                format: date-time
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            hasMore:
+              type: boolean
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+      example:
+        error: VALIDATION_ERROR
+        message: Free tier restrictions exceeded
+        details:
+          - field: categories
+            message: Free users can select maximum 2 categories
+          - field: questionCount
+            message: Free users are limited to 5 questions

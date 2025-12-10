@@ -1,0 +1,462 @@
+openapi: 3.1.0
+info:
+  title: Tafawoq Subscription API
+  version: 1.0.0
+  description: |
+    API contracts for subscription management and Stripe payment integration.
+    Handles subscription lifecycle, billing, and access control.
+
+servers:
+  - url: /api
+    description: Next.js API routes
+
+paths:
+  /subscription:
+    get:
+      operationId: getSubscription
+      summary: Get current subscription details
+      description: Returns user's subscription status, billing info, and usage limits
+      tags:
+        - Subscription
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionDetails'
+        '401':
+          description: Not authenticated
+
+  /subscription/checkout:
+    post:
+      operationId: createCheckoutSession
+      summary: Create Stripe checkout session
+      description: |
+        Creates a Stripe Checkout session for premium subscription.
+        Includes 3-day trial for new subscribers.
+      tags:
+        - Subscription
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '400':
+          description: User already has active subscription
+        '401':
+          description: Not authenticated
+
+  /subscription/portal:
+    post:
+      operationId: createPortalSession
+      summary: Create Stripe billing portal session
+      description: |
+        Creates a Stripe Customer Portal session for subscription management.
+        Allows users to update payment method, view invoices, cancel subscription.
+      tags:
+        - Subscription
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: Portal session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalResponse'
+        '400':
+          description: No subscription exists
+        '401':
+          description: Not authenticated
+
+  /subscription/cancel:
+    post:
+      operationId: cancelSubscription
+      summary: Cancel subscription
+      description: |
+        Schedules subscription cancellation at end of billing period.
+        User retains access until current period ends.
+      tags:
+        - Subscription
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: Cancellation scheduled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelResponse'
+        '400':
+          description: No active subscription to cancel
+        '401':
+          description: Not authenticated
+
+  /subscription/reactivate:
+    post:
+      operationId: reactivateSubscription
+      summary: Reactivate cancelled subscription
+      description: |
+        Reactivates a subscription that was scheduled for cancellation.
+        Only works before the current period ends.
+      tags:
+        - Subscription
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: Subscription reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionDetails'
+        '400':
+          description: Cannot reactivate (subscription already ended)
+        '401':
+          description: Not authenticated
+
+  /subscription/invoices:
+    get:
+      operationId: getInvoices
+      summary: Get billing history
+      description: Returns list of past invoices and payments
+      tags:
+        - Subscription
+      security:
+        - supabaseAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+      responses:
+        '200':
+          description: Invoice history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceListResponse'
+        '401':
+          description: Not authenticated
+
+  /subscription/usage:
+    get:
+      operationId: getUsageLimits
+      summary: Get current usage and limits
+      description: Returns usage counters and remaining allowances for free tier
+      tags:
+        - Subscription
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: Usage information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+        '401':
+          description: Not authenticated
+
+  /webhooks/stripe:
+    post:
+      operationId: handleStripeWebhook
+      summary: Stripe webhook handler
+      description: |
+        Handles Stripe webhook events for subscription lifecycle.
+        Validates webhook signature and processes events.
+
+        Handled events:
+        - checkout.session.completed
+        - customer.subscription.created
+        - customer.subscription.updated
+        - customer.subscription.deleted
+        - invoice.payment_failed
+        - invoice.payment_succeeded
+      tags:
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Stripe webhook payload
+      responses:
+        '200':
+          description: Webhook processed
+        '400':
+          description: Invalid webhook signature
+
+components:
+  securitySchemes:
+    supabaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SubscriptionDetails:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [free, premium]
+        status:
+          type: string
+          enum: [active, trialing, past_due, canceled, unpaid]
+          nullable: true
+        isActive:
+          type: boolean
+          description: Whether user currently has premium access
+        stripeCustomerId:
+          type: string
+          nullable: true
+        stripeSubscriptionId:
+          type: string
+          nullable: true
+        currentPeriodStart:
+          type: string
+          format: date-time
+          nullable: true
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          nullable: true
+        trialEnd:
+          type: string
+          format: date-time
+          nullable: true
+          description: Trial expiration date (if trialing)
+        cancelAtPeriodEnd:
+          type: boolean
+          description: Whether cancellation is scheduled
+        priceAmount:
+          type: integer
+          description: Monthly price in halalas (SAR cents)
+          example: 4900
+        currency:
+          type: string
+          example: sar
+        features:
+          $ref: '#/components/schemas/SubscriptionFeatures'
+
+    SubscriptionFeatures:
+      type: object
+      description: Feature access based on subscription tier
+      properties:
+        unlimitedExams:
+          type: boolean
+        unlimitedPractice:
+          type: boolean
+        maxPracticeQuestions:
+          type: integer
+          description: 5 for free, 100 for premium
+        maxPracticeCategories:
+          type: integer
+          description: 2 for free, unlimited for premium
+        instantExplanations:
+          type: boolean
+          description: Free users wait 24 hours
+        advancedAnalytics:
+          type: boolean
+        dataExport:
+          type: boolean
+        historicalComparison:
+          type: boolean
+
+    CheckoutRequest:
+      type: object
+      properties:
+        successUrl:
+          type: string
+          format: uri
+          description: Redirect URL on success (optional)
+        cancelUrl:
+          type: string
+          format: uri
+          description: Redirect URL on cancel (optional)
+
+    CheckoutResponse:
+      type: object
+      properties:
+        checkoutUrl:
+          type: string
+          format: uri
+          description: Stripe Checkout URL to redirect user
+        sessionId:
+          type: string
+          description: Stripe session ID
+
+    PortalResponse:
+      type: object
+      properties:
+        portalUrl:
+          type: string
+          format: uri
+          description: Stripe Customer Portal URL
+
+    CancelResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Subscription will be cancelled at end of billing period
+        cancelAt:
+          type: string
+          format: date-time
+          description: When access will end
+        currentPeriodEnd:
+          type: string
+          format: date-time
+
+    InvoiceListResponse:
+      type: object
+      properties:
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+        hasMore:
+          type: boolean
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        status:
+          type: string
+          enum: [draft, open, paid, uncollectible, void]
+        amount:
+          type: integer
+          description: Amount in halalas
+        currency:
+          type: string
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        invoicePdfUrl:
+          type: string
+          format: uri
+          nullable: true
+
+    UsageResponse:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [free, premium]
+        exams:
+          type: object
+          properties:
+            used:
+              type: integer
+              description: Exams taken this week
+            limit:
+              type: integer
+              description: 3 for free, unlimited for premium
+              nullable: true
+            remaining:
+              type: integer
+              nullable: true
+            resetsAt:
+              type: string
+              format: date-time
+              description: When weekly counter resets
+        practice:
+          type: object
+          properties:
+            maxQuestions:
+              type: integer
+            maxCategories:
+              type: integer
+        explanationDelay:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: True for free tier
+            delayHours:
+              type: integer
+              description: 24 for free, 0 for premium
+
+    PricingInfo:
+      type: object
+      description: Pricing information for display
+      properties:
+        monthlyPrice:
+          type: number
+          format: float
+          example: 49.00
+        currency:
+          type: string
+          example: SAR
+        currencySymbol:
+          type: string
+          example: "ر.س"
+        trialDays:
+          type: integer
+          example: 3
+        features:
+          type: array
+          items:
+            type: object
+            properties:
+              nameAr:
+                type: string
+              nameEn:
+                type: string
+              free:
+                type: string
+              premium:
+                type: string
+          example:
+            - nameAr: "الاختبارات الكاملة"
+              nameEn: "Full Exams"
+              free: "3 في الأسبوع"
+              premium: "غير محدود"
+            - nameAr: "أسئلة التدريب"
+              nameEn: "Practice Questions"
+              free: "5"
+              premium: "حتى 100"
+            - nameAr: "فئات التدريب"
+              nameEn: "Practice Categories"
+              free: "2"
+              premium: "غير محدود"
+            - nameAr: "التفسيرات"
+              nameEn: "Explanations"
+              free: "بعد 24 ساعة"
+              premium: "فوري"
+            - nameAr: "التحليلات المتقدمة"
+              nameEn: "Advanced Analytics"
+              free: "لا"
+              premium: "نعم"
+            - nameAr: "تصدير البيانات"
+              nameEn: "Data Export"
+              free: "لا"
+              premium: "نعم"

@@ -1,0 +1,661 @@
+openapi: 3.1.0
+info:
+  title: Tafawoq Authentication API
+  version: 1.0.0
+  description: |
+    API contracts for user authentication, registration, and profile management.
+    Uses Supabase Auth under the hood with custom endpoints for onboarding flow.
+
+servers:
+  - url: /api
+    description: Next.js API routes
+
+paths:
+  /auth/register:
+    post:
+      operationId: registerUser
+      summary: Register a new user
+      description: |
+        Creates a new user account with email and password.
+        Sends OTP verification email.
+
+        Password requirements:
+        - Minimum 8 characters
+        - At least one uppercase letter
+        - At least one lowercase letter
+        - At least one number
+        - At least one special character
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration initiated, OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Invalid input (weak password, invalid email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      summary: Verify email with OTP
+      description: |
+        Verifies user email using 6-digit OTP code.
+        OTP expires after 10 minutes.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpError'
+        '404':
+          description: User not found
+
+  /auth/resend-otp:
+    post:
+      operationId: resendOtp
+      summary: Resend OTP verification email
+      description: |
+        Resends OTP to user's email.
+        60-second cooldown between resend attempts.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendOtpRequest'
+      responses:
+        '200':
+          description: OTP resent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendOtpResponse'
+        '429':
+          description: Rate limited (60-second cooldown)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      summary: Sign in with email and password
+      description: Authenticates existing user and returns session tokens
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+        '403':
+          description: Email not verified
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      summary: Sign out current user
+      description: Invalidates current session
+      tags:
+        - Authentication
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+        '401':
+          description: Not authenticated
+
+  /auth/session:
+    get:
+      operationId: getSession
+      summary: Get current session
+      description: Returns current user session and profile data
+      tags:
+        - Authentication
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: Not authenticated
+
+  /auth/password/reset:
+    post:
+      operationId: requestPasswordReset
+      summary: Request password reset
+      description: Sends password reset link to user's email
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Reset email sent (if account exists)
+        '429':
+          description: Rate limited
+
+  /auth/password/update:
+    post:
+      operationId: updatePassword
+      summary: Update password with reset token
+      description: Sets new password using reset token from email
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '200':
+          description: Password updated
+        '400':
+          description: Invalid or expired token
+
+  /profile:
+    get:
+      operationId: getProfile
+      summary: Get user profile
+      description: Returns full user profile including subscription and performance data
+      tags:
+        - Profile
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Not authenticated
+
+    patch:
+      operationId: updateProfile
+      summary: Update user profile
+      description: Updates profile fields (academic track, preferences)
+      tags:
+        - Profile
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid update data
+
+  /profile/track:
+    patch:
+      operationId: updateAcademicTrack
+      summary: Change academic track
+      description: |
+        Updates user's academic track.
+        Affects future exam question distribution.
+        Does not affect historical data.
+      tags:
+        - Profile
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTrackRequest'
+      responses:
+        '200':
+          description: Track updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /profile/onboarding:
+    patch:
+      operationId: completeOnboarding
+      summary: Complete onboarding tutorial
+      description: Marks onboarding as completed for the user
+      tags:
+        - Profile
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteOnboardingRequest'
+      responses:
+        '200':
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /profile/delete:
+    post:
+      operationId: requestAccountDeletion
+      summary: Request account deletion
+      description: |
+        Initiates account and data deletion process.
+        PDPL compliance: deletion completed within 30 days.
+      tags:
+        - Profile
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteAccountRequest'
+      responses:
+        '200':
+          description: Deletion request received
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteAccountResponse'
+        '400':
+          description: Invalid confirmation
+
+  /profile/export:
+    get:
+      operationId: exportUserData
+      summary: Export user data
+      description: |
+        Exports all user data (PDPL compliance).
+        Premium users only.
+      tags:
+        - Profile
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: User data export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataExport'
+        '402':
+          description: Premium subscription required
+
+components:
+  securitySchemes:
+    supabaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - acceptedTerms
+        - acceptedPrivacy
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          description: |
+            Password requirements:
+            - Minimum 8 characters
+            - Uppercase, lowercase, number, special character
+        acceptedTerms:
+          type: boolean
+          description: Must be true
+        acceptedPrivacy:
+          type: boolean
+          description: Must be true
+      example:
+        email: "student@example.com"
+        password: "SecureP@ss123"
+        acceptedTerms: true
+        acceptedPrivacy: true
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Verification email sent
+        email:
+          type: string
+        expiresIn:
+          type: integer
+          description: OTP expiration in seconds
+          example: 600
+
+    VerifyOtpRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+        otp:
+          type: string
+          pattern: "^[0-9]{6}$"
+          description: 6-digit OTP code
+
+    ResendOtpRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResendOtpResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: OTP resent
+        nextResendAt:
+          type: string
+          format: date-time
+          description: When next resend is allowed
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserProfile'
+        session:
+          type: object
+          properties:
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            expiresAt:
+              type: string
+              format: date-time
+
+    SessionResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserProfile'
+        isAuthenticated:
+          type: boolean
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        academicTrack:
+          type: string
+          enum: [scientific, literary]
+          nullable: true
+        subscriptionTier:
+          type: string
+          enum: [free, premium]
+        subscriptionStatus:
+          type: string
+          enum: [active, trialing, past_due, canceled]
+          nullable: true
+        trialEndsAt:
+          type: string
+          format: date-time
+          nullable: true
+        onboardingCompleted:
+          type: boolean
+        totalPracticeHours:
+          type: number
+          format: float
+        lastExamScores:
+          type: object
+          nullable: true
+          properties:
+            verbal:
+              type: number
+            quantitative:
+              type: number
+            overall:
+              type: number
+            takenAt:
+              type: string
+              format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        academicTrack:
+          type: string
+          enum: [scientific, literary]
+
+    UpdateTrackRequest:
+      type: object
+      required:
+        - academicTrack
+      properties:
+        academicTrack:
+          type: string
+          enum: [scientific, literary]
+
+    CompleteOnboardingRequest:
+      type: object
+      required:
+        - academicTrack
+      properties:
+        academicTrack:
+          type: string
+          enum: [scientific, literary]
+          description: Track selected during onboarding
+
+    PasswordResetRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    UpdatePasswordRequest:
+      type: object
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    DeleteAccountRequest:
+      type: object
+      required:
+        - confirmEmail
+        - confirmText
+      properties:
+        confirmEmail:
+          type: string
+          format: email
+          description: Must match current user email
+        confirmText:
+          type: string
+          description: Must be exactly "DELETE"
+
+    DeleteAccountResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Account deletion scheduled
+        deletionDate:
+          type: string
+          format: date
+          description: Expected deletion date (within 30 days)
+
+    DataExport:
+      type: object
+      properties:
+        user:
+          type: object
+        examSessions:
+          type: array
+          items:
+            type: object
+        practiceSessions:
+          type: array
+          items:
+            type: object
+        performanceRecords:
+          type: object
+        exportedAt:
+          type: string
+          format: date-time
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    ConflictError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: EMAIL_EXISTS
+        message:
+          type: string
+          example: An account with this email already exists
+
+    OtpError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [INVALID_OTP, EXPIRED_OTP]
+        message:
+          type: string
+        attemptsRemaining:
+          type: integer
+          description: Number of attempts left before lockout
+
+    RateLimitError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: RATE_LIMITED
+        message:
+          type: string
+        retryAfter:
+          type: integer
+          description: Seconds until next attempt allowed
