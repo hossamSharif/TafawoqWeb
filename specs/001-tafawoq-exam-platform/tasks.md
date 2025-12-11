@@ -23,13 +23,13 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Initialize Next.js 14+ project with TypeScript and App Router at repository root
-- [ ] T002 [P] Configure Tailwind CSS with RTL support and Arabic font (Noto Kufi Arabic) in tailwind.config.ts
-- [ ] T003 [P] Configure ESLint and Prettier with TypeScript rules in .eslintrc.json and .prettierrc
-- [ ] T004 [P] Create environment configuration with .env.example and src/lib/env.ts for type-safe env vars
-- [ ] T005 [P] Install and configure shadcn/ui with RTL-ready components in src/components/ui/
-- [ ] T006 Create root layout with RTL direction, Arabic font, and global styles in src/app/layout.tsx and src/app/globals.css
-- [ ] T007 [P] Create TypeScript type definitions for exam, question, user, and subscription in src/types/
+- [X] T001 Initialize Next.js 14+ project with TypeScript and App Router at repository root
+- [X] T002 [P] Configure Tailwind CSS with RTL support and Arabic font (Noto Kufi Arabic) in tailwind.config.ts
+- [X] T003 [P] Configure ESLint and Prettier with TypeScript rules in .eslintrc.json and .prettierrc
+- [X] T004 [P] Create environment configuration with .env.example and src/lib/env.ts for type-safe env vars
+- [X] T005 [P] Install and configure shadcn/ui with RTL-ready components in src/components/ui/
+- [X] T006 Create root layout with RTL direction, Arabic font, and global styles in src/app/layout.tsx and src/app/globals.css
+- [X] T007 [P] Create TypeScript type definitions for exam, question, user, and subscription in src/types/
 
 ---
 

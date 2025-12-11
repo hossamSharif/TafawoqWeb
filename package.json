@@ -1,0 +1,52 @@
+{
+  "name": "tafawqoqweb",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Saudi Aptitude Exam Preparation Platform",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@sentry/nextjs": "^8.45.0",
+    "@stripe/stripe-js": "^2.4.0",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.49.0",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "stripe": "^17.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "lucide-react": "^0.560.0",
+    "postcss": "^8.4.47",
+    "prettier": "^3.7.4",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hossamSharif/TafawoqWeb.git"
+  },
+  "keywords": [
+    "saudi-aptitude-exam",
+    "education",
+    "arabic",
+    "nextjs"
+  ],
+  "author": "",
+  "license": "ISC"
+}
