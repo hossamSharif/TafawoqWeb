@@ -229,16 +229,82 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       })
 
       // Update user analytics
+      const typedScores = scores as {
+        verbal_score?: number
+        quantitative_score?: number
+        overall_score?: number
+        strengths?: string[]
+        weaknesses?: string[]
+      }
+
       await supabase
         .from('user_analytics')
         .upsert({
           user_id: user.id,
-          last_exam_verbal_score: (scores as { verbal_score?: number }).verbal_score,
-          last_exam_quantitative_score: (scores as { quantitative_score?: number }).quantitative_score,
-          last_exam_overall_average: (scores as { overall_score?: number }).overall_score,
+          last_exam_verbal_score: typedScores.verbal_score,
+          last_exam_quantitative_score: typedScores.quantitative_score,
+          last_exam_overall_average: typedScores.overall_score,
           last_activity_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' })
+
+      // Update performance_records with exam history
+      const { data: perfRecord } = await supabase
+        .from('performance_records')
+        .select('exam_history, weekly_exam_count, week_start_date')
+        .eq('user_id', user.id)
+        .single()
+
+      // Build new exam history entry
+      const newExamEntry = {
+        date: endTime,
+        verbal: typedScores.verbal_score || 0,
+        quantitative: typedScores.quantitative_score || 0,
+        overall: typedScores.overall_score || 0,
+      }
+
+      // Get existing history or create empty array
+      const existingHistory = (perfRecord?.exam_history || []) as Array<{
+        date: string
+        verbal: number
+        quantitative: number
+        overall: number
+      }>
+
+      // Add new entry and keep last 10
+      const updatedHistory = [...existingHistory, newExamEntry].slice(-10)
+
+      // Check if we need to reset weekly count (if more than 7 days)
+      const weekStartDate = perfRecord?.week_start_date
+      const now = new Date()
+      const weekStart = weekStartDate ? new Date(weekStartDate) : null
+      const daysDiff = weekStart ? Math.floor((now.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)) : 8
+
+      const newWeeklyCount = daysDiff >= 7 ? 1 : (perfRecord?.weekly_exam_count || 0) + 1
+      const newWeekStartDate = daysDiff >= 7 ? now.toISOString().split('T')[0] : weekStartDate
+
+      await supabase
+        .from('performance_records')
+        .upsert({
+          user_id: user.id,
+          exam_history: updatedHistory,
+          weekly_exam_count: newWeeklyCount,
+          week_start_date: newWeekStartDate,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' })
+
+      // Update user_profiles with last exam scores
+      await supabase
+        .from('user_profiles')
+        .update({
+          last_exam_scores: {
+            verbal: typedScores.verbal_score || 0,
+            quantitative: typedScores.quantitative_score || 0,
+            overall: typedScores.overall_score || 0,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
     }
 
     return NextResponse.json({

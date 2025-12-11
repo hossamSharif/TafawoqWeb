@@ -11,6 +11,7 @@ import {
   getScoreBgClass,
   formatTimeArabic,
 } from '@/lib/utils/scoring'
+import { TrendChart, type TrendDataPoint } from '@/components/analytics'
 import {
   Trophy,
   Target,
@@ -22,6 +23,8 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
+  Crown,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -41,6 +44,23 @@ interface CategoryData {
   percentage: number
   tier: string
   color: string
+}
+
+interface PremiumAnalytics {
+  previousExam: {
+    overallScore: number
+    verbalScore: number
+    quantitativeScore: number
+    date: string
+    improvement: {
+      overall: number
+      verbal: number
+      quantitative: number
+    }
+  } | null
+  peerPercentile: number | null
+  examHistory: TrendDataPoint[]
+  totalExamsTaken: number
 }
 
 interface ExamResults {
@@ -82,6 +102,8 @@ interface ExamResults {
     correctAnswer: number
     isCorrect: boolean
   }[]
+  isPremium?: boolean
+  premiumAnalytics?: PremiumAnalytics | null
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -222,7 +244,7 @@ export default function ExamResultsPage() {
     )
   }
 
-  const { session, scores, analysis } = results
+  const { session, scores, analysis, isPremium, premiumAnalytics } = results
   const visibleCategories = showAllCategories
     ? analysis.categoryBreakdown
     : analysis.categoryBreakdown.slice(0, 6)
@@ -432,6 +454,130 @@ export default function ExamResultsPage() {
             ))}
           </div>
         </div>
+
+        {/* Premium Analytics Section */}
+        {isPremium && premiumAnalytics && (
+          <div className="space-y-6 mb-8">
+            {/* Peer Percentile & Comparison */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Peer Percentile */}
+              {premiumAnalytics.peerPercentile !== null && (
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl shadow-sm p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-gray-900">ترتيبك بين الطلاب</h3>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-5xl font-bold text-primary mb-2">
+                      {premiumAnalytics.peerPercentile}%
+                    </p>
+                    <p className="text-gray-600">
+                      تفوقت على {premiumAnalytics.peerPercentile}% من الطلاب
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Previous Exam Comparison */}
+              {premiumAnalytics.previousExam && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-gray-900">مقارنة بالاختبار السابق</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'الإجمالي', value: premiumAnalytics.previousExam.improvement.overall },
+                      { label: 'الكمي', value: premiumAnalytics.previousExam.improvement.quantitative },
+                      { label: 'اللفظي', value: premiumAnalytics.previousExam.improvement.verbal },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center justify-between">
+                        <span className="text-gray-600">{item.label}</span>
+                        <span
+                          className={cn(
+                            'font-bold flex items-center gap-1',
+                            item.value > 0 ? 'text-green-600' : item.value < 0 ? 'text-red-600' : 'text-gray-500'
+                          )}
+                        >
+                          {item.value > 0 ? (
+                            <TrendingUp className="w-4 h-4" />
+                          ) : item.value < 0 ? (
+                            <TrendingDown className="w-4 h-4" />
+                          ) : null}
+                          {item.value > 0 ? '+' : ''}{item.value}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-3">
+                    مقارنة مع اختبار {new Date(premiumAnalytics.previousExam.date).toLocaleDateString('ar-SA')}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Trend Chart */}
+            {premiumAnalytics.examHistory.length >= 2 && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-gray-900">تطور الأداء</h3>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
+                    <Crown className="w-3 h-3" />
+                    <span>مميز</span>
+                  </div>
+                </div>
+                <TrendChart
+                  data={premiumAnalytics.examHistory}
+                  height={280}
+                  showVerbal={true}
+                  showQuantitative={true}
+                  showOverall={true}
+                />
+                <p className="text-xs text-gray-400 mt-3 text-center">
+                  آخر {premiumAnalytics.totalExamsTaken} اختبارات
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Premium Upsell for non-premium users */}
+        {!isPremium && (
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl shadow-sm p-6 mb-8 border border-yellow-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Crown className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">احصل على تحليلات متقدمة</h3>
+                <p className="text-sm text-gray-600">ترقية للاشتراك المميز للحصول على:</p>
+              </div>
+            </div>
+            <ul className="space-y-2 mb-4 text-sm text-gray-600">
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
+                تطور أدائك عبر الزمن (رسم بياني)
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
+                مقارنة مع اختباراتك السابقة
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
+                ترتيبك بين جميع الطلاب
+              </li>
+            </ul>
+            <Link href="/settings#subscription">
+              <Button size="sm" className="gap-1 bg-yellow-600 hover:bg-yellow-700">
+                <Crown className="w-4 h-4" />
+                ترقية الآن
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Questions Review */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8">

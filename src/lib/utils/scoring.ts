@@ -238,3 +238,158 @@ export function estimateScore(
   const estimatedCorrect = Math.round(currentRate * totalQuestions)
   return Math.round((estimatedCorrect / totalQuestions) * 100)
 }
+
+/**
+ * Detailed strength/weakness item with score
+ */
+export interface DetailedStrengthWeakness {
+  category: string
+  score: number
+  correct: number
+  total: number
+}
+
+/**
+ * Get top N strengths sorted by score
+ */
+export function getTopStrengths(
+  breakdown: CategoryBreakdown[],
+  limit: number = 3,
+  minQuestions: number = 3,
+  minScore: number = 75
+): DetailedStrengthWeakness[] {
+  return breakdown
+    .filter(cat => cat.total >= minQuestions && cat.percentage >= minScore)
+    .sort((a, b) => b.percentage - a.percentage)
+    .slice(0, limit)
+    .map(cat => ({
+      category: cat.category,
+      score: cat.percentage,
+      correct: cat.correct,
+      total: cat.total,
+    }))
+}
+
+/**
+ * Get top N weaknesses sorted by score (lowest first)
+ */
+export function getTopWeaknesses(
+  breakdown: CategoryBreakdown[],
+  limit: number = 3,
+  minQuestions: number = 3,
+  maxScore: number = 50
+): DetailedStrengthWeakness[] {
+  return breakdown
+    .filter(cat => cat.total >= minQuestions && cat.percentage < maxScore)
+    .sort((a, b) => a.percentage - b.percentage)
+    .slice(0, limit)
+    .map(cat => ({
+      category: cat.category,
+      score: cat.percentage,
+      correct: cat.correct,
+      total: cat.total,
+    }))
+}
+
+/**
+ * Calculate comprehensive performance analysis
+ */
+export interface PerformanceAnalysis {
+  strengths: DetailedStrengthWeakness[]
+  weaknesses: DetailedStrengthWeakness[]
+  categoryBreakdown: CategoryBreakdown[]
+  averageScore: number
+  strongCategoriesCount: number
+  weakCategoriesCount: number
+}
+
+export function analyzePerformance(
+  breakdown: CategoryBreakdown[],
+  strengthLimit: number = 3,
+  weaknessLimit: number = 3
+): PerformanceAnalysis {
+  const strengths = getTopStrengths(breakdown, strengthLimit)
+  const weaknesses = getTopWeaknesses(breakdown, weaknessLimit)
+
+  const totalScore = breakdown.reduce((sum, cat) => sum + cat.percentage * cat.total, 0)
+  const totalQuestions = breakdown.reduce((sum, cat) => sum + cat.total, 0)
+  const averageScore = totalQuestions > 0 ? Math.round(totalScore / totalQuestions) : 0
+
+  const strongCategoriesCount = breakdown.filter(cat => cat.percentage >= 75).length
+  const weakCategoriesCount = breakdown.filter(cat => cat.percentage < 50).length
+
+  return {
+    strengths,
+    weaknesses,
+    categoryBreakdown: breakdown,
+    averageScore,
+    strongCategoriesCount,
+    weakCategoriesCount,
+  }
+}
+
+/**
+ * Calculate score change from previous exam
+ */
+export interface ScoreComparisonResult {
+  current: number
+  previous: number
+  change: number
+  changePercent: number
+  trend: 'up' | 'down' | 'stable'
+}
+
+export function compareScores(current: number, previous: number): ScoreComparisonResult {
+  const change = current - previous
+  const changePercent = previous > 0 ? Math.round((change / previous) * 100) : 0
+  const trend = change > 2 ? 'up' : change < -2 ? 'down' : 'stable'
+
+  return {
+    current,
+    previous,
+    change,
+    changePercent,
+    trend,
+  }
+}
+
+/**
+ * Calculate difficulty performance breakdown
+ */
+export interface DifficultyPerformance {
+  difficulty: 'easy' | 'medium' | 'hard'
+  correct: number
+  total: number
+  percentage: number
+}
+
+export function calculateDifficultyBreakdown(
+  answers: AnswerData[],
+  questions: Question[]
+): DifficultyPerformance[] {
+  const questionDifficultyMap = new Map<string, 'easy' | 'medium' | 'hard'>()
+  questions.forEach(q => {
+    questionDifficultyMap.set(q.id, q.difficulty)
+  })
+
+  const stats: Record<string, { correct: number; total: number }> = {
+    easy: { correct: 0, total: 0 },
+    medium: { correct: 0, total: 0 },
+    hard: { correct: 0, total: 0 },
+  }
+
+  for (const answer of answers) {
+    const difficulty = questionDifficultyMap.get(answer.questionId) || 'medium'
+    stats[difficulty].total++
+    if (answer.isCorrect) stats[difficulty].correct++
+  }
+
+  return (['easy', 'medium', 'hard'] as const).map(difficulty => ({
+    difficulty,
+    correct: stats[difficulty].correct,
+    total: stats[difficulty].total,
+    percentage: stats[difficulty].total > 0
+      ? Math.round((stats[difficulty].correct / stats[difficulty].total) * 100)
+      : 0,
+  }))
+}

@@ -133,6 +133,74 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Get user profile to check subscription tier
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('subscription_tier')
+      .eq('user_id', user.id)
+      .single()
+
+    const isPremium = profile?.subscription_tier === 'premium'
+
+    // Premium features: historical comparison and peer percentile
+    let premiumAnalytics = null
+    if (isPremium) {
+      // Get user's previous exam for comparison
+      const { data: previousExams } = await supabase
+        .from('exam_sessions')
+        .select('overall_score, verbal_score, quantitative_score, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .neq('id', sessionId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      // Calculate peer percentile (simplified - based on all completed exams)
+      const { data: allExams } = await supabase
+        .from('exam_sessions')
+        .select('overall_score')
+        .eq('status', 'completed')
+        .not('overall_score', 'is', null)
+
+      let peerPercentile = null
+      if (allExams && allExams.length > 0) {
+        const scores = allExams.map(e => e.overall_score as number).filter(s => s !== null)
+        const belowCount = scores.filter(s => s < sectionScores.overallScore).length
+        peerPercentile = Math.round((belowCount / scores.length) * 100)
+      }
+
+      // Get exam history for trend chart
+      const { data: examHistory } = await supabase
+        .from('exam_sessions')
+        .select('overall_score, verbal_score, quantitative_score, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: true })
+        .limit(10)
+
+      premiumAnalytics = {
+        previousExam: previousExams?.[0] ? {
+          overallScore: previousExams[0].overall_score,
+          verbalScore: previousExams[0].verbal_score,
+          quantitativeScore: previousExams[0].quantitative_score,
+          date: previousExams[0].created_at,
+          improvement: {
+            overall: sectionScores.overallScore - (previousExams[0].overall_score || 0),
+            verbal: sectionScores.verbalScore - (previousExams[0].verbal_score || 0),
+            quantitative: sectionScores.quantitativeScore - (previousExams[0].quantitative_score || 0),
+          },
+        } : null,
+        peerPercentile,
+        examHistory: examHistory?.map(e => ({
+          date: e.created_at,
+          overall: e.overall_score || 0,
+          verbal: e.verbal_score || 0,
+          quantitative: e.quantitative_score || 0,
+        })) || [],
+        totalExamsTaken: examHistory?.length || 0,
+      }
+    }
+
     return NextResponse.json({
       session: {
         id: session.id,
@@ -192,6 +260,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ),
       },
       questions: questionResults,
+      isPremium,
+      premiumAnalytics,
     })
   } catch (error) {
     console.error('Get results error:', error)
