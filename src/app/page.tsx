@@ -50,16 +50,14 @@ export default function WelcomePage() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Link
-            href="/register"
+            href="/auth/register"
             className="px-8 py-4 bg-primary text-white rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: 'rgb(30, 86, 49)' }}
           >
             إنشاء حساب جديد
           </Link>
           <Link
-            href="/login"
-            className="px-8 py-4 border-2 border-primary text-primary rounded-lg font-semibold text-lg hover:bg-primary hover:text-white transition-colors"
-            style={{ borderColor: 'rgb(30, 86, 49)', color: 'rgb(30, 86, 49)' }}
+            href="/auth/login"
+            className="px-8 py-4 border-2 border-primary text-primary rounded-lg font-semibold text-lg hover:bg-primary/10 transition-colors"
           >
             تسجيل الدخول
           </Link>

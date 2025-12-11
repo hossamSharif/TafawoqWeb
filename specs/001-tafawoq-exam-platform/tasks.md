@@ -41,45 +41,45 @@
 
 ### Database Setup
 
-- [ ] T008 Create Supabase project and configure connection in src/lib/supabase/client.ts
-- [ ] T009 Apply migration 001_create_user_profiles.sql via Supabase MCP tools
-- [ ] T010 Apply migration 002_create_subscriptions.sql via Supabase MCP tools
-- [ ] T011 Apply migration 003_create_exam_sessions.sql via Supabase MCP tools
-- [ ] T012 Apply migration 004_create_practice_sessions.sql via Supabase MCP tools
-- [ ] T013 Apply migration 005_create_answers.sql via Supabase MCP tools
-- [ ] T014 Apply migration 006_create_performance_records.sql via Supabase MCP tools
-- [ ] T015 Apply migration 007_create_reading_passages.sql via Supabase MCP tools
-- [ ] T016 Apply migration 008_create_functions_triggers.sql (including handle_new_user trigger) via Supabase MCP tools
-- [ ] T017 Apply migration 009_create_rls_policies.sql for all tables via Supabase MCP tools
-- [ ] T018 Apply migration 010_create_indexes.sql for query optimization via Supabase MCP tools
-- [ ] T019 Generate TypeScript types from Supabase schema using MCP tools into src/lib/supabase/types.ts
+- [X] T008 Create Supabase project and configure connection in src/lib/supabase/client.ts
+- [X] T009 Apply migration 001_create_user_profiles.sql via Supabase MCP tools
+- [X] T010 Apply migration 002_create_subscriptions.sql via Supabase MCP tools
+- [X] T011 Apply migration 003_create_exam_sessions.sql via Supabase MCP tools
+- [X] T012 Apply migration 004_create_practice_sessions.sql via Supabase MCP tools
+- [X] T013 Apply migration 005_create_answers.sql via Supabase MCP tools
+- [X] T014 Apply migration 006_create_performance_records.sql via Supabase MCP tools
+- [X] T015 Apply migration 007_create_reading_passages.sql via Supabase MCP tools
+- [X] T016 Apply migration 008_create_functions_triggers.sql (including handle_new_user trigger) via Supabase MCP tools
+- [X] T017 Apply migration 009_create_rls_policies.sql for all tables via Supabase MCP tools
+- [X] T018 Apply migration 010_create_indexes.sql for query optimization via Supabase MCP tools
+- [X] T019 Generate TypeScript types from Supabase schema using MCP tools into src/lib/supabase/types.ts
 
 ### Core Authentication Infrastructure
 
-- [ ] T020 Implement Supabase Auth client initialization in src/lib/supabase/auth.ts
-- [ ] T021 Create AuthContext provider with session management in src/contexts/AuthContext.tsx
-- [ ] T022 Implement auth middleware for protected routes in src/middleware.ts
+- [X] T020 Implement Supabase Auth client initialization in src/lib/supabase/auth.ts
+- [X] T021 Create AuthContext provider with session management in src/contexts/AuthContext.tsx
+- [X] T022 Implement auth middleware for protected routes in src/middleware.ts
 
 ### Stripe Infrastructure
 
-- [ ] T023 Initialize Stripe client in src/lib/stripe/client.ts with environment variables
-- [ ] T024 Create Stripe products and prices (Premium Monthly SAR 49) using Stripe MCP tools
-- [ ] T025 Implement subscription helpers in src/lib/stripe/subscriptions.ts
+- [X] T023 Initialize Stripe client in src/lib/stripe/client.ts with environment variables
+- [X] T024 Create Stripe products and prices (Premium Monthly SAR 49) using Stripe MCP tools
+- [X] T025 Implement subscription helpers in src/lib/stripe/subscriptions.ts
 
 ### Gemini AI Infrastructure
 
-- [ ] T026 Initialize Gemini AI client with structured JSON output in src/lib/gemini/client.ts
-- [ ] T027 Create JSON schema validators for question generation in src/lib/gemini/validators.ts
+- [X] T026 Initialize Gemini AI client with structured JSON output in src/lib/gemini/client.ts
+- [X] T027 Create JSON schema validators for question generation in src/lib/gemini/validators.ts
 
 ### Shared Components
 
-- [ ] T028 Create RTLWrapper component for RTL-aware layouts in src/components/shared/RTLWrapper.tsx
-- [ ] T029 Create LoadingSkeleton component with Arabic text support in src/components/shared/LoadingSkeleton.tsx
-- [ ] T030 Create SubscriptionGate component for feature gating in src/components/shared/SubscriptionGate.tsx
+- [X] T028 Create RTLWrapper component for RTL-aware layouts in src/components/shared/RTLWrapper.tsx
+- [X] T029 Create LoadingSkeleton component with Arabic text support in src/components/shared/LoadingSkeleton.tsx
+- [X] T030 Create SubscriptionGate component for feature gating in src/components/shared/SubscriptionGate.tsx
 
 ### Error Tracking
 
-- [ ] T031 Configure Sentry for Next.js with anonymized user context in sentry.client.config.ts and sentry.server.config.ts
+- [X] T031 Configure Sentry for Next.js with anonymized user context in sentry.client.config.ts and sentry.server.config.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -93,45 +93,45 @@
 
 ### Auth API Routes for User Story 1
 
-- [ ] T032 [P] [US1] Create POST /api/auth/register route for email/password registration in src/app/api/auth/register/route.ts
-- [ ] T033 [P] [US1] Create POST /api/auth/verify-otp route for OTP verification in src/app/api/auth/verify-otp/route.ts
-- [ ] T034 [P] [US1] Create POST /api/auth/resend-otp route with 60-second cooldown in src/app/api/auth/resend-otp/route.ts
-- [ ] T035 [P] [US1] Create POST /api/auth/login route for returning users in src/app/api/auth/login/route.ts
-- [ ] T036 [P] [US1] Create POST /api/auth/logout route for session invalidation in src/app/api/auth/logout/route.ts
-- [ ] T037 [P] [US1] Create GET /api/auth/session route for session retrieval in src/app/api/auth/session/route.ts
+- [X] T032 [P] [US1] Create POST /api/auth/register route for email/password registration in src/app/api/auth/register/route.ts
+- [X] T033 [P] [US1] Create POST /api/auth/verify-otp route for OTP verification in src/app/api/auth/verify-otp/route.ts
+- [X] T034 [P] [US1] Create POST /api/auth/resend-otp route with 60-second cooldown in src/app/api/auth/resend-otp/route.ts
+- [X] T035 [P] [US1] Create POST /api/auth/login route for returning users in src/app/api/auth/login/route.ts
+- [X] T036 [P] [US1] Create POST /api/auth/logout route for session invalidation in src/app/api/auth/logout/route.ts
+- [X] T037 [P] [US1] Create GET /api/auth/session route for session retrieval in src/app/api/auth/session/route.ts
 
 ### Profile API Routes for User Story 1
 
-- [ ] T038 [P] [US1] Create GET /api/profile route for user profile retrieval in src/app/api/profile/route.ts
-- [ ] T039 [P] [US1] Create PATCH /api/profile/onboarding route for completing onboarding in src/app/api/profile/onboarding/route.ts
+- [X] T038 [P] [US1] Create GET /api/profile route for user profile retrieval in src/app/api/profile/route.ts
+- [X] T039 [P] [US1] Create PATCH /api/profile/onboarding route for completing onboarding in src/app/api/profile/onboarding/route.ts
 
 ### Auth UI Pages for User Story 1
 
-- [ ] T040 [P] [US1] Create welcome/landing page with "Create Account" CTA in src/app/page.tsx
-- [ ] T041 [P] [US1] Create registration form page with email, password, Terms & Privacy checkboxes in src/app/(auth)/register/page.tsx
-- [ ] T042 [P] [US1] Create OTP verification page with 6-digit input and resend button in src/app/(auth)/verify/page.tsx
-- [ ] T043 [P] [US1] Create login page for returning users in src/app/(auth)/login/page.tsx
+- [X] T040 [P] [US1] Create welcome/landing page with "Create Account" CTA in src/app/page.tsx
+- [X] T041 [P] [US1] Create registration form page with email, password, Terms & Privacy checkboxes in src/app/(auth)/register/page.tsx
+- [X] T042 [P] [US1] Create OTP verification page with 6-digit input and resend button in src/app/(auth)/verify/page.tsx
+- [X] T043 [P] [US1] Create login page for returning users in src/app/(auth)/login/page.tsx
 
 ### Onboarding UI Components for User Story 1
 
-- [ ] T044 [P] [US1] Create academic track selection screen with Scientific/Literary options in src/app/(auth)/onboarding/track/page.tsx
-- [ ] T045 [P] [US1] Create subscription plan selection screen with Free/Premium comparison in src/app/(auth)/onboarding/plan/page.tsx
+- [X] T044 [P] [US1] Create academic track selection screen with Scientific/Literary options in src/app/(auth)/onboarding/track/page.tsx
+- [X] T045 [P] [US1] Create subscription plan selection screen with Free/Premium comparison in src/app/(auth)/onboarding/plan/page.tsx
 
 ### Dashboard Shell for User Story 1
 
-- [ ] T046 [US1] Create main dashboard layout with navigation in src/app/(main)/layout.tsx
-- [ ] T047 [US1] Create dashboard page showing "Start Full Exam" and "Customized Practice" options in src/app/(main)/dashboard/page.tsx
+- [X] T046 [US1] Create main dashboard layout with navigation in src/app/(main)/layout.tsx
+- [X] T047 [US1] Create dashboard page showing "Start Full Exam" and "Customized Practice" options in src/app/(main)/dashboard/page.tsx
 
 ### Onboarding Tutorial for User Story 1
 
-- [ ] T048 [P] [US1] Create OnboardingTutorial component with 3 screens explaining platform in src/components/shared/OnboardingTutorial.tsx
-- [ ] T049 [US1] Integrate tutorial display on first dashboard access in src/app/(main)/dashboard/page.tsx
+- [X] T048 [P] [US1] Create OnboardingTutorial component with 3 screens explaining platform in src/components/shared/OnboardingTutorial.tsx
+- [X] T049 [US1] Integrate tutorial display on first dashboard access in src/app/(main)/dashboard/page.tsx
 
 ### Auth Form Components for User Story 1
 
-- [ ] T050 [P] [US1] Create password strength validator utility in src/lib/utils/password.ts
-- [ ] T051 [P] [US1] Create PasswordInput component with visibility toggle in src/components/ui/password-input.tsx
-- [ ] T052 [P] [US1] Create OTPInput component for 6-digit code entry in src/components/ui/otp-input.tsx
+- [X] T050 [P] [US1] Create password strength validator utility in src/lib/utils/password.ts
+- [X] T051 [P] [US1] Create PasswordInput component with visibility toggle in src/components/ui/password-input.tsx
+- [X] T052 [P] [US1] Create OTPInput component for 6-digit code entry in src/components/ui/otp-input.tsx
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - users can register, verify, onboard, and access dashboard.
 
@@ -145,50 +145,50 @@
 
 ### Exam API Routes for User Story 2
 
-- [ ] T053 [P] [US2] Create POST /api/exams route for exam session creation in src/app/api/exams/route.ts
-- [ ] T054 [P] [US2] Create GET /api/exams/[sessionId] route for session retrieval in src/app/api/exams/[sessionId]/route.ts
-- [ ] T055 [P] [US2] Create PATCH /api/exams/[sessionId] route for status updates in src/app/api/exams/[sessionId]/route.ts
-- [ ] T056 [P] [US2] Create POST /api/exams/[sessionId]/answers route for answer submission in src/app/api/exams/[sessionId]/answers/route.ts
-- [ ] T057 [P] [US2] Create GET /api/exams/[sessionId]/answers/[questionIndex]/explanation route in src/app/api/exams/[sessionId]/answers/[questionIndex]/explanation/route.ts
-- [ ] T058 [P] [US2] Create GET /api/exams/[sessionId]/results route for results retrieval in src/app/api/exams/[sessionId]/results/route.ts
-- [ ] T059 [P] [US2] Create PATCH /api/exams/[sessionId]/timer route for pause/resume in src/app/api/exams/[sessionId]/timer/route.ts
+- [X] T053 [P] [US2] Create POST /api/exams route for exam session creation in src/app/api/exams/route.ts
+- [X] T054 [P] [US2] Create GET /api/exams/[sessionId] route for session retrieval in src/app/api/exams/[sessionId]/route.ts
+- [X] T055 [P] [US2] Create PATCH /api/exams/[sessionId] route for status updates in src/app/api/exams/[sessionId]/route.ts
+- [X] T056 [P] [US2] Create POST /api/exams/[sessionId]/answers route for answer submission in src/app/api/exams/[sessionId]/answers/route.ts
+- [X] T057 [P] [US2] Create GET /api/exams/[sessionId]/answers/[questionIndex]/explanation route in src/app/api/exams/[sessionId]/answers/[questionIndex]/explanation/route.ts
+- [X] T058 [P] [US2] Create GET /api/exams/[sessionId]/results route for results retrieval in src/app/api/exams/[sessionId]/results/route.ts
+- [X] T059 [P] [US2] Create PATCH /api/exams/[sessionId]/timer route for pause/resume in src/app/api/exams/[sessionId]/timer/route.ts
 
 ### Gemini Question Generation for User Story 2
 
-- [ ] T060 [US2] Create exam prompt builder for 96-question generation with track-based distribution in src/lib/gemini/prompts.ts
-- [ ] T061 [US2] Implement examGeneration function with retry logic and JSON validation in src/lib/gemini/client.ts
+- [X] T060 [US2] Create exam prompt builder for 96-question generation with track-based distribution in src/lib/gemini/prompts.ts
+- [X] T061 [US2] Implement examGeneration function with retry logic and JSON validation in src/lib/gemini/client.ts
 
 ### Exam UI Components for User Story 2
 
-- [ ] T062 [P] [US2] Create QuestionCard component with Arabic RTL text display in src/components/exam/QuestionCard.tsx
-- [ ] T063 [P] [US2] Create AnswerOptions component with 4-option MCQ layout in src/components/exam/AnswerOptions.tsx
-- [ ] T064 [P] [US2] Create ExamTimer component with 120-minute countdown in src/components/exam/ExamTimer.tsx
-- [ ] T065 [P] [US2] Create ProgressIndicator component showing question progress in src/components/exam/ProgressIndicator.tsx
-- [ ] T066 [P] [US2] Create ExplanationPanel component for answer explanations in src/components/exam/ExplanationPanel.tsx
+- [X] T062 [P] [US2] Create QuestionCard component with Arabic RTL text display in src/components/exam/QuestionCard.tsx
+- [X] T063 [P] [US2] Create AnswerOptions component with 4-option MCQ layout in src/components/exam/AnswerOptions.tsx
+- [X] T064 [P] [US2] Create ExamTimer component with 120-minute countdown in src/components/exam/ExamTimer.tsx
+- [X] T065 [P] [US2] Create ProgressIndicator component showing question progress in src/components/exam/ProgressIndicator.tsx
+- [X] T066 [P] [US2] Create ExplanationPanel component for answer explanations in src/components/exam/ExplanationPanel.tsx
 
 ### Exam Session Hooks for User Story 2
 
-- [ ] T067 [US2] Create useExamSession hook for session state management in src/hooks/useExamSession.ts
-- [ ] T068 [US2] Create useAutoSave hook for answer auto-saving with offline queue in src/hooks/useAutoSave.ts
+- [X] T067 [US2] Create useExamSession hook for session state management in src/hooks/useExamSession.ts
+- [X] T068 [US2] Create useAutoSave hook for answer auto-saving with offline queue in src/hooks/useAutoSave.ts
 
 ### Exam Context for User Story 2
 
-- [ ] T069 [US2] Create ExamContext provider for exam state in src/contexts/ExamContext.tsx
+- [X] T069 [US2] Create ExamContext provider for exam state in src/contexts/ExamContext.tsx
 
 ### Exam Pages for User Story 2
 
-- [ ] T070 [US2] Create exam confirmation modal on dashboard "Start Full Exam" click in src/components/exam/ExamConfirmModal.tsx
-- [ ] T071 [US2] Create active exam taking page with question navigation in src/app/(main)/exam/[id]/page.tsx
-- [ ] T072 [US2] Create exam results page with three percentage scores in src/app/(main)/exam/results/[id]/page.tsx
+- [X] T070 [US2] Create exam confirmation modal on dashboard "Start Full Exam" click in src/components/exam/ExamConfirmModal.tsx
+- [X] T071 [US2] Create active exam taking page with question navigation in src/app/(main)/exam/[id]/page.tsx
+- [X] T072 [US2] Create exam results page with three percentage scores in src/app/(main)/exam/results/[id]/page.tsx
 
 ### Scoring Logic for User Story 2
 
-- [ ] T073 [US2] Implement scoring calculation utilities (verbal, quantitative, overall) in src/lib/utils/scoring.ts
-- [ ] T074 [US2] Implement score color coding logic (gold/green/grey/warm) in src/lib/utils/scoring.ts
+- [X] T073 [US2] Implement scoring calculation utilities (verbal, quantitative, overall) in src/lib/utils/scoring.ts
+- [X] T074 [US2] Implement score color coding logic (gold/green/grey/warm) in src/lib/utils/scoring.ts
 
 ### Subscription Limit Check for User Story 2
 
-- [ ] T075 [US2] Add weekly exam limit check (3/week for free) to exam creation route in src/app/api/exams/route.ts
+- [X] T075 [US2] Add weekly exam limit check (3/week for free) to exam creation route in src/app/api/exams/route.ts
 
 **Checkpoint**: At this point, User Story 2 should be fully functional - users can take full exams with immediate feedback and view results.
 

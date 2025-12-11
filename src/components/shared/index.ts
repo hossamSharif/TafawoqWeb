@@ -14,3 +14,4 @@ export {
   FeatureLimitIndicator,
   usePremiumAccess,
 } from './SubscriptionGate'
+export { OnboardingTutorial } from './OnboardingTutorial'
