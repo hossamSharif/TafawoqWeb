@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { LoadingSkeleton } from '@/components/shared'
+import { PageLoadingSkeleton } from '@/components/shared'
 import {
   getScoreColor,
   getScoreLabel,
@@ -202,13 +202,7 @@ export default function ExamResultsPage() {
     return (
       <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
         <div className="max-w-4xl mx-auto">
-          <LoadingSkeleton className="h-12 w-48 mb-8" />
-          <div className="grid grid-cols-3 gap-6 mb-8">
-            <LoadingSkeleton className="h-48" />
-            <LoadingSkeleton className="h-48" />
-            <LoadingSkeleton className="h-48" />
-          </div>
-          <LoadingSkeleton className="h-64" />
+          <PageLoadingSkeleton />
         </div>
       </div>
     )

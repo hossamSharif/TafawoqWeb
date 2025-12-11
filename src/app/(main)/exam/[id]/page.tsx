@@ -11,7 +11,7 @@ import {
   ExplanationPanel,
 } from '@/components/exam'
 import { Button } from '@/components/ui/button'
-import { LoadingSkeleton } from '@/components/shared'
+import { PageLoadingSkeleton } from '@/components/shared'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,9 +135,7 @@ function ExamContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
-        <LoadingSkeleton className="h-20 mb-6" />
-        <LoadingSkeleton className="h-64 mb-6" />
-        <LoadingSkeleton className="h-48" />
+        <PageLoadingSkeleton />
       </div>
     )
   }

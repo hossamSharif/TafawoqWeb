@@ -333,20 +333,75 @@ export async function generateExam(
 }
 
 /**
- * Generate practice questions for a specific category
+ * Generate practice questions for one or more categories
  */
 export async function generatePracticeQuestions(
   section: QuestionSection,
-  category: QuestionCategory,
+  categoriesOrCategory: QuestionCategory | QuestionCategory[],
   difficulty: QuestionDifficulty,
   count: number = 10
 ): Promise<Question[]> {
+  const categories = Array.isArray(categoriesOrCategory)
+    ? categoriesOrCategory
+    : [categoriesOrCategory]
+
   return generateQuestions({
     section,
-    categories: [category],
+    categories,
     difficulty,
     count,
   })
+}
+
+/**
+ * Practice-specific prompt configuration
+ */
+export interface PracticeConfig {
+  section: QuestionSection
+  categories: QuestionCategory[]
+  difficulty: QuestionDifficulty
+  questionCount: number
+}
+
+/**
+ * Generate a complete practice session with balanced category distribution
+ */
+export async function generatePracticeSession(config: PracticeConfig): Promise<Question[]> {
+  const { section, categories, difficulty, questionCount } = config
+
+  // If single category, generate all questions from it
+  if (categories.length === 1) {
+    return generateQuestions({
+      section,
+      categories,
+      difficulty,
+      count: questionCount,
+    })
+  }
+
+  // For multiple categories, distribute questions evenly
+  const questionsPerCategory = Math.floor(questionCount / categories.length)
+  const remainder = questionCount % categories.length
+
+  const allQuestions: Question[] = []
+
+  for (let i = 0; i < categories.length; i++) {
+    const categoryCount = questionsPerCategory + (i < remainder ? 1 : 0)
+
+    if (categoryCount > 0) {
+      const questions = await generateQuestions({
+        section,
+        categories: [categories[i]],
+        difficulty,
+        count: categoryCount,
+        excludeIds: allQuestions.map(q => q.id),
+      })
+      allQuestions.push(...questions)
+    }
+  }
+
+  // Shuffle questions to mix categories
+  return allQuestions.sort(() => Math.random() - 0.5)
 }
 
 /**

@@ -12,11 +12,13 @@ export {
   generateFullExam,
   generateExam,
   generatePracticeQuestions,
+  generatePracticeSession,
   generatePerformanceFeedback,
   TRACK_DISTRIBUTION,
   type QuestionGenerationConfig,
   type ExamConfig,
   type AcademicTrack,
+  type PracticeConfig,
 } from './prompts'
 
 // Response validators

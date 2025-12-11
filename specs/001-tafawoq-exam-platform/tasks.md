@@ -202,42 +202,42 @@
 
 ### Practice API Routes for User Story 3
 
-- [ ] T076 [P] [US3] Create POST /api/practice route for practice session creation in src/app/api/practice/route.ts
-- [ ] T077 [P] [US3] Create GET /api/practice/[sessionId] route for session retrieval in src/app/api/practice/[sessionId]/route.ts
-- [ ] T078 [P] [US3] Create PATCH /api/practice/[sessionId] route for status updates in src/app/api/practice/[sessionId]/route.ts
-- [ ] T079 [P] [US3] Create POST /api/practice/[sessionId]/answers route for answer submission in src/app/api/practice/[sessionId]/answers/route.ts
-- [ ] T080 [P] [US3] Create GET /api/practice/[sessionId]/results route for results in src/app/api/practice/[sessionId]/results/route.ts
-- [ ] T081 [P] [US3] Create GET /api/practice/categories route for available categories in src/app/api/practice/categories/route.ts
-- [ ] T082 [P] [US3] Create GET /api/practice/history route for practice history in src/app/api/practice/history/route.ts
+- [X] T076 [P] [US3] Create POST /api/practice route for practice session creation in src/app/api/practice/route.ts
+- [X] T077 [P] [US3] Create GET /api/practice/[sessionId] route for session retrieval in src/app/api/practice/[sessionId]/route.ts
+- [X] T078 [P] [US3] Create PATCH /api/practice/[sessionId] route for status updates in src/app/api/practice/[sessionId]/route.ts
+- [X] T079 [P] [US3] Create POST /api/practice/[sessionId]/answers route for answer submission in src/app/api/practice/[sessionId]/answers/route.ts
+- [X] T080 [P] [US3] Create GET /api/practice/[sessionId]/results route for results in src/app/api/practice/[sessionId]/results/route.ts
+- [X] T081 [P] [US3] Create GET /api/practice/categories route for available categories in src/app/api/practice/categories/route.ts
+- [X] T082 [P] [US3] Create GET /api/practice/history route for practice history in src/app/api/practice/history/route.ts
 
 ### Gemini Practice Generation for User Story 3
 
-- [ ] T083 [US3] Create practice prompt builder with category, difficulty, and count params in src/lib/gemini/prompts.ts
+- [X] T083 [US3] Create practice prompt builder with category, difficulty, and count params in src/lib/gemini/prompts.ts
 
 ### Practice UI Components for User Story 3
 
-- [ ] T084 [P] [US3] Create SectionSelector component for Quantitative/Verbal selection in src/components/practice/SectionSelector.tsx
-- [ ] T085 [P] [US3] Create CategorySelector component with section-filtered categories in src/components/practice/CategorySelector.tsx
-- [ ] T086 [P] [US3] Create DifficultySelector component (Easy/Medium/Hard) in src/components/practice/DifficultySelector.tsx
-- [ ] T087 [P] [US3] Create QuestionCountSelector component with preset and custom options in src/components/practice/QuestionCountSelector.tsx
+- [X] T084 [P] [US3] Create SectionSelector component for Quantitative/Verbal selection in src/components/practice/SectionSelector.tsx
+- [X] T085 [P] [US3] Create CategorySelector component with section-filtered categories in src/components/practice/CategorySelector.tsx
+- [X] T086 [P] [US3] Create DifficultySelector component (Easy/Medium/Hard) in src/components/practice/DifficultySelector.tsx
+- [X] T087 [P] [US3] Create QuestionCountSelector component with preset and custom options in src/components/practice/QuestionCountSelector.tsx
 
 ### Practice Session Hook for User Story 3
 
-- [ ] T088 [US3] Create usePracticeSession hook for practice state management in src/hooks/usePracticeSession.ts
+- [X] T088 [US3] Create usePracticeSession hook for practice state management in src/hooks/usePracticeSession.ts
 
 ### Practice Pages for User Story 3
 
-- [ ] T089 [US3] Create practice creation wizard page (3-step flow) in src/app/(main)/practice/new/page.tsx
-- [ ] T090 [US3] Create active practice session page with elapsed timer in src/app/(main)/practice/[id]/page.tsx
-- [ ] T091 [US3] Create practice results page with single percentage score in src/app/(main)/practice/results/[id]/page.tsx
+- [X] T089 [US3] Create practice creation wizard page (3-step flow) in src/app/(main)/practice/new/page.tsx
+- [X] T090 [US3] Create active practice session page with elapsed timer in src/app/(main)/practice/[id]/page.tsx
+- [X] T091 [US3] Create practice results page with single percentage score in src/app/(main)/practice/results/[id]/page.tsx
 
 ### Practice Hour Tracking for User Story 3
 
-- [ ] T092 [US3] Implement practice hours increment on session completion in src/app/api/practice/[sessionId]/route.ts
+- [X] T092 [US3] Implement practice hours increment on session completion in src/app/api/practice/[sessionId]/route.ts
 
 ### Free Tier Restrictions for User Story 3
 
-- [ ] T093 [US3] Enforce max 2 categories and fixed 5 questions for free users in src/app/api/practice/route.ts
+- [X] T093 [US3] Enforce max 2 categories and fixed 5 questions for free users in src/app/api/practice/route.ts
 
 **Checkpoint**: At this point, User Story 3 should be fully functional - users can create and complete customized practice sessions.
 

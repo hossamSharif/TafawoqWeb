@@ -143,9 +143,9 @@ export function ListItemSkeleton({ count = 5 }: { count?: number }) {
 /**
  * Full page loading state
  */
-export function PageLoadingSkeleton() {
+export function PageLoadingSkeleton({ className }: { className?: string }) {
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className={cn('container mx-auto px-4 py-8 space-y-8', className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
