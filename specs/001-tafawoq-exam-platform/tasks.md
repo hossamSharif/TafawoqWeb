@@ -284,25 +284,25 @@
 
 ### Diagram Rendering Components for User Story 5
 
-- [ ] T105 [P] [US5] Create DiagramRenderer dispatcher component in src/components/diagrams/DiagramRenderer.tsx
-- [ ] T106 [P] [US5] Create SVGDiagram component for geometry shapes (circle, triangle, rectangle, composite) in src/components/diagrams/SVGDiagram.tsx
-- [ ] T107 [P] [US5] Create ChartDiagram component wrapping Chart.js (bar, pie, line) in src/components/diagrams/ChartDiagram.tsx
-- [ ] T108 [P] [US5] Create individual shape components in src/components/diagrams/shapes/ directory
+- [X] T105 [P] [US5] Create DiagramRenderer dispatcher component in src/components/diagrams/DiagramRenderer.tsx
+- [X] T106 [P] [US5] Create SVGDiagram component for geometry shapes (circle, triangle, rectangle, composite) in src/components/diagrams/SVGDiagram.tsx
+- [X] T107 [P] [US5] Create ChartDiagram component wrapping Chart.js (bar, pie, line) in src/components/diagrams/ChartDiagram.tsx
+- [X] T108 [P] [US5] Create individual shape components in src/components/diagrams/shapes/ directory
 
 ### Question Type Components for User Story 5
 
-- [ ] T109 [P] [US5] Create TextOnlyQuestion component with Arabic line height in src/components/exam/TextOnlyQuestion.tsx
-- [ ] T110 [P] [US5] Create ImageQuestion component with responsive scaling and zoom in src/components/exam/ImageQuestion.tsx
-- [ ] T111 [P] [US5] Create ReadingPassageQuestion component for comprehension passages in src/components/exam/ReadingPassageQuestion.tsx
+- [X] T109 [P] [US5] Create TextOnlyQuestion component with Arabic line height in src/components/exam/TextOnlyQuestion.tsx
+- [X] T110 [P] [US5] Create ImageQuestion component with responsive scaling and zoom in src/components/exam/ImageQuestion.tsx
+- [X] T111 [P] [US5] Create ReadingPassageQuestion component for comprehension passages in src/components/exam/ReadingPassageQuestion.tsx
 
 ### Question Header for User Story 5
 
-- [ ] T112 [US5] Create QuestionHeader component with number, section indicator, difficulty badge in src/components/exam/QuestionHeader.tsx
+- [X] T112 [US5] Create QuestionHeader component with number, section indicator, difficulty badge in src/components/exam/QuestionHeader.tsx
 
 ### Image Loading for User Story 5
 
-- [ ] T113 [US5] Implement skeleton loading state for images in QuestionCard component
-- [ ] T114 [US5] Add click-to-zoom modal for diagram inspection in src/components/exam/DiagramZoomModal.tsx
+- [X] T113 [US5] Implement skeleton loading state for images in QuestionCard component
+- [X] T114 [US5] Add click-to-zoom modal for diagram inspection in src/components/exam/DiagramZoomModal.tsx
 
 **Checkpoint**: At this point, User Story 5 should be fully functional - all question types render correctly with RTL support.
 
@@ -316,36 +316,36 @@
 
 ### Subscription API Routes for User Story 6
 
-- [ ] T115 [P] [US6] Create GET /api/subscription route for current subscription details in src/app/api/subscription/route.ts
-- [ ] T116 [P] [US6] Create POST /api/subscription/checkout route for Stripe checkout session in src/app/api/subscription/checkout/route.ts
-- [ ] T117 [P] [US6] Create POST /api/subscription/portal route for Stripe customer portal in src/app/api/subscription/portal/route.ts
-- [ ] T118 [P] [US6] Create POST /api/subscription/cancel route for cancellation in src/app/api/subscription/cancel/route.ts
-- [ ] T119 [P] [US6] Create POST /api/subscription/reactivate route for reactivation in src/app/api/subscription/reactivate/route.ts
-- [ ] T120 [P] [US6] Create GET /api/subscription/invoices route for billing history in src/app/api/subscription/invoices/route.ts
-- [ ] T121 [P] [US6] Create GET /api/subscription/usage route for usage limits in src/app/api/subscription/usage/route.ts
+- [X] T115 [P] [US6] Create GET /api/subscription route for current subscription details in src/app/api/subscription/route.ts
+- [X] T116 [P] [US6] Create POST /api/subscription/checkout route for Stripe checkout session in src/app/api/subscription/checkout/route.ts
+- [X] T117 [P] [US6] Create POST /api/subscription/portal route for Stripe customer portal in src/app/api/subscription/portal/route.ts
+- [X] T118 [P] [US6] Create POST /api/subscription/cancel route for cancellation in src/app/api/subscription/cancel/route.ts
+- [X] T119 [P] [US6] Create POST /api/subscription/reactivate route for reactivation in src/app/api/subscription/reactivate/route.ts
+- [X] T120 [P] [US6] Create GET /api/subscription/invoices route for billing history in src/app/api/subscription/invoices/route.ts
+- [X] T121 [P] [US6] Create GET /api/subscription/usage route for usage limits in src/app/api/subscription/usage/route.ts
 
 ### Stripe Webhook Handler for User Story 6
 
-- [ ] T122 [US6] Create POST /api/webhooks/stripe route handling subscription events in src/app/api/webhooks/stripe/route.ts
-- [ ] T123 [US6] Implement subscription status sync to Supabase on webhook events in src/lib/stripe/subscriptions.ts
+- [X] T122 [US6] Create POST /api/webhooks/stripe route handling subscription events in src/app/api/webhooks/stripe/route.ts
+- [X] T123 [US6] Implement subscription status sync to Supabase on webhook events in src/lib/stripe/subscriptions.ts
 
 ### Subscription UI Components for User Story 6
 
-- [ ] T124 [P] [US6] Create SubscriptionBadge component (Free/Premium/Trial) in src/components/subscription/SubscriptionBadge.tsx
-- [ ] T125 [P] [US6] Create UpgradePrompt component shown on feature restrictions in src/components/subscription/UpgradePrompt.tsx
-- [ ] T126 [P] [US6] Create TrialCountdown component showing days remaining in src/components/subscription/TrialCountdown.tsx
-- [ ] T127 [P] [US6] Create PricingComparison component for plan features in src/components/subscription/PricingComparison.tsx
+- [X] T124 [P] [US6] Create SubscriptionBadge component (Free/Premium/Trial) in src/components/subscription/SubscriptionBadge.tsx
+- [X] T125 [P] [US6] Create UpgradePrompt component shown on feature restrictions in src/components/subscription/UpgradePrompt.tsx
+- [X] T126 [P] [US6] Create TrialCountdown component showing days remaining in src/components/subscription/TrialCountdown.tsx
+- [X] T127 [P] [US6] Create PricingComparison component for plan features in src/components/subscription/PricingComparison.tsx
 
 ### Subscription Hook for User Story 6
 
-- [ ] T128 [US6] Create useSubscription hook for subscription state in src/hooks/useSubscription.ts
-- [ ] T129 [US6] Create SubscriptionContext provider in src/contexts/SubscriptionContext.tsx
+- [X] T128 [US6] Create useSubscription hook for subscription state in src/hooks/useSubscription.ts
+- [X] T129 [US6] Create SubscriptionContext provider in src/contexts/SubscriptionContext.tsx
 
 ### Subscription Pages for User Story 6
 
-- [ ] T130 [US6] Add subscription status to profile page with upgrade button in src/app/(main)/profile/page.tsx
-- [ ] T131 [US6] Create settings page with subscription management section in src/app/(main)/settings/page.tsx
-- [ ] T132 [US6] Add Stripe payment form integration for premium upgrade flow
+- [X] T130 [US6] Add subscription status to profile page with upgrade button in src/app/(main)/profile/page.tsx
+- [X] T131 [US6] Create settings page with subscription management section in src/app/(main)/settings/page.tsx
+- [X] T132 [US6] Add Stripe payment form integration for premium upgrade flow
 
 **Checkpoint**: At this point, User Story 6 should be fully functional - users can upgrade, manage, and view subscription status.
 

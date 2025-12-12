@@ -69,7 +69,7 @@ const AlertDialogTrigger = React.forwardRef<HTMLButtonElement, AlertDialogTrigge
 )
 AlertDialogTrigger.displayName = 'AlertDialogTrigger'
 
-interface AlertDialogContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+type AlertDialogContentProps = React.HTMLAttributes<HTMLDivElement>
 
 const AlertDialogContent = React.forwardRef<HTMLDivElement, AlertDialogContentProps>(
   ({ className, children, ...props }, ref) => {
@@ -158,7 +158,7 @@ const AlertDialogDescription = React.forwardRef<HTMLParagraphElement, React.HTML
 )
 AlertDialogDescription.displayName = 'AlertDialogDescription'
 
-interface AlertDialogActionProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+type AlertDialogActionProps = React.ButtonHTMLAttributes<HTMLButtonElement>
 
 const AlertDialogAction = React.forwardRef<HTMLButtonElement, AlertDialogActionProps>(
   ({ className, onClick, ...props }, ref) => {
@@ -179,7 +179,7 @@ const AlertDialogAction = React.forwardRef<HTMLButtonElement, AlertDialogActionP
 )
 AlertDialogAction.displayName = 'AlertDialogAction'
 
-interface AlertDialogCancelProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+type AlertDialogCancelProps = React.ButtonHTMLAttributes<HTMLButtonElement>
 
 const AlertDialogCancel = React.forwardRef<HTMLButtonElement, AlertDialogCancelProps>(
   ({ className, onClick, ...props }, ref) => {
