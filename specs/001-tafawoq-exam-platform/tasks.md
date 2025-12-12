@@ -393,18 +393,18 @@
 
 ### Tutorial Content for User Story 8
 
-- [ ] T145 [P] [US8] Create tutorial screen 1 content: Full Exams vs. Customized Practice in src/components/shared/OnboardingTutorial.tsx
-- [ ] T146 [P] [US8] Create tutorial screen 2 content: Academic Track explanation in src/components/shared/OnboardingTutorial.tsx
-- [ ] T147 [P] [US8] Create tutorial screen 3 content: Three-score system and practice hours in src/components/shared/OnboardingTutorial.tsx
+- [X] T145 [P] [US8] Create tutorial screen 1 content: Full Exams vs. Customized Practice in src/components/shared/OnboardingTutorial.tsx
+- [X] T146 [P] [US8] Create tutorial screen 2 content: Academic Track explanation in src/components/shared/OnboardingTutorial.tsx
+- [X] T147 [P] [US8] Create tutorial screen 3 content: Three-score system and practice hours in src/components/shared/OnboardingTutorial.tsx
 
 ### Tutorial Navigation for User Story 8
 
-- [ ] T148 [US8] Implement tutorial navigation with progress indicators in src/components/shared/OnboardingTutorial.tsx
-- [ ] T149 [US8] Add "Start Preparing" button completing tutorial and navigating to dashboard
+- [X] T148 [US8] Implement tutorial navigation with progress indicators in src/components/shared/OnboardingTutorial.tsx
+- [X] T149 [US8] Add "Start Preparing" button completing tutorial and navigating to dashboard
 
 ### Tutorial Replay for User Story 8
 
-- [ ] T150 [US8] Add tutorial replay option in Settings > Help in src/app/(main)/settings/page.tsx
+- [X] T150 [US8] Add tutorial replay option in Settings > Help in src/app/(main)/settings/page.tsx
 
 **Checkpoint**: At this point, User Story 8 should be fully functional - new users see and can replay onboarding.
 

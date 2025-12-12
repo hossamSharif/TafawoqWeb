@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PageLoadingSkeleton } from '@/components/shared'
+import { PageLoadingSkeleton, OnboardingTutorial } from '@/components/shared'
 import { SubscriptionBadge } from '@/components/subscription/SubscriptionBadge'
 import { TrialCountdown } from '@/components/subscription/TrialCountdown'
 import { PricingComparison } from '@/components/subscription/PricingComparison'
@@ -25,6 +25,10 @@ import {
   RefreshCw,
   Calendar,
   Download,
+  HelpCircle,
+  Play,
+  MessageCircle,
+  FileQuestion,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -66,6 +70,7 @@ export default function SettingsPage() {
   const [isReactivating, setIsReactivating] = useState(false)
   const [isLoadingPortal, setIsLoadingPortal] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   // Check for subscription success/cancel in URL
   useEffect(() => {
@@ -412,6 +417,67 @@ export default function SettingsPage() {
           </Card>
         </section>
 
+        {/* Help Section */}
+        <section id="help" className="mb-8">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <HelpCircle className="w-6 h-6 text-gray-400" />
+                <div>
+                  <CardTitle>المساعدة</CardTitle>
+                  <CardDescription>موارد مساعدة وإرشادات</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Replay Tutorial */}
+              <button
+                onClick={() => setShowTutorial(true)}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-right"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Play className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">إعادة مشاهدة الدليل التعريفي</p>
+                    <p className="text-sm text-gray-500">تعرف على ميزات المنصة والنظام</p>
+                  </div>
+                </div>
+                <ChevronLeft className="w-5 h-5 text-gray-400" />
+              </button>
+
+              {/* FAQ Link */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <FileQuestion className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">الأسئلة الشائعة</p>
+                    <p className="text-sm text-gray-500">إجابات لأكثر الأسئلة شيوعاً</p>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-400 bg-gray-200 px-2 py-1 rounded">قريباً</span>
+              </div>
+
+              {/* Contact Support */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">تواصل معنا</p>
+                    <p className="text-sm text-gray-500">للدعم الفني والاستفسارات</p>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-400 bg-gray-200 px-2 py-1 rounded">قريباً</span>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Back to Dashboard */}
         <div className="flex justify-center">
           <Link href="/dashboard">
@@ -446,6 +512,14 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Onboarding Tutorial Replay */}
+      {showTutorial && (
+        <OnboardingTutorial
+          onComplete={() => setShowTutorial(false)}
+          isReplay
+        />
+      )}
     </div>
   )
 }
