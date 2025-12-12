@@ -1,33 +1,32 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PageLoadingSkeleton } from '@/components/shared'
 import { SubscriptionGate } from '@/components/shared/SubscriptionGate'
 import {
-  ScoreDisplay,
   StrengthsWeaknesses,
   TrendChart,
   PracticeShortcut,
   type TrendDataPoint,
 } from '@/components/analytics'
-import { getScoreColor, getScoreLabel, formatTimeArabic } from '@/lib/utils/scoring'
 import {
-  User,
-  Mail,
-  BookOpen,
-  Clock,
-  TrendingUp,
-  Crown,
+  ProfileHeader,
+  LastExamScores,
+  PracticeHoursDisplay,
+  AcademicTrackSwitcher,
+  ExamHistory,
+  DeleteAccountModal,
+} from '@/components/profile'
+import {
   Settings,
-  ChevronLeft,
-  Calendar,
-  Target,
   BarChart3,
+  Download,
+  Trash2,
+  Loader2,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface ProfileData {
   id: string
@@ -55,44 +54,153 @@ interface PerformanceData {
   weaknesses: string[]
 }
 
+interface ExamHistoryItem {
+  id: string
+  date: string
+  verbal: number
+  quantitative: number
+  overall: number
+  timeSpentMinutes?: number
+  track?: 'scientific' | 'literary'
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [performance, setPerformance] = useState<PerformanceData | null>(null)
+  const [examHistoryData, setExamHistoryData] = useState<ExamHistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch profile and performance data in parallel
+      const [profileRes, performanceRes] = await Promise.all([
+        fetch('/api/profile'),
+        fetch('/api/profile/performance'),
+      ])
+
+      const profileData = await profileRes.json()
+
+      if (!profileRes.ok) {
+        throw new Error(profileData.error || 'فشل في تحميل الملف الشخصي')
+      }
+
+      // Transform API response to expected shape
+      const transformedProfile: ProfileData = {
+        id: profileData.profile?.id || '',
+        email: profileData.profile?.email || '',
+        academicTrack: profileData.profile?.academic_track || 'scientific',
+        subscriptionTier: profileData.subscription?.tier || 'free',
+        onboardingCompleted: profileData.profile?.onboarding_completed || false,
+        totalPracticeHours: profileData.profile?.total_practice_hours || 0,
+        lastExamScores: profileData.analytics ? {
+          verbal: profileData.analytics.last_exam_verbal_score,
+          quantitative: profileData.analytics.last_exam_quantitative_score,
+          overall: profileData.analytics.last_exam_overall_average,
+        } : null,
+        createdAt: profileData.profile?.created_at || new Date().toISOString(),
+      }
+
+      setProfile(transformedProfile)
+
+      // Performance data is optional
+      if (performanceRes.ok) {
+        const performanceData = await performanceRes.json()
+        setPerformance(performanceData)
+
+        // Transform exam history for ExamHistory component
+        if (performanceData.examHistory) {
+          const historyItems: ExamHistoryItem[] = performanceData.examHistory.map(
+            (item: TrendDataPoint & { id?: string; timeSpentMinutes?: number }) => ({
+              id: item.id || `exam-${item.date}`,
+              date: item.date,
+              verbal: item.verbal,
+              quantitative: item.quantitative,
+              overall: item.overall,
+              timeSpentMinutes: item.timeSpentMinutes,
+            })
+          )
+          setExamHistoryData(historyItems)
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        // Fetch profile and performance data in parallel
-        const [profileRes, performanceRes] = await Promise.all([
-          fetch('/api/profile'),
-          fetch('/api/profile/performance'),
-        ])
+    fetchData()
+  }, [fetchData])
 
-        const profileData = await profileRes.json()
+  const handleTrackChange = async (newTrack: 'scientific' | 'literary') => {
+    const response = await fetch('/api/profile/track', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ track: newTrack }),
+    })
 
-        if (!profileRes.ok) {
-          throw new Error(profileData.error || 'فشل في تحميل الملف الشخصي')
-        }
+    const data = await response.json()
 
-        setProfile(profileData)
-
-        // Performance data is optional
-        if (performanceRes.ok) {
-          const performanceData = await performanceRes.json()
-          setPerformance(performanceData)
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'حدث خطأ')
-      } finally {
-        setIsLoading(false)
-      }
+    if (!response.ok) {
+      throw new Error(data.error || 'فشل تغيير المسار')
     }
 
-    fetchData()
-  }, [])
+    // Update local state
+    if (profile) {
+      setProfile({ ...profile, academicTrack: newTrack })
+    }
+  }
+
+  const handleExportData = async () => {
+    setIsExporting(true)
+    try {
+      const response = await fetch('/api/profile/export')
+
+      if (!response.ok) {
+        const data = await response.json()
+        if (data.upgradeRequired) {
+          router.push('/settings#subscription')
+          return
+        }
+        throw new Error(data.error || 'فشل تصدير البيانات')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tafawoq-export-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Export error:', err)
+      alert(err instanceof Error ? err.message : 'فشل تصدير البيانات')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDeleteAccount = async (email: string, reason?: string) => {
+    const response = await fetch('/api/profile/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmEmail: email, reason }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || 'فشل جدولة حذف الحساب')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -118,7 +226,6 @@ export default function ProfilePage() {
     )
   }
 
-  const practiceHoursFormatted = formatTimeArabic(profile.totalPracticeHours * 3600)
   const memberSince = new Date(profile.createdAt).toLocaleDateString('ar-SA', {
     year: 'numeric',
     month: 'long',
@@ -131,14 +238,9 @@ export default function ProfilePage() {
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">الملف الشخصي</h1>
-                <p className="text-gray-500 text-sm">{profile.email}</p>
-              </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">الملف الشخصي</h1>
+              <p className="text-gray-500 text-sm">{profile.email}</p>
             </div>
             <Link href="/settings">
               <Button variant="outline" size="sm" className="gap-2">
@@ -151,151 +253,52 @@ export default function ProfilePage() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Profile Info */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">معلومات الحساب</h2>
+        {/* Profile Header */}
+        <ProfileHeader
+          email={profile.email}
+          academicTrack={profile.academicTrack}
+          subscriptionTier={profile.subscriptionTier}
+          memberSince={memberSince}
+          className="mb-6"
+        />
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-500">البريد الإلكتروني</p>
-                  <p className="font-medium">{profile.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-500">المسار الأكاديمي</p>
-                  <p className="font-medium">
-                    {profile.academicTrack === 'scientific' ? 'علمي' : 'أدبي'}
-                  </p>
-                </div>
-              </div>
+        {/* Upgrade Banner (Free users only) */}
+        {profile.subscriptionTier === 'free' && (
+          <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-gray-900">ترقية للمميز</h3>
+              <p className="text-sm text-gray-600">احصل على اختبارات غير محدودة وتحليلات متقدمة</p>
             </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Crown className={cn(
-                  'w-5 h-5',
-                  profile.subscriptionTier === 'premium' ? 'text-yellow-500' : 'text-gray-400'
-                )} />
-                <div>
-                  <p className="text-sm text-gray-500">الاشتراك</p>
-                  <p className="font-medium">
-                    {profile.subscriptionTier === 'premium' ? 'مميز' : 'مجاني'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-500">عضو منذ</p>
-                  <p className="font-medium">{memberSince}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {profile.subscriptionTier === 'free' && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-gray-900">ترقية للمميز</h3>
-                  <p className="text-sm text-gray-600">احصل على اختبارات غير محدودة وتحليلات متقدمة</p>
-                </div>
-                <Link href="/settings#subscription">
-                  <Button size="sm" className="gap-1">
-                    ترقية الآن
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Last Exam Scores */}
-        {profile.lastExamScores && (
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Target className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-bold text-gray-900">نتائج آخر اختبار</h2>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-              {/* Overall Score */}
-              <div className="text-center">
-                <ScoreDisplay
-                  score={profile.lastExamScores.overall}
-                  label="الإجمالي"
-                  size="xl"
-                />
-              </div>
-
-              {/* Section Scores */}
-              <div className="flex gap-6">
-                <div className="text-center">
-                  <ScoreDisplay
-                    score={profile.lastExamScores.quantitative}
-                    label="كمي"
-                    size="md"
-                  />
-                </div>
-                <div className="text-center">
-                  <ScoreDisplay
-                    score={profile.lastExamScores.verbal}
-                    label="لفظي"
-                    size="md"
-                  />
-                </div>
-              </div>
-            </div>
+            <Link href="/settings#subscription">
+              <Button size="sm">ترقية الآن</Button>
+            </Link>
           </div>
         )}
 
+        {/* Last Exam Scores */}
+        <LastExamScores
+          scores={profile.lastExamScores}
+          className="mb-6"
+        />
+
         {/* Practice Stats */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Clock className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-gray-900">إحصائيات التدريب</h2>
-          </div>
+        <PracticeHoursDisplay
+          stats={{
+            totalPracticeHours: profile.totalPracticeHours,
+            totalExams: performance?.totalExams || 0,
+            totalQuestions: performance?.totalQuestions || 0,
+            totalCorrect: performance?.totalCorrect || 0,
+            weeklyExamCount: performance?.weeklyExamCount,
+          }}
+          className="mb-6"
+        />
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-primary">
-                {profile.totalPracticeHours.toFixed(1)}
-              </p>
-              <p className="text-sm text-gray-500">ساعات التدريب</p>
-            </div>
-
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-primary">
-                {performance?.totalExams || 0}
-              </p>
-              <p className="text-sm text-gray-500">اختبارات مكتملة</p>
-            </div>
-
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-primary">
-                {performance?.totalQuestions || 0}
-              </p>
-              <p className="text-sm text-gray-500">أسئلة مجابة</p>
-            </div>
-
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-primary">
-                {performance?.totalQuestions
-                  ? Math.round((performance.totalCorrect / performance.totalQuestions) * 100)
-                  : 0}%
-              </p>
-              <p className="text-sm text-gray-500">معدل الصحة</p>
-            </div>
-          </div>
-        </div>
+        {/* Academic Track Switcher */}
+        <AcademicTrackSwitcher
+          currentTrack={profile.academicTrack}
+          onTrackChange={handleTrackChange}
+          className="mb-6"
+        />
 
         {/* Strengths & Weaknesses */}
         {performance && (performance.strengths.length > 0 || performance.weaknesses.length > 0) && (
@@ -319,6 +322,13 @@ export default function ProfilePage() {
             />
           </div>
         )}
+
+        {/* Exam History */}
+        <ExamHistory
+          history={examHistoryData}
+          maxItems={5}
+          className="mb-6"
+        />
 
         {/* Trend Chart - Premium Only */}
         <SubscriptionGate
@@ -354,6 +364,52 @@ export default function ProfilePage() {
           )}
         </SubscriptionGate>
 
+        {/* Data Management Section (Premium) */}
+        <SubscriptionGate requiredTier="premium">
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">إدارة البيانات</h2>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                onClick={handleExportData}
+                disabled={isExporting}
+                className="gap-2 flex-1"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    جاري التصدير...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    تصدير بياناتي
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              قم بتحميل جميع بياناتك بصيغة JSON وفقاً لنظام حماية البيانات الشخصية
+            </p>
+          </div>
+        </SubscriptionGate>
+
+        {/* Danger Zone */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-red-100">
+          <h2 className="text-lg font-bold text-red-600 mb-4">منطقة الخطر</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            حذف الحساب سيؤدي إلى إزالة جميع بياناتك بشكل نهائي. يتم جدولة الحذف خلال 30 يوماً ويمكنك إلغاؤه في أي وقت.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteModal(true)}
+            className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            حذف الحساب
+          </Button>
+        </div>
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href="/dashboard">
@@ -369,6 +425,15 @@ export default function ProfilePage() {
           </Link>
         </div>
       </main>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        userEmail={profile.email}
+        hasActiveSubscription={profile.subscriptionTier === 'premium'}
+        onConfirmDelete={handleDeleteAccount}
+      />
     </div>
   )
 }

@@ -359,27 +359,27 @@
 
 ### Profile API Routes for User Story 7
 
-- [ ] T133 [P] [US7] Create PATCH /api/profile route for profile updates in src/app/api/profile/route.ts
-- [ ] T134 [P] [US7] Create PATCH /api/profile/track route for track changes in src/app/api/profile/track/route.ts
-- [ ] T135 [P] [US7] Create POST /api/profile/delete route for account deletion in src/app/api/profile/delete/route.ts
-- [ ] T136 [P] [US7] Create GET /api/profile/export route for data export (premium) in src/app/api/profile/export/route.ts
+- [X] T133 [P] [US7] Create PATCH /api/profile route for profile updates in src/app/api/profile/route.ts
+- [X] T134 [P] [US7] Create PATCH /api/profile/track route for track changes in src/app/api/profile/track/route.ts
+- [X] T135 [P] [US7] Create POST /api/profile/delete route for account deletion in src/app/api/profile/delete/route.ts
+- [X] T136 [P] [US7] Create GET /api/profile/export route for data export (premium) in src/app/api/profile/export/route.ts
 
 ### Profile UI Components for User Story 7
 
-- [ ] T137 [P] [US7] Create ProfileHeader component with email and track display in src/components/profile/ProfileHeader.tsx
-- [ ] T138 [P] [US7] Create LastExamScores component with three percentages in src/components/profile/LastExamScores.tsx
-- [ ] T139 [P] [US7] Create PracticeHoursDisplay component in src/components/profile/PracticeHoursDisplay.tsx
-- [ ] T140 [P] [US7] Create AcademicTrackSwitcher component in src/components/profile/AcademicTrackSwitcher.tsx
-- [ ] T141 [P] [US7] Create ExamHistory component with historical trends in src/components/profile/ExamHistory.tsx
+- [X] T137 [P] [US7] Create ProfileHeader component with email and track display in src/components/profile/ProfileHeader.tsx
+- [X] T138 [P] [US7] Create LastExamScores component with three percentages in src/components/profile/LastExamScores.tsx
+- [X] T139 [P] [US7] Create PracticeHoursDisplay component in src/components/profile/PracticeHoursDisplay.tsx
+- [X] T140 [P] [US7] Create AcademicTrackSwitcher component in src/components/profile/AcademicTrackSwitcher.tsx
+- [X] T141 [P] [US7] Create ExamHistory component with historical trends in src/components/profile/ExamHistory.tsx
 
 ### Profile Page for User Story 7
 
-- [ ] T142 [US7] Complete profile page with all profile components in src/app/(main)/profile/page.tsx
+- [X] T142 [US7] Complete profile page with all profile components in src/app/(main)/profile/page.tsx
 
 ### Account Deletion for User Story 7
 
-- [ ] T143 [US7] Create DeleteAccountModal with confirmation flow in src/components/profile/DeleteAccountModal.tsx
-- [ ] T144 [US7] Implement 30-day deletion scheduling (PDPL compliance) in deletion route
+- [X] T143 [US7] Create DeleteAccountModal with confirmation flow in src/components/profile/DeleteAccountModal.tsx
+- [X] T144 [US7] Implement 30-day deletion scheduling (PDPL compliance) in deletion route
 
 **Checkpoint**: At this point, User Story 7 should be fully functional - users can manage profile and track.
 
