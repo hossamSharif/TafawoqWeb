@@ -19,7 +19,7 @@ export default function PlanSelectionPage() {
   useEffect(() => {
     const track = sessionStorage.getItem('selectedTrack')
     if (!track) {
-      router.push('/auth/onboarding/track')
+      router.push('/onboarding/track')
       return
     }
     setAcademicTrack(track)

@@ -287,7 +287,7 @@ export default function PracticeSessionPage() {
             stem={currentQuestion.stem}
             passage={currentQuestion.passage}
             section={currentQuestion.section}
-            topic={CATEGORY_LABELS[currentQuestion.topic]}
+            topic={currentQuestion.topic}
             difficulty={currentQuestion.difficulty}
           />
 

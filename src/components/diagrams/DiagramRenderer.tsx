@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import { SVGDiagram } from './SVGDiagram'
 import type { DiagramData, DiagramType } from '@/types/question'
+import type { ChartData } from './ChartDiagram'
 
 // Dynamically import ChartDiagram to reduce bundle size
 const ChartDiagram = dynamic(
@@ -68,7 +69,7 @@ export function DiagramRenderer({
       return (
         <ChartDiagram
           type={diagram.type}
-          data={diagram.data as Parameters<typeof ChartDiagram>[0]['data']}
+          data={diagram.data as unknown as ChartData}
           caption={diagram.caption}
           interactive={interactive && enableZoom}
           onClick={handleClick}

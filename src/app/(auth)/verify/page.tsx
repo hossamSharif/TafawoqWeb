@@ -22,7 +22,7 @@ export default function VerifyPage() {
   useEffect(() => {
     const storedEmail = sessionStorage.getItem('verificationEmail')
     if (!storedEmail) {
-      router.push('/auth/register')
+      router.push('/register')
       return
     }
     setEmail(storedEmail)
@@ -61,7 +61,7 @@ export default function VerifyPage() {
       sessionStorage.removeItem('verificationEmail')
 
       // Redirect to onboarding
-      router.push('/auth/onboarding/track')
+      router.push('/onboarding/track')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
       setOtp('')
@@ -201,7 +201,7 @@ export default function VerifyPage() {
           </Button>
 
           <p className="text-sm text-center text-muted-foreground">
-            <Link href="/auth/register" className="text-primary hover:underline">
+            <Link href="/register" className="text-primary hover:underline">
               تغيير البريد الإلكتروني
             </Link>
           </p>

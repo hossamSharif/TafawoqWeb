@@ -48,16 +48,16 @@ export function SVGDiagram({
   const renderShape = () => {
     switch (type) {
       case 'circle':
-        return <Circle data={data as CircleData} viewBox={viewBox} />
+        return <Circle data={data as unknown as CircleData} viewBox={viewBox} />
 
       case 'triangle':
-        return <Triangle data={data as TriangleData} viewBox={viewBox} />
+        return <Triangle data={data as unknown as TriangleData} viewBox={viewBox} />
 
       case 'rectangle':
-        return <Rectangle data={data as RectangleData} viewBox={viewBox} />
+        return <Rectangle data={data as unknown as RectangleData} viewBox={viewBox} />
 
       case 'composite-shape': {
-        const compositeData = data as CompositeShapeData
+        const compositeData = data as unknown as CompositeShapeData
         return (
           <g>
             {/* Render all shapes */}

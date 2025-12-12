@@ -4,7 +4,7 @@ import { useEffect, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SVGDiagram } from '@/components/diagrams/SVGDiagram'
-import { ChartDiagram } from '@/components/diagrams/ChartDiagram'
+import { ChartDiagram, type ChartData } from '@/components/diagrams/ChartDiagram'
 import type { DiagramData, DiagramType } from '@/types/question'
 
 interface DiagramZoomModalProps {
@@ -148,7 +148,7 @@ function ZoomedChartDiagram({
     <div className="w-full max-w-2xl">
       <ChartDiagram
         type={type}
-        data={data as Parameters<typeof ChartDiagram>[0]['data']}
+        data={data as unknown as ChartData}
         className="scale-110"
         interactive={false}
       />

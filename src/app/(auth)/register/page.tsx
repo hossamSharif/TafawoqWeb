@@ -63,7 +63,7 @@ export default function RegisterPage() {
       sessionStorage.setItem('verificationEmail', formData.email)
 
       // Redirect to verification page
-      router.push('/auth/verify')
+      router.push('/verify')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
     } finally {
@@ -199,7 +199,7 @@ export default function RegisterPage() {
 
           <p className="text-sm text-center text-muted-foreground">
             لديك حساب بالفعل؟{' '}
-            <Link href="/auth/login" className="text-primary hover:underline font-medium">
+            <Link href="/login" className="text-primary hover:underline font-medium">
               تسجيل الدخول
             </Link>
           </p>

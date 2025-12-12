@@ -16,7 +16,7 @@ export default function TrackSelectionPage() {
   const handleContinue = () => {
     if (selectedTrack) {
       sessionStorage.setItem('selectedTrack', selectedTrack)
-      router.push('/auth/onboarding/plan')
+      router.push('/onboarding/plan')
     }
   }
 

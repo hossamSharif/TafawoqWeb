@@ -1,34 +1,42 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  ChartOptions,
-  ChartData,
-} from 'chart.js'
-import { Line } from 'react-chartjs-2'
+import { Suspense, lazy, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { Lock } from 'lucide-react'
+import { Lock, Loader2 } from 'lucide-react'
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-)
+// Lazy load the Line chart component with Chart.js registration
+const LazyLineChart = lazy(async () => {
+  const [chartjs, chartjsReact] = await Promise.all([
+    import('chart.js'),
+    import('react-chartjs-2'),
+  ])
+
+  // Register Chart.js components
+  chartjs.Chart.register(
+    chartjs.CategoryScale,
+    chartjs.LinearScale,
+    chartjs.PointElement,
+    chartjs.LineElement,
+    chartjs.Title,
+    chartjs.Tooltip,
+    chartjs.Legend,
+    chartjs.Filler
+  )
+
+  return { default: chartjsReact.Line }
+})
+
+// Loading fallback component
+function ChartLoadingFallback({ height }: { height: number }) {
+  return (
+    <div
+      className="flex items-center justify-center bg-gray-50 rounded-lg animate-pulse"
+      style={{ height }}
+    >
+      <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+    </div>
+  )
+}
 
 export interface TrendDataPoint {
   date: string
@@ -67,6 +75,7 @@ const CHART_COLORS = {
 
 /**
  * Line chart for displaying historical exam score trends
+ * Uses dynamic imports for Chart.js to reduce initial bundle size
  */
 export function TrendChart({
   data,
@@ -81,134 +90,158 @@ export function TrendChart({
   className,
 }: TrendChartProps) {
   // Format dates for display
-  const labels = data.map((d) => {
-    const date = new Date(d.date)
-    return date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })
-  })
+  const labels = useMemo(
+    () =>
+      data.map((d) => {
+        const date = new Date(d.date)
+        return date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })
+      }),
+    [data]
+  )
 
-  const datasets: ChartData<'line'>['datasets'] = []
+  // Build datasets
+  const datasets = useMemo(() => {
+    const ds: Array<{
+      label: string
+      data: number[]
+      borderColor: string
+      backgroundColor: string
+      fill?: boolean
+      borderDash?: number[]
+      tension: number
+      pointRadius: number
+      pointHoverRadius: number
+    }> = []
 
-  if (showOverall) {
-    datasets.push({
-      label: 'الإجمالي',
-      data: data.map((d) => d.overall),
-      borderColor: CHART_COLORS.overall.line,
-      backgroundColor: CHART_COLORS.overall.background,
-      fill: true,
-      tension: 0.3,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-    })
-  }
+    if (showOverall) {
+      ds.push({
+        label: 'الإجمالي',
+        data: data.map((d) => d.overall),
+        borderColor: CHART_COLORS.overall.line,
+        backgroundColor: CHART_COLORS.overall.background,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      })
+    }
 
-  if (showVerbal) {
-    datasets.push({
-      label: 'لفظي',
-      data: data.map((d) => d.verbal ?? 0),
-      borderColor: CHART_COLORS.verbal.line,
-      backgroundColor: 'transparent',
-      borderDash: [5, 5],
-      tension: 0.3,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-    })
-  }
+    if (showVerbal) {
+      ds.push({
+        label: 'لفظي',
+        data: data.map((d) => d.verbal ?? 0),
+        borderColor: CHART_COLORS.verbal.line,
+        backgroundColor: 'transparent',
+        borderDash: [5, 5],
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+      })
+    }
 
-  if (showQuantitative) {
-    datasets.push({
-      label: 'كمي',
-      data: data.map((d) => d.quantitative ?? 0),
-      borderColor: CHART_COLORS.quantitative.line,
-      backgroundColor: 'transparent',
-      borderDash: [5, 5],
-      tension: 0.3,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-    })
-  }
+    if (showQuantitative) {
+      ds.push({
+        label: 'كمي',
+        data: data.map((d) => d.quantitative ?? 0),
+        borderColor: CHART_COLORS.quantitative.line,
+        backgroundColor: 'transparent',
+        borderDash: [5, 5],
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+      })
+    }
 
-  const chartData: ChartData<'line'> = {
-    labels,
-    datasets,
-  }
+    return ds
+  }, [data, showOverall, showVerbal, showQuantitative])
 
-  const options: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-        rtl: true,
-        labels: {
-          font: {
-            family: 'Noto Kufi Arabic, sans-serif',
-          },
-          usePointStyle: true,
-          padding: 20,
-        },
-      },
-      title: {
-        display: !!title,
-        text: title,
-        font: {
-          family: 'Noto Kufi Arabic, sans-serif',
-          size: 16,
-          weight: 'bold',
-        },
-        padding: { bottom: 20 },
-      },
-      tooltip: {
-        rtl: true,
-        titleFont: {
-          family: 'Noto Kufi Arabic, sans-serif',
-        },
-        bodyFont: {
-          family: 'Noto Kufi Arabic, sans-serif',
-        },
-        callbacks: {
-          label: (context) => `${context.dataset.label}: ${context.raw}%`,
-        },
-      },
-    },
-    scales: {
-      y: {
-        min: 0,
-        max: 100,
-        ticks: {
-          callback: (value) => `${value}%`,
-          font: {
-            family: 'Noto Kufi Arabic, sans-serif',
+  const chartData = useMemo(
+    () => ({
+      labels,
+      datasets,
+    }),
+    [labels, datasets]
+  )
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top' as const,
+          rtl: true,
+          labels: {
+            font: {
+              family: 'Noto Kufi Arabic, sans-serif',
+            },
+            usePointStyle: true,
+            padding: 20,
           },
         },
-        grid: {
-          color: '#E5E7EB',
-        },
-      },
-      x: {
-        ticks: {
+        title: {
+          display: !!title,
+          text: title,
           font: {
             family: 'Noto Kufi Arabic, sans-serif',
+            size: 16,
+            weight: 'bold' as const,
+          },
+          padding: { bottom: 20 },
+        },
+        tooltip: {
+          rtl: true,
+          titleFont: {
+            family: 'Noto Kufi Arabic, sans-serif',
+          },
+          bodyFont: {
+            family: 'Noto Kufi Arabic, sans-serif',
+          },
+          callbacks: {
+            label: (context: { dataset: { label?: string }; raw: unknown }) =>
+              `${context.dataset.label}: ${context.raw}%`,
           },
         },
-        grid: {
-          display: false,
+      },
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: {
+            callback: (value: number | string) => `${value}%`,
+            font: {
+              family: 'Noto Kufi Arabic, sans-serif',
+            },
+          },
+          grid: {
+            color: '#E5E7EB',
+          },
+        },
+        x: {
+          ticks: {
+            font: {
+              family: 'Noto Kufi Arabic, sans-serif',
+            },
+          },
+          grid: {
+            display: false,
+          },
         },
       },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index',
-    },
-  }
+      interaction: {
+        intersect: false,
+        mode: 'index' as const,
+      },
+    }),
+    [title]
+  )
 
   if (isLocked) {
     return (
       <div className={cn('relative', className)}>
         <div className="absolute inset-0 bg-gray-100 rounded-lg flex flex-col items-center justify-center z-10">
           <Lock className="w-12 h-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-bold text-gray-700 mb-2">
-            {title}
-          </h3>
+          <h3 className="text-lg font-bold text-gray-700 mb-2">{title}</h3>
           <p className="text-gray-500 text-sm text-center mb-4 px-4">
             تتبع تقدمك عبر الزمن واطلع على رؤى تفصيلية
           </p>
@@ -222,7 +255,9 @@ export function TrendChart({
           )}
         </div>
         <div className="opacity-20 pointer-events-none" style={{ height }}>
-          <Line data={chartData} options={options} />
+          <Suspense fallback={<ChartLoadingFallback height={height} />}>
+            <LazyLineChart data={chartData} options={options} />
+          </Suspense>
         </div>
       </div>
     )
@@ -245,7 +280,9 @@ export function TrendChart({
 
   return (
     <div className={cn('relative', className)} style={{ height }}>
-      <Line data={chartData} options={options} />
+      <Suspense fallback={<ChartLoadingFallback height={height} />}>
+        <LazyLineChart data={chartData} options={options} />
+      </Suspense>
     </div>
   )
 }
@@ -260,6 +297,7 @@ interface SimpleTrendProps {
 
 /**
  * Simple single-line trend chart for compact displays
+ * Uses dynamic imports for Chart.js to reduce initial bundle size
  */
 export function SimpleTrend({
   data,
@@ -268,50 +306,61 @@ export function SimpleTrend({
   height = 100,
   className,
 }: SimpleTrendProps) {
-  const chartLabels = labels || data.map((_, i) => `${i + 1}`)
+  const chartLabels = useMemo(
+    () => labels || data.map((_, i) => `${i + 1}`),
+    [labels, data]
+  )
 
-  const chartData: ChartData<'line'> = {
-    labels: chartLabels,
-    datasets: [
-      {
-        data,
-        borderColor: color,
-        backgroundColor: `${color}20`,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-      },
-    ],
-  }
+  const chartData = useMemo(
+    () => ({
+      labels: chartLabels,
+      datasets: [
+        {
+          data,
+          borderColor: color,
+          backgroundColor: `${color}20`,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        },
+      ],
+    }),
+    [chartLabels, data, color]
+  )
 
-  const options: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (context) => `${context.raw}%`,
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context: { raw: unknown }) => `${context.raw}%`,
+          },
         },
       },
-    },
-    scales: {
-      y: {
-        display: false,
-        min: Math.min(...data) - 10,
-        max: Math.max(...data) + 10,
+      scales: {
+        y: {
+          display: false,
+          min: Math.min(...data) - 10,
+          max: Math.max(...data) + 10,
+        },
+        x: { display: false },
       },
-      x: { display: false },
-    },
-    interaction: {
-      intersect: false,
-    },
-  }
+      interaction: {
+        intersect: false,
+      },
+    }),
+    [data]
+  )
 
   return (
     <div className={className} style={{ height }}>
-      <Line data={chartData} options={options} />
+      <Suspense fallback={<ChartLoadingFallback height={height} />}>
+        <LazyLineChart data={chartData} options={options} />
+      </Suspense>
     </div>
   )
 }
@@ -330,11 +379,7 @@ export function TrendIndicator({ current, previous, className }: TrendIndicatorP
   const percentage = previous > 0 ? Math.round((diff / previous) * 100) : 0
 
   if (diff === 0) {
-    return (
-      <span className={cn('text-gray-500 text-sm', className)}>
-        ثابت
-      </span>
-    )
+    return <span className={cn('text-gray-500 text-sm', className)}>ثابت</span>
   }
 
   if (diff > 0) {
@@ -342,7 +387,9 @@ export function TrendIndicator({ current, previous, className }: TrendIndicatorP
       <span className={cn('text-green-600 text-sm flex items-center gap-1', className)}>
         <span>↑</span>
         <span>+{Math.abs(diff)}%</span>
-        {percentage > 0 && <span className="text-xs text-gray-400">({percentage}% تحسن)</span>}
+        {percentage > 0 && (
+          <span className="text-xs text-gray-400">({percentage}% تحسن)</span>
+        )}
       </span>
     )
   }
@@ -351,7 +398,9 @@ export function TrendIndicator({ current, previous, className }: TrendIndicatorP
     <span className={cn('text-red-600 text-sm flex items-center gap-1', className)}>
       <span>↓</span>
       <span>-{Math.abs(diff)}%</span>
-      {percentage < 0 && <span className="text-xs text-gray-400">({Math.abs(percentage)}% انخفاض)</span>}
+      {percentage < 0 && (
+        <span className="text-xs text-gray-400">({Math.abs(percentage)}% انخفاض)</span>
+      )}
     </span>
   )
 }

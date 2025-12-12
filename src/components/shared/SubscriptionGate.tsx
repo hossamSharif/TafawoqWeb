@@ -11,6 +11,8 @@ interface SubscriptionGateProps {
   children: ReactNode
   fallback?: ReactNode
   showUpgradePrompt?: boolean
+  /** Required subscription tier (optional, defaults to premium check) */
+  requiredTier?: 'free' | 'premium'
 }
 
 /**
@@ -21,6 +23,7 @@ export function SubscriptionGate({
   children,
   fallback,
   showUpgradePrompt = true,
+  requiredTier = 'premium',
 }: SubscriptionGateProps) {
   const { isPremium, isLoading, isAuthenticated } = useAuth()
 
@@ -45,7 +48,7 @@ export function SubscriptionGate({
         </CardHeader>
         <CardContent className="flex justify-center">
           <Button asChild>
-            <Link href="/auth/login">تسجيل الدخول</Link>
+            <Link href="/login">تسجيل الدخول</Link>
           </Button>
         </CardContent>
       </Card>

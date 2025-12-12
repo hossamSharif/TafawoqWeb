@@ -109,7 +109,41 @@ const EXAM_SYSTEM_PROMPT = `أنت خبير في إعداد أسئلة اختب�
 أجب بتنسيق JSON فقط مع مصفوفة questions.`
 
 /**
- * Generate questions using Gemini AI
+ * Exponential backoff delay helper
+ */
+async function delay(attempt: number): Promise<void> {
+  const baseDelay = 1000
+  const maxDelay = 10000
+  const delayMs = Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
+  await new Promise(resolve => setTimeout(resolve, delayMs))
+}
+
+/**
+ * Check if error is retryable (network issues, rate limits, etc.)
+ */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase()
+    // Retryable errors: network issues, rate limits, server errors
+    return (
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('rate limit') ||
+      message.includes('429') ||
+      message.includes('500') ||
+      message.includes('502') ||
+      message.includes('503') ||
+      message.includes('504') ||
+      message.includes('fetch failed') ||
+      message.includes('econnreset') ||
+      message.includes('socket')
+    )
+  }
+  return false
+}
+
+/**
+ * Generate questions using Gemini AI with retry logic
  */
 export async function generateQuestions(config: QuestionGenerationConfig): Promise<Question[]> {
   const model = getQuestionGenerationModel()
@@ -147,39 +181,62 @@ export async function generateQuestions(config: QuestionGenerationConfig): Promi
 
 ${config.excludeIds?.length ? `تجنب إنشاء أسئلة مشابهة للأسئلة ذات المعرفات: ${config.excludeIds.join(', ')}` : ''}`
 
-  try {
-    const result = await model.generateContent([systemPrompt, userPrompt])
-    const response = result.response
-    const text = response.text()
+  const maxRetries = 3
+  let lastError: Error | null = null
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('No valid JSON found in response')
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent([systemPrompt, userPrompt])
+      const response = result.response
+      const text = response.text()
+
+      // Extract JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) {
+        throw new Error('No valid JSON found in response')
+      }
+
+      const parsed = JSON.parse(jsonMatch[0])
+
+      if (!parsed.questions || !Array.isArray(parsed.questions)) {
+        throw new Error('Invalid response structure - missing questions array')
+      }
+
+      const questions: Question[] = parsed.questions.map((q: Partial<Question>, index: number) => ({
+        id: q.id || `gen_${Date.now()}_${index}`,
+        section: q.section || config.section,
+        topic: q.topic as QuestionCategory,
+        difficulty: q.difficulty || config.difficulty,
+        questionType: q.questionType || 'mcq',
+        stem: q.stem || '',
+        choices: q.choices as [string, string, string, string],
+        answerIndex: q.answerIndex as 0 | 1 | 2 | 3,
+        explanation: q.explanation || '',
+        solvingStrategy: q.solvingStrategy,
+        tip: q.tip,
+        passage: q.passage,
+        tags: q.tags || [],
+      }))
+
+      return questions
+    } catch (error) {
+      console.error(`Question generation attempt ${attempt + 1} failed:`, error)
+      lastError = error instanceof Error ? error : new Error(String(error))
+
+      // Only retry on retryable errors
+      if (attempt < maxRetries - 1 && isRetryableError(error)) {
+        await delay(attempt)
+        continue
+      }
+
+      // For non-retryable errors, throw immediately
+      if (!isRetryableError(error)) {
+        break
+      }
     }
-
-    const parsed = JSON.parse(jsonMatch[0])
-    const questions: Question[] = parsed.questions.map((q: Partial<Question>, index: number) => ({
-      id: q.id || `gen_${Date.now()}_${index}`,
-      section: q.section || config.section,
-      topic: q.topic as QuestionCategory,
-      difficulty: q.difficulty || config.difficulty,
-      questionType: q.questionType || 'mcq',
-      stem: q.stem || '',
-      choices: q.choices as [string, string, string, string],
-      answerIndex: q.answerIndex as 0 | 1 | 2 | 3,
-      explanation: q.explanation || '',
-      solvingStrategy: q.solvingStrategy,
-      tip: q.tip,
-      passage: q.passage,
-      tags: q.tags || [],
-    }))
-
-    return questions
-  } catch (error) {
-    console.error('Error generating questions:', error)
-    throw new Error('فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.')
   }
+
+  throw lastError || new Error('فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.')
 }
 
 /**
@@ -273,9 +330,15 @@ export async function generateFullExam(config: ExamConfig): Promise<Question[]> 
       console.error(`Exam generation attempt ${attempt + 1} failed:`, error)
       lastError = error instanceof Error ? error : new Error(String(error))
 
-      // Wait before retry (exponential backoff)
-      if (attempt < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)))
+      // Only retry on retryable errors
+      if (attempt < maxRetries - 1 && isRetryableError(error)) {
+        await delay(attempt)
+        continue
+      }
+
+      // For non-retryable errors, throw immediately
+      if (!isRetryableError(error)) {
+        break
       }
     }
   }

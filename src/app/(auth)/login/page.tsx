@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { PasswordInput } from '@/components/ui/password-input'
 import { Loader2 } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/dashboard'
@@ -49,7 +49,7 @@ export default function LoginPage() {
 
       // Check if user needs onboarding
       if (data.requiresOnboarding) {
-        router.push('/auth/onboarding/track')
+        router.push('/onboarding/track')
       } else {
         router.push(redirectTo)
       }
@@ -76,7 +76,7 @@ export default function LoginPage() {
               {error}
               {requiresVerification && (
                 <Link
-                  href="/auth/verify"
+                  href="/verify"
                   className="block mt-2 text-primary hover:underline font-medium"
                 >
                   إكمال التحقق من البريد الإلكتروني
@@ -106,7 +106,7 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <Label htmlFor="password">كلمة المرور</Label>
               <Link
-                href="/auth/forgot-password"
+                href="/forgot-password"
                 className="text-xs text-primary hover:underline"
               >
                 نسيت كلمة المرور؟
@@ -143,12 +143,36 @@ export default function LoginPage() {
 
           <p className="text-sm text-center text-muted-foreground">
             ليس لديك حساب؟{' '}
-            <Link href="/auth/register" className="text-primary hover:underline font-medium">
+            <Link href="/register" className="text-primary hover:underline font-medium">
               إنشاء حساب جديد
             </Link>
           </p>
         </CardFooter>
       </form>
     </Card>
+  )
+}
+
+function LoginFormFallback() {
+  return (
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
+        <CardDescription>
+          جاري التحميل...
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFormFallback />}>
+      <LoginForm />
+    </Suspense>
   )
 }

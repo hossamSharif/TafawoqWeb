@@ -17,6 +17,39 @@ export interface PasswordRequirement {
 
 const MIN_PASSWORD_LENGTH = 8
 
+export interface PasswordValidation {
+  isValid: boolean
+  errors: string[]
+}
+
+/**
+ * Validate password and return structured result with error messages
+ */
+export function validatePassword(password: string): PasswordValidation {
+  const errors: string[] = []
+
+  if (!password || password.length < MIN_PASSWORD_LENGTH) {
+    errors.push(`كلمة المرور يجب أن تكون ${MIN_PASSWORD_LENGTH} أحرف على الأقل`)
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل')
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('كلمة المرور يجب أن تحتوي على حرف صغير واحد على الأقل')
+  }
+
+  if (!/\d/.test(password)) {
+    errors.push('كلمة المرور يجب أن تحتوي على رقم واحد على الأقل')
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  }
+}
+
 /**
  * Check if password meets minimum requirements
  */

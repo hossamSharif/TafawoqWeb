@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { Question } from '@/types/question'
+import type { Question, QuestionCategory } from '@/types/question'
 
 export interface ExamQuestion {
   id: string
   index: number
   section: 'verbal' | 'quantitative'
-  topic?: string
+  topic?: QuestionCategory
   difficulty?: 'easy' | 'medium' | 'hard'
   questionType: string
   stem: string

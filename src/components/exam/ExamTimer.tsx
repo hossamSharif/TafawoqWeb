@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { Clock, Pause, Play, AlertTriangle } from 'lucide-react'
+import { Clock, Pause, Play, AlertTriangle, WifiOff } from 'lucide-react'
+import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 
 export interface ExamTimerProps {
   /** Total exam duration in seconds (default 7200 = 120 minutes) */
@@ -21,11 +22,16 @@ export interface ExamTimerProps {
   allowPause?: boolean
   /** Show warning when time is low */
   warningThreshold?: number
+  /** Pause timer on network disconnect */
+  pauseOnDisconnect?: boolean
+  /** Called when network status changes */
+  onNetworkStatusChange?: (isOnline: boolean, disconnectedSeconds: number) => void
   className?: string
 }
 
 /**
  * ExamTimer - 120-minute countdown timer with pause support
+ * Automatically pauses on network disconnect to preserve fairness
  */
 export function ExamTimer({
   totalSeconds = 7200, // 120 minutes
@@ -36,14 +42,34 @@ export function ExamTimer({
   onPauseChange,
   allowPause = false,
   warningThreshold = 600, // 10 minutes
+  pauseOnDisconnect = true,
+  onNetworkStatusChange,
   className,
 }: ExamTimerProps) {
   const [elapsed, setElapsed] = useState(initialElapsed)
   const [internalPaused, setInternalPaused] = useState(false)
+  const [networkPaused, setNetworkPaused] = useState(false)
   const lastTickRef = useRef<number>(Date.now())
   const expiredRef = useRef(false)
 
-  const isPaused = controlledPaused ?? internalPaused
+  // Network status detection
+  const { isConnected, disconnectedSeconds, isOnline } = useNetworkStatus({
+    enablePolling: pauseOnDisconnect,
+    onDisconnect: () => {
+      if (pauseOnDisconnect) {
+        setNetworkPaused(true)
+        onNetworkStatusChange?.(false, 0)
+      }
+    },
+    onReconnect: (seconds) => {
+      if (pauseOnDisconnect) {
+        setNetworkPaused(false)
+        onNetworkStatusChange?.(true, seconds)
+      }
+    },
+  })
+
+  const isPaused = controlledPaused ?? internalPaused ?? networkPaused
   const remaining = Math.max(0, totalSeconds - elapsed)
   const isWarning = remaining <= warningThreshold && remaining > 0
   const isExpired = remaining <= 0
@@ -183,6 +209,21 @@ export function ExamTimer({
         <span className="text-sm font-medium text-red-700">
           انتهى الوقت!
         </span>
+      )}
+
+      {/* Network Disconnect Indicator */}
+      {networkPaused && !isExpired && (
+        <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+          <WifiOff className="w-4 h-4 animate-pulse" />
+          <span className="text-sm font-medium">
+            انقطع الاتصال - الوقت متوقف
+          </span>
+          {disconnectedSeconds > 0 && (
+            <span className="text-xs text-orange-500">
+              ({disconnectedSeconds} ث)
+            </span>
+          )}
+        </div>
       )}
     </div>
   )
