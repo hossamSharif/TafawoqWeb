@@ -416,37 +416,37 @@
 
 ### Password Reset Flow
 
-- [ ] T151 [P] Create POST /api/auth/password/reset route in src/app/api/auth/password/reset/route.ts
-- [ ] T152 [P] Create POST /api/auth/password/update route in src/app/api/auth/password/update/route.ts
-- [ ] T153 [P] Create password reset request page in src/app/(auth)/forgot-password/page.tsx
-- [ ] T154 Create password update page in src/app/(auth)/reset-password/page.tsx
+- [X] T151 [P] Create POST /api/auth/password/reset route in src/app/api/auth/password/reset/route.ts
+- [X] T152 [P] Create POST /api/auth/password/update route in src/app/api/auth/password/update/route.ts
+- [X] T153 [P] Create password reset request page in src/app/(auth)/forgot-password/page.tsx
+- [X] T154 Create password update page in src/app/(auth)/reset-password/page.tsx
 
 ### RTL Validation
 
-- [ ] T155 Validate RTL layout across all pages using Chrome MCP tools
-- [ ] T156 Fix any RTL alignment issues in exam and practice components
+- [X] T155 Validate RTL layout across all pages using Chrome MCP tools
+- [X] T156 Fix any RTL alignment issues in exam and practice components
 
 ### Performance Optimization
 
-- [ ] T157 [P] Add dynamic imports for Chart.js components to reduce bundle size
-- [ ] T158 [P] Implement server components where possible in app router pages
+- [X] T157 [P] Add dynamic imports for Chart.js components to reduce bundle size
+- [X] T158 [P] Implement server components where possible in app router pages
 
 ### Edge Case Handling
 
-- [ ] T159 Implement network disconnect detection and timer pause in exam session
-- [ ] T160 Implement exam session resume within same calendar day
-- [ ] T161 Add error handling for Gemini API failures with retry logic
+- [X] T159 Implement network disconnect detection and timer pause in exam session
+- [X] T160 Implement exam session resume within same calendar day
+- [X] T161 Add error handling for Gemini API failures with retry logic
 
 ### Security Hardening
 
-- [ ] T162 [P] Audit all API routes for proper authentication checks
-- [ ] T163 [P] Validate Stripe webhook signatures in webhook handler
-- [ ] T164 Review and test RLS policies for all database operations
+- [X] T162 [P] Audit all API routes for proper authentication checks
+- [X] T163 [P] Validate Stripe webhook signatures in webhook handler
+- [X] T164 Review and test RLS policies for all database operations
 
 ### Quickstart Validation
 
-- [ ] T165 Run through quickstart.md steps to verify development setup
-- [ ] T166 Update quickstart.md if any steps are outdated or unclear
+- [X] T165 Run through quickstart.md steps to verify development setup
+- [X] T166 Update quickstart.md if any steps are outdated or unclear
 
 ---
 
