@@ -1,9 +1,14 @@
-// Gemini AI client and configuration
+// OpenRouter AI client with auto-fallback
 export {
-  getQuestionGenerationModel,
-  getAnalysisModel,
-  getExamGenerationModel,
-  safetySettings,
+  callOpenRouter,
+  generateWithPreset,
+  getCurrentModel,
+  resetModelIndex,
+  FREE_MODELS,
+  GenerationPresets,
+  OpenRouterError,
+  type OpenRouterConfig,
+  type FreeModel,
 } from './client'
 
 // Question and exam generation prompts

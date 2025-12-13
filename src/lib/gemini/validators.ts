@@ -1,7 +1,7 @@
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 
 /**
- * Validates a single question object from Gemini response
+ * Validates a single question object from AI response
  */
 export function validateQuestion(q: unknown, index: number): Question | null {
   if (!q || typeof q !== 'object') {
@@ -57,20 +57,20 @@ export function validateQuestion(q: unknown, index: number): Question | null {
 }
 
 /**
- * Validates and extracts questions array from Gemini response text
+ * Validates and extracts questions array from AI response text
  */
 export function extractQuestionsFromResponse(text: string): Question[] {
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
-    throw new Error('No valid JSON found in Gemini response')
+    throw new Error('No valid JSON found in AI response')
   }
 
   let parsed: unknown
   try {
     parsed = JSON.parse(jsonMatch[0])
   } catch (e) {
-    throw new Error(`Failed to parse JSON from Gemini response: ${e}`)
+    throw new Error(`Failed to parse JSON from AI response: ${e}`)
   }
 
   if (!parsed || typeof parsed !== 'object') {

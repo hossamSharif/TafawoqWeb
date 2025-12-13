@@ -10,6 +10,7 @@ const serverEnvSchema = {
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
 }
 
@@ -37,6 +38,9 @@ export const serverEnv = {
   },
   gemini: {
     apiKey: serverEnvSchema.GEMINI_API_KEY || '',
+  },
+  openrouter: {
+    apiKey: serverEnvSchema.OPENROUTER_API_KEY || '',
   },
   sentry: {
     authToken: serverEnvSchema.SENTRY_AUTH_TOKEN || '',
@@ -75,7 +79,7 @@ export function validateEnv(): { valid: boolean; missing: string[] } {
     'SUPABASE_SERVICE_ROLE_KEY',
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
-    'GEMINI_API_KEY',
+    'OPENROUTER_API_KEY',
   ]
 
   // Required client variables

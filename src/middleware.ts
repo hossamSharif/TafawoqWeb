@@ -11,22 +11,26 @@ const PROTECTED_ROUTES = [
   '/results',
   '/profile',
   '/subscription',
+  '/settings',
+  '/onboarding',
 ]
 
 /**
  * Routes that require premium subscription
+ * Note: /exam/start is NOT premium-only - free users have a weekly limit
+ * The exam API handles the weekly limit check, not the middleware
  */
-const PREMIUM_ROUTES = [
-  '/exam/start',
-  '/practice/start',
+const PREMIUM_ROUTES: string[] = [
+  // '/exam/start', - removed: handled by exam API with weekly limit
+  // '/practice/start', - removed: handled by practice API
 ]
 
 /**
  * Auth routes - redirect to dashboard if already authenticated
  */
 const AUTH_ROUTES = [
-  '/auth/login',
-  '/auth/signup',
+  '/login',
+  '/register',
 ]
 
 export async function middleware(request: NextRequest) {
@@ -66,7 +70,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !session) {
-    const loginUrl = new URL('/auth/login', request.url)
+    const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }

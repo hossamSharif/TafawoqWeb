@@ -1,4 +1,4 @@
-import { getQuestionGenerationModel, getAnalysisModel, getExamGenerationModel } from './client'
+import { callOpenRouter, GenerationPresets } from './client'
 import type {
   Question,
   QuestionSection,
@@ -119,12 +119,69 @@ async function delay(attempt: number): Promise<void> {
 }
 
 /**
- * Check if error is retryable (network issues, rate limits, etc.)
+ * Attempt to repair common JSON issues from AI responses
+ */
+function repairJSON(text: string): string {
+  let json = text
+
+  // Remove any markdown code blocks
+  json = json.replace(/```json\s*/gi, '').replace(/```\s*/g, '')
+
+  // Try to find JSON object
+  const startIdx = json.indexOf('{')
+  const endIdx = json.lastIndexOf('}')
+
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+    throw new Error('No valid JSON object found')
+  }
+
+  json = json.slice(startIdx, endIdx + 1)
+
+  // Fix common issues:
+  // 1. Trailing commas before closing brackets
+  json = json.replace(/,\s*([}\]])/g, '$1')
+
+  // 2. Missing commas between array elements (common with large arrays)
+  json = json.replace(/}\s*{/g, '},{')
+
+  // 3. Unescaped quotes in strings (basic fix)
+  // This is tricky, so we only fix obvious cases
+
+  // 4. Remove any control characters
+  json = json.replace(/[\x00-\x1F\x7F]/g, (match) => {
+    if (match === '\n' || match === '\r' || match === '\t') return match
+    return ''
+  })
+
+  return json
+}
+
+/**
+ * Safely parse JSON with repair attempts
+ */
+function safeParseJSON(text: string): { questions: Partial<Question>[] } {
+  // First try direct parse
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0])
+    }
+  } catch {
+    // Continue to repair attempt
+  }
+
+  // Try with repair
+  const repaired = repairJSON(text)
+  return JSON.parse(repaired)
+}
+
+/**
+ * Check if error is retryable (network issues, rate limits, JSON parse errors, etc.)
  */
 function isRetryableError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message.toLowerCase()
-    // Retryable errors: network issues, rate limits, server errors
+    // Retryable errors: network issues, rate limits, server errors, JSON parse errors
     return (
       message.includes('network') ||
       message.includes('timeout') ||
@@ -136,18 +193,19 @@ function isRetryableError(error: unknown): boolean {
       message.includes('504') ||
       message.includes('fetch failed') ||
       message.includes('econnreset') ||
-      message.includes('socket')
+      message.includes('socket') ||
+      message.includes('json') ||
+      message.includes('unexpected token') ||
+      message.includes('expected')
     )
   }
   return false
 }
 
 /**
- * Generate questions using Gemini AI with retry logic
+ * Generate questions using OpenRouter AI with retry logic
  */
 export async function generateQuestions(config: QuestionGenerationConfig): Promise<Question[]> {
-  const model = getQuestionGenerationModel()
-
   const systemPrompt =
     config.section === 'quantitative' ? QUANTITATIVE_SYSTEM_PROMPT : VERBAL_SYSTEM_PROMPT
 
@@ -186,17 +244,16 @@ ${config.excludeIds?.length ? `تجنب إنشاء أسئلة مشابهة لل�
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const result = await model.generateContent([systemPrompt, userPrompt])
-      const response = result.response
-      const text = response.text()
+      const text = await callOpenRouter({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        ...GenerationPresets.questions,
+      })
 
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/)
-      if (!jsonMatch) {
-        throw new Error('No valid JSON found in response')
-      }
-
-      const parsed = JSON.parse(jsonMatch[0])
+      // Parse JSON with repair attempts
+      const parsed = safeParseJSON(text)
 
       if (!parsed.questions || !Array.isArray(parsed.questions)) {
         throw new Error('Invalid response structure - missing questions array')
@@ -240,44 +297,39 @@ ${config.excludeIds?.length ? `تجنب إنشاء أسئلة مشابهة لل�
 }
 
 /**
- * Generate a full 96-question exam based on academic track
+ * Generate a batch of questions for exam
  */
-export async function generateFullExam(config: ExamConfig): Promise<Question[]> {
-  const model = getExamGenerationModel()
-  const distribution = TRACK_DISTRIBUTION[config.track]
-  const totalQuestions = config.totalQuestions || 96
+async function generateExamBatch(
+  section: 'quantitative' | 'verbal',
+  count: number,
+  batchIndex: number
+): Promise<Question[]> {
+  const sectionName = section === 'quantitative' ? 'كمي' : 'لفظي'
+  const categories = section === 'quantitative'
+    ? 'الجبر، الهندسة، الإحصاء، النسب والتناسب، الاحتمالات، السرعة والمسافة'
+    : 'استيعاب المقروء، إكمال الجمل، الخطأ السياقي، التناظر اللفظي، الارتباط والاختلاف، المفردات'
 
-  // Scale distribution to total questions if not 96
-  const scale = totalQuestions / 96
-  const quantCount = Math.round(distribution.quantitative * scale)
-  const verbalCount = totalQuestions - quantCount
+  const userPrompt = `قم بإنشاء ${count} سؤال ${sectionName} لاختبار القدرات:
 
-  const userPrompt = `قم بإنشاء اختبار قدرات كامل يحتوي على ${totalQuestions} سؤال:
-- ${quantCount} سؤال كمي
-- ${verbalCount} سؤال لفظي
-
-المسار: ${config.track === 'scientific' ? 'علمي' : 'أدبي'}
-
-توزيع الصعوبة لكل قسم:
+توزيع الصعوبة:
 - سهل: 30%
 - متوسط: 50%
 - صعب: 20%
 
-التصنيفات الكمية: الجبر، الهندسة، الإحصاء، النسب والتناسب، الاحتمالات، السرعة والمسافة
-التصنيفات اللفظية: استيعاب المقروء، إكمال الجمل، الخطأ السياقي، التناظر اللفظي، الارتباط والاختلاف، المفردات
+التصنيفات: ${categories}
 
-أجب بتنسيق JSON:
+أجب بتنسيق JSON فقط:
 {
   "questions": [
     {
-      "id": "exam_q1",
-      "section": "quantitative" أو "verbal",
+      "id": "batch${batchIndex}_q1",
+      "section": "${section}",
       "topic": "category_key",
       "difficulty": "easy" أو "medium" أو "hard",
       "questionType": "mcq",
       "stem": "نص السؤال",
       "choices": ["أ", "ب", "ج", "د"],
-      "answerIndex": 0-3,
+      "answerIndex": 0,
       "explanation": "شرح مفصل"
     }
   ]
@@ -288,24 +340,23 @@ export async function generateFullExam(config: ExamConfig): Promise<Question[]> 
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const result = await model.generateContent([EXAM_SYSTEM_PROMPT, userPrompt])
-      const text = result.response.text()
+      const text = await callOpenRouter({
+        messages: [
+          { role: 'system', content: EXAM_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+        ...GenerationPresets.exam,
+      })
 
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/)
-      if (!jsonMatch) {
-        throw new Error('No valid JSON found in response')
-      }
-
-      const parsed = JSON.parse(jsonMatch[0])
+      const parsed = safeParseJSON(text)
 
       if (!parsed.questions || !Array.isArray(parsed.questions)) {
         throw new Error('Invalid response structure - missing questions array')
       }
 
-      const questions: Question[] = parsed.questions.map((q: Partial<Question>, index: number) => ({
-        id: q.id || `exam_${Date.now()}_${index}`,
-        section: q.section || 'quantitative',
+      return parsed.questions.map((q: Partial<Question>, index: number) => ({
+        id: q.id || `batch${batchIndex}_${Date.now()}_${index}`,
+        section: q.section || section,
         topic: q.topic as QuestionCategory,
         difficulty: q.difficulty || 'medium',
         questionType: q.questionType || 'mcq',
@@ -318,32 +369,97 @@ export async function generateFullExam(config: ExamConfig): Promise<Question[]> 
         passage: q.passage,
         tags: q.tags || [],
       }))
-
-      // Validate minimum question count (allow 90% threshold for partial generation)
-      const minQuestions = Math.floor(totalQuestions * 0.9)
-      if (questions.length < minQuestions) {
-        throw new Error(`Generated only ${questions.length} questions, minimum ${minQuestions} required`)
-      }
-
-      return questions
     } catch (error) {
-      console.error(`Exam generation attempt ${attempt + 1} failed:`, error)
+      console.error(`Batch ${batchIndex} generation attempt ${attempt + 1} failed:`, error)
       lastError = error instanceof Error ? error : new Error(String(error))
 
-      // Only retry on retryable errors
       if (attempt < maxRetries - 1 && isRetryableError(error)) {
         await delay(attempt)
         continue
       }
 
-      // For non-retryable errors, throw immediately
       if (!isRetryableError(error)) {
         break
       }
     }
   }
 
-  throw lastError || new Error('فشل في إنشاء الاختبار بعد عدة محاولات')
+  throw lastError || new Error(`فشل في إنشاء الدفعة ${batchIndex}`)
+}
+
+/**
+ * Generate a full 96-question exam based on academic track
+ * Uses batch generation for reliability
+ */
+export async function generateFullExam(config: ExamConfig): Promise<Question[]> {
+  const distribution = TRACK_DISTRIBUTION[config.track]
+  const totalQuestions = config.totalQuestions || 96
+
+  // Scale distribution to total questions if not 96
+  const scale = totalQuestions / 96
+  const quantCount = Math.round(distribution.quantitative * scale)
+  const verbalCount = totalQuestions - quantCount
+
+  // Generate in batches of ~20 questions for reliability
+  const BATCH_SIZE = 20
+  const allQuestions: Question[] = []
+
+  // Calculate batches for quantitative
+  const quantBatches = Math.ceil(quantCount / BATCH_SIZE)
+  const verbalBatches = Math.ceil(verbalCount / BATCH_SIZE)
+
+  console.log(`Generating exam: ${quantCount} quantitative in ${quantBatches} batches, ${verbalCount} verbal in ${verbalBatches} batches`)
+
+  let batchIndex = 0
+
+  // Generate quantitative questions in batches
+  for (let i = 0; i < quantBatches; i++) {
+    const remaining = quantCount - (i * BATCH_SIZE)
+    const batchCount = Math.min(BATCH_SIZE, remaining)
+
+    console.log(`Generating quantitative batch ${i + 1}/${quantBatches} (${batchCount} questions)`)
+
+    const questions = await generateExamBatch('quantitative', batchCount, batchIndex++)
+    allQuestions.push(...questions)
+
+    // Longer delay between batches to avoid rate limits (5 seconds)
+    if (i < quantBatches - 1) {
+      console.log('Waiting 5 seconds before next batch...')
+      await new Promise(resolve => setTimeout(resolve, 5000))
+    }
+  }
+
+  // Delay before switching to verbal section
+  console.log('Waiting 5 seconds before verbal section...')
+  await new Promise(resolve => setTimeout(resolve, 5000))
+
+  // Generate verbal questions in batches
+  for (let i = 0; i < verbalBatches; i++) {
+    const remaining = verbalCount - (i * BATCH_SIZE)
+    const batchCount = Math.min(BATCH_SIZE, remaining)
+
+    console.log(`Generating verbal batch ${i + 1}/${verbalBatches} (${batchCount} questions)`)
+
+    const questions = await generateExamBatch('verbal', batchCount, batchIndex++)
+    allQuestions.push(...questions)
+
+    // Longer delay between batches (5 seconds)
+    if (i < verbalBatches - 1) {
+      console.log('Waiting 5 seconds before next batch...')
+      await new Promise(resolve => setTimeout(resolve, 5000))
+    }
+  }
+
+  // Validate minimum question count (allow 80% threshold for batch generation)
+  const minQuestions = Math.floor(totalQuestions * 0.8)
+  if (allQuestions.length < minQuestions) {
+    throw new Error(`Generated only ${allQuestions.length} questions, minimum ${minQuestions} required`)
+  }
+
+  console.log(`Exam generation complete: ${allQuestions.length} questions`)
+
+  // Shuffle questions
+  return allQuestions.sort(() => Math.random() - 0.5)
 }
 
 /**
@@ -480,8 +596,6 @@ export async function generatePerformanceFeedback(
   weaknesses: string[]
   advice: string
 }> {
-  const model = getAnalysisModel()
-
   const overallScore = Math.round((correctCount / totalCount) * 100)
   const categoryScores = Object.entries(categoryBreakdown)
     .map(([cat, { correct, total }]) => {
@@ -511,8 +625,12 @@ ${categoryScores}
 }`
 
   try {
-    const result = await model.generateContent(prompt)
-    const text = result.response.text()
+    const text = await callOpenRouter({
+      messages: [
+        { role: 'user', content: prompt },
+      ],
+      ...GenerationPresets.analysis,
+    })
 
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {

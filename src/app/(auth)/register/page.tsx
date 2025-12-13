@@ -101,6 +101,7 @@ export default function RegisterPage() {
               disabled={isLoading}
               dir="ltr"
               className="text-left"
+              autoComplete="email"
             />
           </div>
 
@@ -118,6 +119,7 @@ export default function RegisterPage() {
               showRequirements
               dir="ltr"
               className="text-left"
+              autoComplete="new-password"
             />
           </div>
 
@@ -133,6 +135,7 @@ export default function RegisterPage() {
               disabled={isLoading}
               dir="ltr"
               className="text-left"
+              autoComplete="new-password"
             />
             {formData.confirmPassword && formData.password !== formData.confirmPassword && (
               <p className="text-xs text-red-500">كلمتا المرور غير متطابقتين</p>

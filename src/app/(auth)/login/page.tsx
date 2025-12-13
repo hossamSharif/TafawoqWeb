@@ -98,6 +98,7 @@ function LoginForm() {
               disabled={isLoading}
               dir="ltr"
               className="text-left"
+              autoComplete="email"
             />
           </div>
 
@@ -121,6 +122,7 @@ function LoginForm() {
               disabled={isLoading}
               dir="ltr"
               className="text-left"
+              autoComplete="current-password"
             />
           </div>
         </CardContent>
