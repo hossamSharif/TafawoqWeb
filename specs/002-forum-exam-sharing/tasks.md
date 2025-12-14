@@ -95,15 +95,15 @@
 
 ### Implementation for User Story 2
 
-- [ ] T039 [P] [US2] Create PostCard component in src/components/forum/PostCard.tsx
-- [ ] T040 [P] [US2] Create PostList component with infinite scroll in src/components/forum/PostList.tsx
-- [ ] T041 [P] [US2] Create ReactionButtons component in src/components/forum/ReactionButtons.tsx
-- [ ] T042 [US2] Create GET /api/forum/posts route with cursor pagination, sorting, search in src/app/api/forum/posts/route.ts
-- [ ] T043 [US2] Create forum feed page in src/app/(main)/forum/page.tsx
-- [ ] T044 [US2] Create POST /api/forum/posts/[id]/reactions route for adding reactions in src/app/api/forum/posts/[id]/reactions/route.ts
-- [ ] T045 [US2] Create DELETE /api/forum/posts/[id]/reactions/[type] route for removing reactions in src/app/api/forum/posts/[id]/reactions/[type]/route.ts
-- [ ] T046 [US2] Create GET /api/forum/posts/[id] route for single post detail in src/app/api/forum/posts/[id]/route.ts
-- [ ] T047 [US2] Create post detail page in src/app/(main)/forum/post/[id]/page.tsx
+- [x] T039 [P] [US2] Create PostCard component in src/components/forum/PostCard.tsx
+- [x] T040 [P] [US2] Create PostList component with infinite scroll in src/components/forum/PostList.tsx
+- [x] T041 [P] [US2] Create ReactionButtons component in src/components/forum/ReactionButtons.tsx
+- [x] T042 [US2] Create GET /api/forum/posts route with cursor pagination, sorting, search in src/app/api/forum/posts/route.ts
+- [x] T043 [US2] Create forum feed page in src/app/(main)/forum/page.tsx
+- [x] T044 [US2] Create POST /api/forum/posts/[id]/reactions route for adding reactions in src/app/api/forum/posts/[id]/reactions/route.ts
+- [x] T045 [US2] Create DELETE /api/forum/posts/[id]/reactions/[type] route for removing reactions in src/app/api/forum/posts/[id]/reactions/[type]/route.ts
+- [x] T046 [US2] Create GET /api/forum/posts/[id] route for single post detail in src/app/api/forum/posts/[id]/route.ts
+- [x] T047 [US2] Create post detail page in src/app/(main)/forum/post/[id]/page.tsx
 
 **Checkpoint**: User Story 2 complete - users can browse forum and react to posts
 
@@ -117,12 +117,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T048 [P] [US3] Create CreatePostForm component in src/components/forum/CreatePostForm.tsx
-- [ ] T049 [US3] Extend POST /api/forum/posts to handle text post type in src/app/api/forum/posts/route.ts
-- [ ] T050 [US3] Create create post page in src/app/(main)/forum/create/page.tsx
-- [ ] T051 [US3] Create PUT /api/forum/posts/[id] route for editing posts in src/app/api/forum/posts/[id]/route.ts
-- [ ] T052 [US3] Create DELETE /api/forum/posts/[id] route for deleting posts in src/app/api/forum/posts/[id]/route.ts
-- [ ] T053 [US3] Add edit/delete options to PostCard for author's own posts
+- [x] T048 [P] [US3] Create CreatePostForm component in src/components/forum/CreatePostForm.tsx
+- [x] T049 [US3] Extend POST /api/forum/posts to handle text post type in src/app/api/forum/posts/route.ts
+- [x] T050 [US3] Create create post page in src/app/(main)/forum/create/page.tsx
+- [x] T051 [US3] Create PUT /api/forum/posts/[id] route for editing posts in src/app/api/forum/posts/[id]/route.ts
+- [x] T052 [US3] Create DELETE /api/forum/posts/[id] route for deleting posts in src/app/api/forum/posts/[id]/route.ts
+- [x] T053 [US3] Add edit/delete options to PostCard for author's own posts
 
 **Checkpoint**: User Story 3 complete - users can create, edit, and delete text posts
 
@@ -136,15 +136,15 @@
 
 ### Implementation for User Story 4
 
-- [ ] T054 [P] [US4] Create CommentItem component in src/components/forum/CommentItem.tsx
-- [ ] T055 [P] [US4] Create CommentSection component with replies in src/components/forum/CommentSection.tsx
-- [ ] T056 [US4] Create GET /api/forum/posts/[id]/comments route in src/app/api/forum/posts/[id]/comments/route.ts
-- [ ] T057 [US4] Create POST /api/forum/posts/[id]/comments route in src/app/api/forum/posts/[id]/comments/route.ts
-- [ ] T058 [US4] Create PUT /api/forum/comments/[id] route for editing comments in src/app/api/forum/comments/[id]/route.ts
-- [ ] T059 [US4] Create DELETE /api/forum/comments/[id] route for deleting comments in src/app/api/forum/comments/[id]/route.ts
-- [ ] T060 [US4] Create POST /api/forum/comments/[id]/like route in src/app/api/forum/comments/[id]/like/route.ts
-- [ ] T061 [US4] Create DELETE /api/forum/comments/[id]/like route in src/app/api/forum/comments/[id]/like/route.ts
-- [ ] T062 [US4] Integrate CommentSection into post detail page src/app/(main)/forum/post/[id]/page.tsx
+- [x] T054 [P] [US4] Create CommentItem component in src/components/forum/CommentItem.tsx
+- [x] T055 [P] [US4] Create CommentSection component with replies in src/components/forum/CommentSection.tsx
+- [x] T056 [US4] Create GET /api/forum/posts/[id]/comments route in src/app/api/forum/posts/[id]/comments/route.ts
+- [x] T057 [US4] Create POST /api/forum/posts/[id]/comments route in src/app/api/forum/posts/[id]/comments/route.ts
+- [x] T058 [US4] Create PUT /api/forum/comments/[id] route for editing comments in src/app/api/forum/comments/[id]/route.ts
+- [x] T059 [US4] Create DELETE /api/forum/comments/[id] route for deleting comments in src/app/api/forum/comments/[id]/route.ts
+- [x] T060 [US4] Create POST /api/forum/comments/[id]/like route in src/app/api/forum/comments/[id]/like/route.ts
+- [x] T061 [US4] Create DELETE /api/forum/comments/[id]/like route in src/app/api/forum/comments/[id]/like/route.ts
+- [x] T062 [US4] Integrate CommentSection into post detail page src/app/(main)/forum/post/[id]/page.tsx
 
 **Checkpoint**: User Story 4 complete - users can comment and reply on posts
 
