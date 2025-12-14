@@ -11,6 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.21.0",
     "@sentry/nextjs": "^8.45.0",
     "@stripe/stripe-js": "^2.4.0",

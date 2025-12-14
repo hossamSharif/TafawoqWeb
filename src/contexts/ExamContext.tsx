@@ -37,6 +37,12 @@ export interface ExamContextValue extends UseExamSessionReturn {
     questionIndex: number,
     selectedAnswer: number
   ) => Promise<AnswerResult | null>
+  /** Whether batch is currently loading (prefetching) */
+  isLoadingBatch: boolean
+  /** Error from batch loading */
+  batchError: string | null
+  /** Number of generated batches */
+  generatedBatches: number
 }
 
 const ExamContext = createContext<ExamContextValue | null>(null)
@@ -64,12 +70,21 @@ export function ExamProvider({
   const [isTimerRunning, setTimerRunning] = useState(false)
   const questionStartTimeRef = useRef<number>(Date.now())
 
+  // Batch loading state
+  const [isLoadingBatch, setIsLoadingBatch] = useState(false)
+  const [batchError, setBatchError] = useState<string | null>(null)
+  const [generatedBatches, setGeneratedBatches] = useState(0)
+
   // Core exam session hook
   const examSession = useExamSession({
     sessionId,
     onSessionLoad: (session) => {
       setElapsedTime(session.timeSpentSeconds || 0)
       setTimerRunning(session.status === 'in_progress')
+      // Set initial generated batches from session
+      if ('generatedBatches' in session) {
+        setGeneratedBatches((session as ExamSessionData & { generatedBatches?: number }).generatedBatches || 1)
+      }
     },
     onSessionComplete: (session) => {
       setTimerRunning(false)
@@ -161,6 +176,10 @@ export function ExamProvider({
     isAutoSaving: autoSave.isSaving,
     isOffline: autoSave.isOffline,
     submitAnswerWithAutoSave,
+    // Batch loading state
+    isLoadingBatch,
+    batchError,
+    generatedBatches,
   }
 
   return <ExamContext.Provider value={value}>{children}</ExamContext.Provider>

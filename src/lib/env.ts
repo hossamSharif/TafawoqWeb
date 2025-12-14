@@ -11,7 +11,12 @@ const serverEnvSchema = {
   STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+  // Batch generation configuration
+  EXAM_BATCH_SIZE: process.env.EXAM_BATCH_SIZE,
+  PRACTICE_BATCH_SIZE: process.env.PRACTICE_BATCH_SIZE,
+  PREFETCH_THRESHOLD: process.env.PREFETCH_THRESHOLD,
 }
 
 // Client-safe environment variables (NEXT_PUBLIC_ prefix)
@@ -42,8 +47,16 @@ export const serverEnv = {
   openrouter: {
     apiKey: serverEnvSchema.OPENROUTER_API_KEY || '',
   },
+  anthropic: {
+    apiKey: serverEnvSchema.ANTHROPIC_API_KEY || '',
+  },
   sentry: {
     authToken: serverEnvSchema.SENTRY_AUTH_TOKEN || '',
+  },
+  batchGeneration: {
+    examBatchSize: parseInt(serverEnvSchema.EXAM_BATCH_SIZE || '10', 10),
+    practiceBatchSize: parseInt(serverEnvSchema.PRACTICE_BATCH_SIZE || '5', 10),
+    prefetchThreshold: parseFloat(serverEnvSchema.PREFETCH_THRESHOLD || '0.7'),
   },
 }
 

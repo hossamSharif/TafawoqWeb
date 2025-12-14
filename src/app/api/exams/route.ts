@@ -1,12 +1,24 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { generateFullExam, type AcademicTrack } from '@/lib/gemini'
-import type { Question } from '@/types/question'
+import { generateQuestionBatch } from '@/lib/anthropic'
+import type { GenerationContext } from '@/lib/anthropic/types'
+
+type AcademicTrack = 'scientific' | 'literary'
+
+/**
+ * Determine starting section for first batch based on track
+ * Scientific: Start with quantitative (more quant questions)
+ * Literary: Start with verbal (more verbal questions)
+ */
+function getFirstBatchSection(track: AcademicTrack): 'quantitative' | 'verbal' {
+  return track === 'scientific' ? 'quantitative' : 'verbal'
+}
 
 /**
  * POST /api/exams - Create new exam session
- * Generates 96 questions via Gemini and creates session record
+ * Generates first batch of 10 questions via Claude and creates session record
+ * Remaining batches are prefetched as user progresses (see /api/exams/[sessionId]/questions)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -64,33 +76,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate exam questions using Gemini
     const track = profile.academic_track as AcademicTrack
-    let questions: Question[]
 
-    try {
-      questions = await generateFullExam({ track, totalQuestions: 96 })
-    } catch (genError) {
-      console.error('Question generation error:', genError)
-      return NextResponse.json(
-        { error: 'فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.' },
-        { status: 500 }
-      )
-    }
-
-    // Create exam session
+    // Create exam session first (with generation_in_progress = true to prevent concurrent generation)
     const { data: session, error: sessionError } = await supabase
       .from('exam_sessions')
       .insert({
         user_id: user.id,
         track,
         status: 'in_progress',
-        total_questions: questions.length,
+        total_questions: 96,
         questions_answered: 0,
-        questions: questions as unknown as Record<string, unknown>[],
+        questions: [],
         start_time: new Date().toISOString(),
         time_spent_seconds: 0,
         time_paused_seconds: 0,
+        // New batch generation fields
+        generated_batches: 0,
+        generation_context: { generatedIds: [], lastBatchIndex: -1 },
+        generation_in_progress: true,
       })
       .select()
       .single()
@@ -102,6 +106,68 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Generate first batch of 10 questions using Claude
+    const firstSection = getFirstBatchSection(track)
+    const emptyContext: GenerationContext = { generatedIds: [], lastBatchIndex: -1 }
+
+    let batchResponse
+    try {
+      batchResponse = await generateQuestionBatch(
+        {
+          sessionId: session.id,
+          batchIndex: 0,
+          batchSize: 10,
+          section: firstSection,
+          track,
+        },
+        emptyContext
+      )
+    } catch (genError) {
+      console.error('Question generation error:', genError)
+
+      // Release lock on failure
+      await supabase
+        .from('exam_sessions')
+        .update({ generation_in_progress: false })
+        .eq('id', session.id)
+
+      return NextResponse.json(
+        { error: 'فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.' },
+        { status: 500 }
+      )
+    }
+
+    const { questions, updatedContext, usage, meta } = batchResponse
+
+    // Update session with generated questions and release lock
+    const { error: updateError } = await supabase
+      .from('exam_sessions')
+      .update({
+        questions: questions as unknown as Record<string, unknown>[],
+        generated_batches: 1,
+        generation_context: updatedContext,
+        generation_in_progress: false,
+      })
+      .eq('id', session.id)
+
+    if (updateError) {
+      console.error('Session update error:', updateError)
+      return NextResponse.json(
+        { error: 'فشل في حفظ الأسئلة' },
+        { status: 500 }
+      )
+    }
+
+    // Log generation metrics
+    console.log(`[Exam ${session.id}] First batch generated:`, {
+      questionCount: questions.length,
+      provider: meta.provider,
+      cacheHit: meta.cacheHit,
+      durationMs: meta.durationMs,
+      inputTokens: usage.inputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+    })
 
     // Return session with questions (without answers for security)
     const questionsWithoutAnswers = questions.map((q, index) => ({
@@ -121,10 +187,11 @@ export async function POST(request: NextRequest) {
       session: {
         id: session.id,
         status: session.status,
-        totalQuestions: session.total_questions,
-        questionsAnswered: session.questions_answered,
+        totalQuestions: 96,
+        questionsAnswered: 0,
         startTime: session.start_time,
         track: session.track,
+        generatedBatches: 1,
       },
       questions: questionsWithoutAnswers,
     })
