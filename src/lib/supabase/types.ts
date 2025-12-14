@@ -7,55 +7,144 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action_type: string
+          admin_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       answers: {
         Row: {
+          created_at: string
+          explanation_viewed: boolean | null
+          explanation_viewed_at: string | null
           id: string
-          user_id: string
-          session_id: string
-          session_type: string
+          is_correct: boolean
           question_id: string
           question_index: number
           selected_answer: number | null
-          is_correct: boolean
-          time_spent_seconds: number
-          explanation_viewed: boolean
-          explanation_viewed_at: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
           session_id: string
           session_type: string
+          time_spent_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          explanation_viewed?: boolean | null
+          explanation_viewed_at?: string | null
+          id?: string
+          is_correct: boolean
           question_id: string
           question_index: number
           selected_answer?: number | null
-          is_correct: boolean
-          time_spent_seconds: number
-          explanation_viewed?: boolean
-          explanation_viewed_at?: string | null
-          created_at?: string | null
-          updated_at?: string | null
+          session_id: string
+          session_type: string
+          time_spent_seconds?: number | null
+          updated_at?: string
+          user_id: string
         }
         Update: {
+          created_at?: string
+          explanation_viewed?: boolean | null
+          explanation_viewed_at?: string | null
           id?: string
-          user_id?: string
-          session_id?: string
-          session_type?: string
+          is_correct?: boolean
           question_id?: string
           question_index?: number
           selected_answer?: number | null
-          is_correct?: boolean
-          time_spent_seconds?: number
-          explanation_viewed?: boolean
-          explanation_viewed_at?: string | null
-          created_at?: string | null
-          updated_at?: string | null
+          session_id?: string
+          session_type?: string
+          time_spent_seconds?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
+      }
+      comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_edited: boolean | null
+          like_count: number | null
+          parent_id: string | null
+          post_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_edited?: boolean | null
+          like_count?: number | null
+          parent_id?: string | null
+          post_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_edited?: boolean | null
+          like_count?: number | null
+          parent_id?: string | null
+          post_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exam_results: {
         Row: {
@@ -106,70 +195,180 @@ export type Database = {
       }
       exam_sessions: {
         Row: {
-          completed_at: string | null
           created_at: string | null
           end_time: string | null
+          generated_batches: number | null
+          generation_context: Json | null
+          generation_in_progress: boolean | null
           id: string
           overall_score: number | null
           quantitative_score: number | null
           questions: Json | null
           questions_answered: number | null
           start_time: string | null
-          started_at: string | null
           status: string
+          strengths: Json | null
           time_paused_seconds: number | null
           time_spent_seconds: number | null
           total_questions: number
           track: string | null
+          updated_at: string | null
           user_id: string
           verbal_score: number | null
+          weaknesses: Json | null
         }
         Insert: {
-          completed_at?: string | null
           created_at?: string | null
           end_time?: string | null
+          generated_batches?: number | null
+          generation_context?: Json | null
+          generation_in_progress?: boolean | null
           id?: string
           overall_score?: number | null
           quantitative_score?: number | null
           questions?: Json | null
           questions_answered?: number | null
           start_time?: string | null
-          started_at?: string | null
           status?: string
+          strengths?: Json | null
           time_paused_seconds?: number | null
           time_spent_seconds?: number | null
           total_questions?: number
           track?: string | null
+          updated_at?: string | null
           user_id: string
           verbal_score?: number | null
+          weaknesses?: Json | null
         }
         Update: {
-          completed_at?: string | null
           created_at?: string | null
           end_time?: string | null
+          generated_batches?: number | null
+          generation_context?: Json | null
+          generation_in_progress?: boolean | null
           id?: string
           overall_score?: number | null
           quantitative_score?: number | null
           questions?: Json | null
           questions_answered?: number | null
           start_time?: string | null
-          started_at?: string | null
           status?: string
+          strengths?: Json | null
           time_paused_seconds?: number | null
           time_spent_seconds?: number | null
           total_questions?: number
           track?: string | null
+          updated_at?: string | null
           user_id?: string
           verbal_score?: number | null
+          weaknesses?: Json | null
         }
         Relationships: []
+      }
+      feature_toggles: {
+        Row: {
+          description: string | null
+          feature_name: string
+          id: string
+          is_enabled: boolean | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          feature_name: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          feature_name?: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      forum_posts: {
+        Row: {
+          author_id: string
+          body: string | null
+          comment_count: number | null
+          completion_count: number | null
+          created_at: string | null
+          id: string
+          is_edited: boolean | null
+          like_count: number | null
+          love_count: number | null
+          post_type: string
+          shared_exam_id: string | null
+          shared_practice_id: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          body?: string | null
+          comment_count?: number | null
+          completion_count?: number | null
+          created_at?: string | null
+          id?: string
+          is_edited?: boolean | null
+          like_count?: number | null
+          love_count?: number | null
+          post_type: string
+          shared_exam_id?: string | null
+          shared_practice_id?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          body?: string | null
+          comment_count?: number | null
+          completion_count?: number | null
+          created_at?: string | null
+          id?: string
+          is_edited?: boolean | null
+          like_count?: number | null
+          love_count?: number | null
+          post_type?: string
+          shared_exam_id?: string | null
+          shared_practice_id?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_posts_shared_exam_id_fkey"
+            columns: ["shared_exam_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_posts_shared_practice_id_fkey"
+            columns: ["shared_practice_id"]
+            isOneToOne: false
+            referencedRelation: "practice_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_preferences: {
         Row: {
           created_at: string | null
           exam_reminders_enabled: boolean | null
+          forum_email_enabled: boolean | null
           id: string
           milestone_notifications_enabled: boolean | null
+          new_exam_email_enabled: boolean | null
           push_token: string | null
           updated_at: string | null
           user_id: string
@@ -177,8 +376,10 @@ export type Database = {
         Insert: {
           created_at?: string | null
           exam_reminders_enabled?: boolean | null
+          forum_email_enabled?: boolean | null
           id?: string
           milestone_notifications_enabled?: boolean | null
+          new_exam_email_enabled?: boolean | null
           push_token?: string | null
           updated_at?: string | null
           user_id: string
@@ -186,10 +387,48 @@ export type Database = {
         Update: {
           created_at?: string | null
           exam_reminders_enabled?: boolean | null
+          forum_email_enabled?: boolean | null
           id?: string
           milestone_notifications_enabled?: boolean | null
+          new_exam_email_enabled?: boolean | null
           push_token?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          target_id: string | null
+          target_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          target_id?: string | null
+          target_type?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          target_id?: string | null
+          target_type?: string | null
+          title?: string
+          type?: string
           user_id?: string
         }
         Relationships: []
@@ -244,8 +483,11 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           difficulty: string
+          generated_batches: number | null
+          generation_context: Json | null
           id: string
           question_count: number
+          questions: Json | null
           section: string
           started_at: string | null
           status: string
@@ -257,8 +499,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           difficulty: string
+          generated_batches?: number | null
+          generation_context?: Json | null
           id?: string
           question_count: number
+          questions?: Json | null
           section: string
           started_at?: string | null
           status?: string
@@ -270,8 +515,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           difficulty?: string
+          generated_batches?: number | null
+          generation_context?: Json | null
           id?: string
           question_count?: number
+          questions?: Json | null
           section?: string
           started_at?: string | null
           status?: string
@@ -357,6 +605,124 @@ export type Database = {
         }
         Relationships: []
       }
+      reactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          reaction_type: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reaction_type: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reaction_type?: string
+          target_id?: string
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string | null
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      shared_exam_completions: {
+        Row: {
+          created_at: string | null
+          exam_session_id: string | null
+          id: string
+          post_id: string
+          practice_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          exam_session_id?: string | null
+          id?: string
+          post_id: string
+          practice_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          exam_session_id?: string | null
+          id?: string
+          post_id?: string
+          practice_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_exam_completions_exam_session_id_fkey"
+            columns: ["exam_session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_exam_completions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_exam_completions_practice_session_id_fkey"
+            columns: ["practice_session_id"]
+            isOneToOne: false
+            referencedRelation: "practice_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_analytics: {
         Row: {
           id: string
@@ -402,11 +768,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          created_at: string | null
+          credit_history: Json | null
+          exam_credits: number | null
+          id: string
+          last_awarded_milestone: number | null
+          practice_credits: number | null
+          total_completions: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credit_history?: Json | null
+          exam_credits?: number | null
+          id?: string
+          last_awarded_milestone?: number | null
+          practice_credits?: number | null
+          total_completions?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credit_history?: Json | null
+          exam_credits?: number | null
+          id?: string
+          last_awarded_milestone?: number | null
+          practice_credits?: number | null
+          total_completions?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           academic_track: string
           created_at: string | null
+          display_name: string | null
           id: string
+          is_admin: boolean | null
+          is_banned: boolean | null
+          is_disabled: boolean | null
           last_active_at: string | null
           onboarding_completed: boolean | null
           profile_picture_url: string | null
@@ -417,7 +823,11 @@ export type Database = {
         Insert: {
           academic_track: string
           created_at?: string | null
+          display_name?: string | null
           id?: string
+          is_admin?: boolean | null
+          is_banned?: boolean | null
+          is_disabled?: boolean | null
           last_active_at?: string | null
           onboarding_completed?: boolean | null
           profile_picture_url?: string | null
@@ -428,7 +838,11 @@ export type Database = {
         Update: {
           academic_track?: string
           created_at?: string | null
+          display_name?: string | null
           id?: string
+          is_admin?: boolean | null
+          is_banned?: boolean | null
+          is_disabled?: boolean | null
           last_active_at?: string | null
           onboarding_completed?: boolean | null
           profile_picture_url?: string | null
@@ -508,23 +922,9 @@ export type Database = {
           total_questions: number
         }[]
       }
-      get_practice_history: {
-        Args: { p_user_id: string }
-        Returns: {
-          id: string
-          section: string
-          categories: string[]
-          difficulty: string
-          question_count: number
-          status: string
-          started_at: string
-          completed_at: string | null
-          time_spent_seconds: number | null
-          practice_results: Json | null
-        }[]
-      }
       has_premium_access: { Args: { check_user_id: string }; Returns: boolean }
-      increment_practice_hours: { Args: { p_user_id: string; p_hours: number }; Returns: void }
+      is_user_admin: { Args: { check_user_id: string }; Returns: boolean }
+      is_user_banned: { Args: { check_user_id: string }; Returns: boolean }
       search_similar_questions: {
         Args: {
           p_difficulty: string
@@ -550,23 +950,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database["public"]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof Database
+  schema: keyof DatabaseWithoutInternals
 }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -584,16 +986,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof Database
+  schema: keyof DatabaseWithoutInternals
 }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -609,16 +1011,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof Database
+  schema: keyof DatabaseWithoutInternals
 }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -634,16 +1036,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof Database
+  schema: keyof DatabaseWithoutInternals
 }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -651,16 +1053,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof Database
+  schema: keyof DatabaseWithoutInternals
 }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

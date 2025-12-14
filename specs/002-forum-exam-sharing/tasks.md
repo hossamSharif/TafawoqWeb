@@ -46,22 +46,22 @@
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [ ] T016 Apply migration: Create RLS policies for forum_posts table via mcp__supabase__apply_migration
-- [ ] T017 Apply migration: Create RLS policies for comments table via mcp__supabase__apply_migration
-- [ ] T018 Apply migration: Create RLS policies for reactions table via mcp__supabase__apply_migration
-- [ ] T019 Apply migration: Create RLS policies for notifications table via mcp__supabase__apply_migration
-- [ ] T020 Apply migration: Create RLS policies for reports table via mcp__supabase__apply_migration
-- [ ] T021 Apply migration: Create RLS policies for admin_audit_log and feature_toggles via mcp__supabase__apply_migration
-- [ ] T022 Apply migration: Create database indexes for forum_posts, comments, reactions via mcp__supabase__apply_migration
-- [ ] T023 Apply migration: Create trigger functions increment_reaction_count, decrement_reaction_count via mcp__supabase__apply_migration
-- [ ] T024 Apply migration: Create trigger function increment_comment_count via mcp__supabase__apply_migration
-- [ ] T025 Apply migration: Create trigger function check_reward_milestone via mcp__supabase__apply_migration
-- [ ] T026 Apply migration: Seed default feature_toggles (forum_enabled, rewards_enabled, etc.) via mcp__supabase__apply_migration
-- [ ] T027 [P] Create forum Supabase queries helper in src/lib/forum/queries.ts
-- [ ] T028 [P] Create notifications service in src/lib/notifications/service.ts
-- [ ] T029 [P] Create rewards calculator in src/lib/rewards/calculator.ts
-- [ ] T030 [P] Create admin queries helper in src/lib/admin/queries.ts
-- [ ] T031 [P] Create admin audit logging utility in src/lib/admin/audit.ts
+- [x] T016 Apply migration: Create RLS policies for forum_posts table via mcp__supabase__apply_migration
+- [x] T017 Apply migration: Create RLS policies for comments table via mcp__supabase__apply_migration
+- [x] T018 Apply migration: Create RLS policies for reactions table via mcp__supabase__apply_migration
+- [x] T019 Apply migration: Create RLS policies for notifications table via mcp__supabase__apply_migration
+- [x] T020 Apply migration: Create RLS policies for reports table via mcp__supabase__apply_migration
+- [x] T021 Apply migration: Create RLS policies for admin_audit_log and feature_toggles via mcp__supabase__apply_migration
+- [x] T022 Apply migration: Create database indexes for forum_posts, comments, reactions via mcp__supabase__apply_migration
+- [x] T023 Apply migration: Create trigger functions increment_reaction_count, decrement_reaction_count via mcp__supabase__apply_migration
+- [x] T024 Apply migration: Create trigger function increment_comment_count via mcp__supabase__apply_migration
+- [x] T025 Apply migration: Create trigger function check_reward_milestone via mcp__supabase__apply_migration
+- [x] T026 Apply migration: Seed default feature_toggles (forum_enabled, rewards_enabled, etc.) via mcp__supabase__apply_migration
+- [x] T027 [P] Create forum Supabase queries helper in src/lib/forum/queries.ts
+- [x] T028 [P] Create notifications service in src/lib/notifications/service.ts
+- [x] T029 [P] Create rewards calculator in src/lib/rewards/calculator.ts
+- [x] T030 [P] Create admin queries helper in src/lib/admin/queries.ts
+- [x] T031 [P] Create admin audit logging utility in src/lib/admin/audit.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
