@@ -75,13 +75,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T032 [P] [US1] Create ShareExamModal component in src/components/forum/ShareExamModal.tsx
-- [ ] T033 [P] [US1] Create auto-description generator utility for exam metadata in src/lib/forum/description-generator.ts
-- [ ] T034 [US1] Create POST /api/forum/posts route for creating exam share posts in src/app/api/forum/posts/route.ts
-- [ ] T035 [US1] Add share button to exam/practice history (extend existing exam history component)
-- [ ] T036 [US1] Create shared content dashboard showing completion stats in src/components/forum/SharingStats.tsx
-- [ ] T037 [US1] Create POST /api/forum/posts/[id]/start-exam route to start a shared exam in src/app/api/forum/posts/[id]/start-exam/route.ts
-- [ ] T038 [US1] Track shared exam completions and update completion_count via database trigger
+- [x] T032 [P] [US1] Create ShareExamModal component in src/components/forum/ShareExamModal.tsx
+- [x] T033 [P] [US1] Create auto-description generator utility for exam metadata in src/lib/forum/description-generator.ts
+- [x] T034 [US1] Create POST /api/forum/posts route for creating exam share posts in src/app/api/forum/posts/route.ts
+- [x] T035 [US1] Add share button to exam/practice history (extend existing exam history component)
+- [x] T036 [US1] Create shared content dashboard showing completion stats in src/components/forum/SharingStats.tsx
+- [x] T037 [US1] Create POST /api/forum/posts/[id]/start-exam route to start a shared exam in src/app/api/forum/posts/[id]/start-exam/route.ts
+- [x] T038 [US1] Track shared exam completions and update completion_count via database trigger
 
 **Checkpoint**: User Story 1 complete - users can share exams and others can start them
 
