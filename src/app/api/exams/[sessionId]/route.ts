@@ -8,6 +8,33 @@ interface RouteParams {
   params: Promise<{ sessionId: string }>
 }
 
+interface ExamSessionRow {
+  id: string
+  user_id: string
+  track: 'scientific' | 'literary'
+  status: 'in_progress' | 'completed' | 'abandoned'
+  questions: Question[]
+  total_questions: number
+  questions_answered: number
+  start_time: string
+  end_time?: string
+  time_spent_seconds?: number
+  time_paused_seconds?: number
+  verbal_score?: number
+  quantitative_score?: number
+  overall_score?: number
+  generated_batches?: number
+  generation_context?: { generatedIds: string[]; lastBatchIndex: number }
+}
+
+interface AnswerRow {
+  question_id: string
+  question_index: number
+  selected_answer: number
+  is_correct: boolean
+  time_spent_seconds?: number
+}
+
 /**
  * GET /api/exams/[sessionId] - Get exam session details
  */
@@ -79,6 +106,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     )
 
+    // T032-T033: Return all generated questions for session resume
     return NextResponse.json({
       session: {
         id: session.id,
@@ -93,6 +121,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         verbalScore: session.verbal_score,
         quantitativeScore: session.quantitative_score,
         overallScore: session.overall_score,
+        // Include batch generation info for session resume
+        generatedBatches: session.generated_batches || Math.ceil(questions.length / 10),
+        generationContext: session.generation_context || { generatedIds: [], lastBatchIndex: -1 },
       },
       questions,
       answers: answers?.map((a) => ({

@@ -9,6 +9,7 @@ import {
   ExamTimer,
   ProgressIndicator,
   ExplanationPanel,
+  GenerationError,
 } from '@/components/exam'
 import { Button } from '@/components/ui/button'
 import { PageLoadingSkeleton } from '@/components/shared'
@@ -53,6 +54,10 @@ function ExamContent() {
     prevQuestion,
     completeExam,
     abandonExam,
+    batchError,
+    isLoadingBatch,
+    retryPrefetch,
+    clearBatchError,
   } = useExamContext()
 
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
@@ -344,6 +349,17 @@ function ExamContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* T043: Generation Error Toast for 503 responses */}
+      {batchError && (
+        <GenerationError
+          message={batchError}
+          onRetry={retryPrefetch}
+          onCancel={clearBatchError}
+          isRetrying={isLoadingBatch}
+          variant="toast"
+        />
+      )}
     </div>
   )
 }

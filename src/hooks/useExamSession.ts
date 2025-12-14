@@ -3,6 +3,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Question, QuestionCategory } from '@/types/question'
 
+/**
+ * Batch generation configuration
+ */
+const BATCH_SIZE = 10
+const PREFETCH_THRESHOLD = 0.7 // Prefetch at 70% through current batch
+const MAX_RETRIES = 3
+const RETRY_DELAYS = [1000, 2000, 4000] // Exponential backoff
+
 export interface ExamQuestion {
   id: string
   index: number
@@ -35,6 +43,8 @@ export interface ExamSessionData {
   verbalScore?: number
   quantitativeScore?: number
   overallScore?: number
+  /** Number of batches generated so far */
+  generatedBatches?: number
 }
 
 export interface AnswerResult {
@@ -77,6 +87,12 @@ export interface UseExamSessionReturn {
   isLoading: boolean
   /** Error message */
   error: string | null
+  /** Whether batch is currently being prefetched */
+  isPrefetching: boolean
+  /** Prefetch error (if any) */
+  prefetchError: string | null
+  /** Number of generated batches */
+  generatedBatches: number
   /** Start a new exam */
   startExam: () => Promise<void>
   /** Load existing session */
@@ -95,6 +111,8 @@ export interface UseExamSessionReturn {
   abandonExam: () => Promise<void>
   /** Sync timer with server */
   syncTimer: (timeSpent: number) => Promise<void>
+  /** Manually trigger prefetch for next batch */
+  prefetchNextBatch: () => Promise<void>
 }
 
 /**
@@ -112,6 +130,14 @@ export function useExamSession(
   const [answerResults, setAnswerResults] = useState<Map<number, AnswerResult>>(new Map())
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Prefetch state
+  const [isPrefetching, setIsPrefetching] = useState(false)
+  const [prefetchError, setPrefetchError] = useState<string | null>(null)
+  const [generatedBatches, setGeneratedBatches] = useState(0)
+
+  // Track which batches have been requested to prevent duplicate requests
+  const prefetchedBatchesRef = useRef<Set<number>>(new Set())
 
   const currentQuestion = questions[currentIndex] || null
 
@@ -137,6 +163,8 @@ export function useExamSession(
       setCurrentIndex(0)
       setAnsweredQuestions(new Set())
       setAnswerResults(new Map())
+      setGeneratedBatches(data.session.generatedBatches || 1)
+      prefetchedBatchesRef.current = new Set([0])
 
       onSessionLoad?.(data.session, data.questions)
     } catch (err) {
@@ -182,6 +210,14 @@ export function useExamSession(
 
       setAnsweredQuestions(answered)
       setAnswerResults(results)
+
+      // Set generated batches from session response
+      const loadedBatches = data.session.generatedBatches || Math.ceil(data.questions.length / BATCH_SIZE)
+      setGeneratedBatches(loadedBatches)
+      // Mark all loaded batches as already fetched
+      prefetchedBatchesRef.current = new Set(
+        Array.from({ length: loadedBatches }, (_, i) => i)
+      )
 
       // Find first unanswered question
       const firstUnanswered = data.questions.findIndex(
@@ -375,6 +411,109 @@ export function useExamSession(
     }
   }, [session])
 
+  // T029: Prefetch next batch of questions
+  const prefetchNextBatch = useCallback(async () => {
+    if (!session) return
+
+    const nextBatchIndex = generatedBatches
+
+    // Check if already prefetching or already have this batch
+    if (isPrefetching || prefetchedBatchesRef.current.has(nextBatchIndex)) {
+      return
+    }
+
+    // Max 10 batches for exams
+    if (nextBatchIndex >= 10) {
+      return
+    }
+
+    // Mark this batch as being fetched
+    prefetchedBatchesRef.current.add(nextBatchIndex)
+    setIsPrefetching(true)
+    setPrefetchError(null)
+
+    // T030: Retry with exponential backoff
+    let lastError: Error | null = null
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(`/api/exams/${session.id}/questions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batchIndex: nextBatchIndex }),
+        })
+
+        // Handle 409 Conflict (generation already in progress)
+        if (response.status === 409) {
+          console.log(`[Prefetch] Batch ${nextBatchIndex}: Generation in progress, retrying...`)
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]))
+            continue
+          }
+          throw new Error('جاري توليد الأسئلة بالفعل')
+        }
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'فشل في تحميل الأسئلة')
+        }
+
+        // T031: Merge prefetched questions into local state without UI disruption
+        setQuestions((prev) => {
+          // Avoid duplicates by checking existing question IDs
+          const existingIds = new Set(prev.map((q) => q.id))
+          const newQuestions = data.questions.filter(
+            (q: ExamQuestion) => !existingIds.has(q.id)
+          )
+          return [...prev, ...newQuestions]
+        })
+
+        setGeneratedBatches(data.meta.batchIndex + 1)
+
+        console.log(`[Prefetch] Batch ${nextBatchIndex} loaded:`, {
+          totalLoaded: data.meta.totalLoaded,
+          cacheHit: data.meta.cacheHit,
+        })
+
+        setIsPrefetching(false)
+        return
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err))
+        console.error(`[Prefetch] Attempt ${attempt + 1} failed:`, err)
+
+        // Wait before retry (except on last attempt)
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]))
+        }
+      }
+    }
+
+    // All retries failed
+    setIsPrefetching(false)
+    setPrefetchError(lastError?.message || 'فشل في تحميل الأسئلة')
+    // Remove from prefetched set so it can be retried
+    prefetchedBatchesRef.current.delete(nextBatchIndex)
+  }, [session, generatedBatches, isPrefetching])
+
+  // T028: Auto-prefetch when reaching 70% threshold of current batch
+  useEffect(() => {
+    if (!session || session.status !== 'in_progress') return
+    if (isPrefetching || generatedBatches >= 10) return
+
+    // Calculate position within current batch
+    const currentBatch = Math.floor(currentIndex / BATCH_SIZE)
+    const positionInBatch = currentIndex % BATCH_SIZE
+    const threshold = Math.floor(BATCH_SIZE * PREFETCH_THRESHOLD) // 7 for batch size 10
+
+    // Check if we've reached the threshold (e.g., question 7 of current batch)
+    // AND we don't have the next batch yet
+    if (positionInBatch >= threshold && generatedBatches <= currentBatch + 1) {
+      console.log(`[Prefetch] Triggering prefetch at question ${currentIndex} (position ${positionInBatch} in batch ${currentBatch})`)
+      prefetchNextBatch()
+    }
+  }, [currentIndex, session, generatedBatches, isPrefetching, prefetchNextBatch])
+
   // Auto-load session if ID provided
   useEffect(() => {
     if (sessionId) {
@@ -391,6 +530,9 @@ export function useExamSession(
     answerResults,
     isLoading,
     error,
+    isPrefetching,
+    prefetchError,
+    generatedBatches,
     startExam,
     loadSession,
     submitAnswer,
@@ -400,6 +542,7 @@ export function useExamSession(
     completeExam,
     abandonExam,
     syncTimer,
+    prefetchNextBatch,
   }
 }
 

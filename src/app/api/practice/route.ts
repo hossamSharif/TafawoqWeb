@@ -1,12 +1,18 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { generatePracticeQuestions } from '@/lib/gemini'
+import { generateQuestionBatch } from '@/lib/anthropic'
+import type { GenerationContext } from '@/lib/anthropic/types'
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 
 /**
+ * Practice batch size (smaller than exam)
+ */
+const PRACTICE_BATCH_SIZE = 5
+
+/**
  * POST /api/practice - Create new practice session
- * Generates questions via Gemini based on user-selected parameters
+ * T047: Generates first batch of questions via Claude on session creation
  */
 export async function POST(request: NextRequest) {
   try {
@@ -85,25 +91,7 @@ export async function POST(request: NextRequest) {
       finalQuestionCount = Math.max(5, Math.min(100, questionCount))
     }
 
-    // Generate practice questions using Gemini
-    let questions: Question[]
-
-    try {
-      questions = await generatePracticeQuestions(
-        section,
-        finalCategories[0], // Primary category for generation
-        difficulty,
-        finalQuestionCount
-      )
-    } catch (genError) {
-      console.error('Question generation error:', genError)
-      return NextResponse.json(
-        { error: 'فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.' },
-        { status: 500 }
-      )
-    }
-
-    // Create practice session
+    // T047: Create practice session first (with generation_in_progress = true to prevent concurrent generation)
     const { data: session, error: sessionError } = await supabase
       .from('practice_sessions')
       .insert({
@@ -111,10 +99,15 @@ export async function POST(request: NextRequest) {
         section,
         categories: finalCategories,
         difficulty,
-        question_count: questions.length,
+        question_count: 0, // Will update after first batch
+        questions: [],
         status: 'in_progress',
         started_at: new Date().toISOString(),
         time_spent_seconds: 0,
+        // T049: New batch generation fields
+        generated_batches: 0,
+        generation_context: { generatedIds: [], lastBatchIndex: -1 } as GenerationContext,
+        generation_in_progress: true,
       })
       .select()
       .single()
@@ -126,6 +119,66 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Generate first batch using Claude
+    const emptyContext: GenerationContext = { generatedIds: [], lastBatchIndex: -1 }
+    let batchResponse
+    try {
+      batchResponse = await generateQuestionBatch(
+        {
+          sessionId: session.id,
+          batchIndex: 0,
+          batchSize: PRACTICE_BATCH_SIZE,
+          section,
+          track: 'scientific', // Practice doesn't use track, default to scientific
+          categories: finalCategories,
+        },
+        emptyContext
+      )
+    } catch (genError) {
+      console.error('Question generation error:', genError)
+
+      // Release lock on failure
+      await supabase
+        .from('practice_sessions')
+        .update({ generation_in_progress: false })
+        .eq('id', session.id)
+
+      return NextResponse.json(
+        { error: 'فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.' },
+        { status: 500 }
+      )
+    }
+
+    const { questions, updatedContext, usage, meta } = batchResponse
+
+    // Update session with generated questions and release lock
+    const { error: updateError } = await supabase
+      .from('practice_sessions')
+      .update({
+        questions: questions as unknown as Record<string, unknown>[],
+        question_count: questions.length,
+        generated_batches: 1,
+        generation_context: updatedContext,
+        generation_in_progress: false,
+      })
+      .eq('id', session.id)
+
+    if (updateError) {
+      console.error('Session update error:', updateError)
+      return NextResponse.json(
+        { error: 'فشل في حفظ الأسئلة' },
+        { status: 500 }
+      )
+    }
+
+    // Log generation metrics
+    console.log(`[Practice ${session.id}] First batch generated:`, {
+      questionCount: questions.length,
+      provider: meta.provider,
+      cacheHit: meta.cacheHit,
+      durationMs: meta.durationMs,
+    })
 
     // Return session with questions (without answers for security)
     const questionsWithoutAnswers = questions.map((q, index) => ({
@@ -148,11 +201,11 @@ export async function POST(request: NextRequest) {
         section: session.section,
         categories: session.categories,
         difficulty: session.difficulty,
-        questionCount: session.question_count,
+        questionCount: questions.length,
         startedAt: session.started_at,
+        generatedBatches: 1,
       },
       questions: questionsWithoutAnswers,
-      _questionsWithAnswers: questions, // Store full questions for answer checking
       restrictions: {
         appliedFreeTierRestrictions: !isPremium,
         originalQuestionCount: questionCount,

@@ -87,16 +87,16 @@
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Create batch generation API route at src/app/api/exams/[sessionId]/questions/route.ts
-- [ ] T023 [US2] Implement batch validation (sequential index, session ownership) in questions/route.ts
-- [ ] T024 [US2] Implement generation lock acquisition (generation_in_progress=true) in questions/route.ts
-- [ ] T025 [US2] Call generateQuestionBatch and append to existing questions in questions/route.ts
-- [ ] T026 [US2] Release generation lock and update generation_context on completion
-- [ ] T027 [US2] Return 409 Conflict with Arabic error when generation already in progress
-- [ ] T028 [US2] Implement prefetch trigger logic at 70% threshold in src/hooks/useExamSession.ts
-- [ ] T029 [US2] Add prefetchNextBatch callback function in useExamSession.ts
-- [ ] T030 [US2] Handle 409 response with exponential backoff retry in useExamSession.ts
-- [ ] T031 [US2] Merge prefetched questions into local state without UI disruption
+- [X] T022 [US2] Create batch generation API route at src/app/api/exams/[sessionId]/questions/route.ts
+- [X] T023 [US2] Implement batch validation (sequential index, session ownership) in questions/route.ts
+- [X] T024 [US2] Implement generation lock acquisition (generation_in_progress=true) in questions/route.ts
+- [X] T025 [US2] Call generateQuestionBatch and append to existing questions in questions/route.ts
+- [X] T026 [US2] Release generation lock and update generation_context on completion
+- [X] T027 [US2] Return 409 Conflict with Arabic error when generation already in progress
+- [X] T028 [US2] Implement prefetch trigger logic at 70% threshold in src/hooks/useExamSession.ts
+- [X] T029 [US2] Add prefetchNextBatch callback function in useExamSession.ts
+- [X] T030 [US2] Handle 409 response with exponential backoff retry in useExamSession.ts
+- [X] T031 [US2] Merge prefetched questions into local state without UI disruption
 
 **Checkpoint**: User Story 2 complete - Questions load seamlessly ahead of user progress
 
@@ -110,11 +110,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Modify GET /api/exams/[sessionId]/route.ts to return all generated questions
-- [ ] T033 [US3] Include generatedBatches and generation_context in session response
-- [ ] T034 [US3] Update useExamSession.ts to initialize from existing questions on mount
-- [ ] T035 [US3] Calculate correct prefetch batch index from generation_context.lastBatchIndex
-- [ ] T036 [US3] Resume prefetch logic from current position without re-generating existing batches
+- [X] T032 [US3] Modify GET /api/exams/[sessionId]/route.ts to return all generated questions
+- [X] T033 [US3] Include generatedBatches and generation_context in session response
+- [X] T034 [US3] Update useExamSession.ts to initialize from existing questions on mount
+- [X] T035 [US3] Calculate correct prefetch batch index from generation_context.lastBatchIndex
+- [X] T036 [US3] Resume prefetch logic from current position without re-generating existing batches
 
 **Checkpoint**: User Story 3 complete - Exam resume loads existing questions, continues prefetching
 
@@ -128,13 +128,13 @@
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] Implement OpenRouter fallback function in src/lib/anthropic/client.ts
-- [ ] T038 [US4] Integrate fallback into generateQuestionBatch after 3 Claude retries
-- [ ] T039 [US4] Add cacheHit: false to BatchResponse meta when using fallback
-- [ ] T040 [US4] Log fallback usage for monitoring (provider switch event)
-- [ ] T041 [US4] Handle total failure (both providers) with GENERATION_UNAVAILABLE error
-- [ ] T042 [US4] Create error UI component with cancel/retry options in src/components/exam/GenerationError.tsx
-- [ ] T043 [US4] Display GenerationError component when 503 response received
+- [X] T037 [US4] Implement OpenRouter fallback function in src/lib/anthropic/client.ts
+- [X] T038 [US4] Integrate fallback into generateQuestionBatch after 3 Claude retries
+- [X] T039 [US4] Add cacheHit: false to BatchResponse meta when using fallback
+- [X] T040 [US4] Log fallback usage for monitoring (provider switch event)
+- [X] T041 [US4] Handle total failure (both providers) with GENERATION_UNAVAILABLE error
+- [X] T042 [US4] Create error UI component with cancel/retry options in src/components/exam/GenerationError.tsx
+- [X] T043 [US4] Display GenerationError component when 503 response received
 
 **Checkpoint**: User Story 4 complete - Rate limits handled gracefully with fallback
 
@@ -148,12 +148,12 @@
 
 ### Implementation for User Story 5
 
-- [ ] T044 [P] [US5] Create practice batch API route at src/app/api/practice/[sessionId]/questions/route.ts
-- [ ] T045 [US5] Implement batch generation with PRACTICE_BATCH_SIZE (default 5) in practice questions route
-- [ ] T046 [US5] Apply same generation lock pattern (generation_in_progress check) for practice
-- [ ] T047 [US5] Modify POST /api/practice/route.ts to generate first batch on session creation
-- [ ] T048 [US5] Update practice session hooks to use prefetch pattern (70% threshold)
-- [ ] T049 [US5] Store generation_context in practice_sessions table
+- [X] T044 [P] [US5] Create practice batch API route at src/app/api/practice/[sessionId]/questions/route.ts
+- [X] T045 [US5] Implement batch generation with PRACTICE_BATCH_SIZE (default 5) in practice questions route
+- [X] T046 [US5] Apply same generation lock pattern (generation_in_progress check) for practice
+- [X] T047 [US5] Modify POST /api/practice/route.ts to generate first batch on session creation
+- [X] T048 [US5] Update practice session hooks to use prefetch pattern (70% threshold)
+- [X] T049 [US5] Store generation_context in practice_sessions table
 
 **Checkpoint**: User Story 5 complete - Practice mode uses batched generation
 

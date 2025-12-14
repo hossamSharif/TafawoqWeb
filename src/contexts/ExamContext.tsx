@@ -43,6 +43,10 @@ export interface ExamContextValue extends UseExamSessionReturn {
   batchError: string | null
   /** Number of generated batches */
   generatedBatches: number
+  /** Manually retry prefetch */
+  retryPrefetch: () => Promise<void>
+  /** Clear batch error */
+  clearBatchError: () => void
 }
 
 const ExamContext = createContext<ExamContextValue | null>(null)
@@ -70,10 +74,8 @@ export function ExamProvider({
   const [isTimerRunning, setTimerRunning] = useState(false)
   const questionStartTimeRef = useRef<number>(Date.now())
 
-  // Batch loading state
-  const [isLoadingBatch, setIsLoadingBatch] = useState(false)
-  const [batchError, setBatchError] = useState<string | null>(null)
-  const [generatedBatches, setGeneratedBatches] = useState(0)
+  // Batch loading state - synced from examSession hook
+  const [batchErrorDismissed, setBatchErrorDismissed] = useState(false)
 
   // Core exam session hook
   const examSession = useExamSession({
@@ -81,10 +83,7 @@ export function ExamProvider({
     onSessionLoad: (session) => {
       setElapsedTime(session.timeSpentSeconds || 0)
       setTimerRunning(session.status === 'in_progress')
-      // Set initial generated batches from session
-      if ('generatedBatches' in session) {
-        setGeneratedBatches((session as ExamSessionData & { generatedBatches?: number }).generatedBatches || 1)
-      }
+      setBatchErrorDismissed(false)
     },
     onSessionComplete: (session) => {
       setTimerRunning(false)
@@ -162,6 +161,17 @@ export function ExamProvider({
     await examSession.completeExam(elapsedTime)
   }, [autoSave, examSession, elapsedTime])
 
+  // Retry prefetch callback
+  const retryPrefetch = useCallback(async () => {
+    setBatchErrorDismissed(false)
+    await examSession.prefetchNextBatch()
+  }, [examSession])
+
+  // Clear batch error
+  const clearBatchError = useCallback(() => {
+    setBatchErrorDismissed(true)
+  }, [])
+
   const value: ExamContextValue = {
     ...examSession,
     goToQuestion,
@@ -176,10 +186,12 @@ export function ExamProvider({
     isAutoSaving: autoSave.isSaving,
     isOffline: autoSave.isOffline,
     submitAnswerWithAutoSave,
-    // Batch loading state
-    isLoadingBatch,
-    batchError,
-    generatedBatches,
+    // Batch loading state from hook
+    isLoadingBatch: examSession.isPrefetching,
+    batchError: batchErrorDismissed ? null : examSession.prefetchError,
+    generatedBatches: examSession.generatedBatches,
+    retryPrefetch,
+    clearBatchError,
   }
 
   return <ExamContext.Provider value={value}>{children}</ExamContext.Provider>

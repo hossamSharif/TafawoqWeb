@@ -4,6 +4,14 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 
+/**
+ * T048: Practice batch generation configuration
+ */
+const PRACTICE_BATCH_SIZE = 5
+const PREFETCH_THRESHOLD = 0.7 // Prefetch at 70% through current batch
+const MAX_RETRIES = 3
+const RETRY_DELAYS = [1000, 2000, 4000]
+
 export interface PracticeSessionConfig {
   section: QuestionSection
   categories: QuestionCategory[]
@@ -21,6 +29,8 @@ export interface PracticeSession {
   startedAt: string
   completedAt?: string
   timeSpentSeconds: number
+  /** T048: Number of batches generated */
+  generatedBatches?: number
 }
 
 export interface PracticeAnswer {
@@ -39,6 +49,10 @@ export interface PracticeState {
   isLoading: boolean
   error: string | null
   elapsedTime: number
+  /** T048: Prefetch state */
+  isPrefetching: boolean
+  prefetchError: string | null
+  generatedBatches: number
 }
 
 export interface UsePracticeSessionReturn extends PracticeState {
@@ -63,6 +77,9 @@ export interface UsePracticeSessionReturn extends PracticeState {
   // Time tracking
   startTimer: () => void
   stopTimer: () => void
+
+  // T048: Prefetch
+  prefetchNextBatch: () => Promise<void>
 }
 
 export function usePracticeSession(): UsePracticeSessionReturn {
@@ -74,11 +91,16 @@ export function usePracticeSession(): UsePracticeSessionReturn {
     isLoading: false,
     error: null,
     elapsedTime: 0,
+    // T048: Prefetch state
+    isPrefetching: false,
+    prefetchError: null,
+    generatedBatches: 0,
   })
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const questionStartTimeRef = useRef<number>(Date.now())
   const fullQuestionsRef = useRef<Question[]>([]) // Store full questions with answers
+  const prefetchedBatchesRef = useRef<Set<number>>(new Set()) // T048: Track fetched batches
 
   // Start elapsed time timer
   const startTimer = useCallback(() => {
@@ -125,6 +147,9 @@ export function usePracticeSession(): UsePracticeSessionReturn {
       // Store full questions with answers for answer checking
       fullQuestionsRef.current = data._questionsWithAnswers || []
 
+      // T048: Initialize prefetch state
+      prefetchedBatchesRef.current = new Set([0])
+
       setState((prev) => ({
         ...prev,
         session: data.session,
@@ -134,6 +159,9 @@ export function usePracticeSession(): UsePracticeSessionReturn {
         isLoading: false,
         elapsedTime: 0,
         error: null,
+        generatedBatches: data.session.generatedBatches || 1,
+        isPrefetching: false,
+        prefetchError: null,
       }))
 
       questionStartTimeRef.current = Date.now()
@@ -170,13 +198,29 @@ export function usePracticeSession(): UsePracticeSessionReturn {
         answersMap.set(answer.questionId, answer)
       }
 
+      // T048: Initialize prefetch tracking for existing batches
+      const loadedBatches = sessionData.session.generatedBatches || 1
+      prefetchedBatchesRef.current = new Set(
+        Array.from({ length: loadedBatches }, (_, i) => i)
+      )
+
+      // Store full questions with answers if available
+      if (sessionData._questionsWithAnswers) {
+        fullQuestionsRef.current = sessionData._questionsWithAnswers
+      }
+
       setState((prev) => ({
         ...prev,
         session: sessionData.session,
+        questions: sessionData.questions || [],
         answers: answersMap,
         isLoading: false,
         elapsedTime: sessionData.session.timeSpentSeconds || 0,
         error: null,
+        // T048: Restore prefetch state
+        generatedBatches: loadedBatches,
+        isPrefetching: false,
+        prefetchError: null,
       }))
 
       if (sessionData.session.status === 'in_progress') {
@@ -339,6 +383,106 @@ export function usePracticeSession(): UsePracticeSessionReturn {
     return count
   }, [state.answers])
 
+  /**
+   * T048: Prefetch next batch of questions
+   * Called automatically at 70% threshold or manually on retry
+   */
+  const prefetchNextBatch = useCallback(async () => {
+    if (!state.session || state.session.status !== 'in_progress') return
+    if (state.isPrefetching) return
+
+    const nextBatchIndex = state.generatedBatches
+
+    // Don't prefetch if already fetched
+    if (prefetchedBatchesRef.current.has(nextBatchIndex)) return
+
+    setState((prev) => ({ ...prev, isPrefetching: true, prefetchError: null }))
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(`/api/practice/${state.session.id}/questions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batchIndex: nextBatchIndex }),
+        })
+
+        // Handle 409 Conflict (generation already in progress)
+        if (response.status === 409) {
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]))
+            continue
+          }
+          // Final attempt failed
+          setState((prev) => ({
+            ...prev,
+            isPrefetching: false,
+            prefetchError: 'جاري توليد الأسئلة بالفعل',
+          }))
+          return
+        }
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'فشل في تحميل الأسئلة')
+        }
+
+        // Mark batch as fetched
+        prefetchedBatchesRef.current.add(nextBatchIndex)
+
+        // Merge new questions without UI disruption
+        setState((prev) => ({
+          ...prev,
+          questions: [...prev.questions, ...data.questions],
+          generatedBatches: nextBatchIndex + 1,
+          isPrefetching: false,
+          prefetchError: null,
+        }))
+
+        // Store full questions with answers if provided
+        if (data._questionsWithAnswers) {
+          fullQuestionsRef.current = [
+            ...fullQuestionsRef.current,
+            ...data._questionsWithAnswers,
+          ]
+        }
+
+        return
+      } catch (error) {
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]))
+          continue
+        }
+
+        // Final attempt failed
+        const errorMessage = error instanceof Error ? error.message : 'فشل في تحميل الأسئلة'
+        setState((prev) => ({
+          ...prev,
+          isPrefetching: false,
+          prefetchError: errorMessage,
+        }))
+      }
+    }
+  }, [state.session, state.generatedBatches, state.isPrefetching])
+
+  /**
+   * T048: Auto-prefetch at 70% threshold
+   * For practice batch size of 5, triggers at question 3-4 (70% of 5 = 3.5)
+   */
+  useEffect(() => {
+    if (!state.session || state.session.status !== 'in_progress') return
+    if (state.questions.length === 0) return
+
+    const currentBatch = Math.floor(state.currentQuestionIndex / PRACTICE_BATCH_SIZE)
+    const positionInBatch = state.currentQuestionIndex % PRACTICE_BATCH_SIZE
+    const threshold = Math.floor(PRACTICE_BATCH_SIZE * PREFETCH_THRESHOLD) // 3
+
+    // Prefetch if at or past threshold and next batch not yet loaded
+    if (positionInBatch >= threshold && state.generatedBatches <= currentBatch + 1) {
+      prefetchNextBatch()
+    }
+  }, [state.currentQuestionIndex, state.session, state.questions.length, state.generatedBatches, prefetchNextBatch])
+
   return {
     ...state,
     createSession,
@@ -353,6 +497,8 @@ export function usePracticeSession(): UsePracticeSessionReturn {
     getCorrectCount,
     startTimer,
     stopTimer,
+    // T048: Prefetch
+    prefetchNextBatch,
   }
 }
 
