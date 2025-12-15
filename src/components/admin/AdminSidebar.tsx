@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { brand } from '@/lib/brand'
 import {
   LayoutDashboard,
   Users,
@@ -12,11 +13,13 @@ import {
   BarChart3,
   LogOut,
   Home,
+  Library,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/admin', label: 'لوحة التحكم', icon: LayoutDashboard, exact: true },
   { href: '/admin/users', label: 'المستخدمين', icon: Users },
+  { href: '/admin/content', label: 'إدارة المحتوى', icon: Library },
   { href: '/admin/moderation', label: 'الإشراف', icon: Shield },
   { href: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard },
   { href: '/admin/settings', label: 'الإعدادات', icon: Settings },
@@ -41,7 +44,7 @@ export function AdminSidebar() {
           </div>
           <div>
             <h2 className="font-bold text-lg">لوحة الإدارة</h2>
-            <p className="text-xs text-muted-foreground">تفوق</p>
+            <p className="text-xs text-muted-foreground">{brand.name.arabic}</p>
           </div>
         </div>
 

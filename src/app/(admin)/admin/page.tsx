@@ -15,6 +15,7 @@ import {
   Loader2,
   Activity,
   CreditCard,
+  Library,
 } from 'lucide-react'
 import type { DashboardResponse } from '@/lib/admin/types'
 
@@ -205,7 +206,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <Link href="/admin/moderation">
             <CardContent className="pt-6">
@@ -218,6 +219,27 @@ export default function AdminDashboardPage() {
                     <h3 className="font-semibold">مراجعة البلاغات</h3>
                     <p className="text-sm text-muted-foreground">
                       {data?.metrics.pending_reports} بلاغ معلق
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <Link href="/admin/content">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <Library className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">إدارة المحتوى</h3>
+                    <p className="text-sm text-muted-foreground">
+                      رفع وإدارة الاختبارات
                     </p>
                   </div>
                 </div>

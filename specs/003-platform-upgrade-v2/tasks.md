@@ -178,15 +178,15 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 ### Implementation for User Story 6
 
-- [ ] T065 [P] [US6] Create AdminContentUploader component in src/components/admin/AdminContentUploader.tsx (JSON file input with preview)
-- [ ] T066 [P] [US6] Create AdminContentPreview component in src/components/admin/AdminContentPreview.tsx (renders exam preview before saving)
-- [ ] T067 [P] [US6] Create AdminContentList component in src/components/admin/AdminContentList.tsx (lists admin-uploaded content)
-- [ ] T068 [US6] Create admin content upload page in src/app/(main)/admin/content/page.tsx
-- [ ] T069 [US6] Create POST /api/admin/content/validate route in src/app/api/admin/content/validate/route.ts (validates JSON against exam schema)
-- [ ] T070 [US6] Create POST /api/admin/content/upload route in src/app/api/admin/content/upload/route.ts (stores validated content as forum_post with is_admin_upload=true)
-- [ ] T071 [US6] Create GET /api/admin/content route in src/app/api/admin/content/route.ts (lists admin-uploaded content)
-- [ ] T072 [US6] Create DELETE /api/admin/content/[id] route in src/app/api/admin/content/[id]/route.ts (removes admin content)
-- [ ] T073 [US6] Add admin content section to admin dashboard in src/app/(main)/admin/page.tsx
+- [x] T065 [P] [US6] Create AdminContentUploader component in src/components/admin/AdminContentUploader.tsx (JSON file input with preview)
+- [x] T066 [P] [US6] Create AdminContentPreview component in src/components/admin/AdminContentPreview.tsx (renders exam preview before saving)
+- [x] T067 [P] [US6] Create AdminContentList component in src/components/admin/AdminContentList.tsx (lists admin-uploaded content)
+- [x] T068 [US6] Create admin content upload page in src/app/(admin)/admin/content/page.tsx
+- [x] T069 [US6] Create POST /api/admin/content/validate route in src/app/api/admin/content/validate/route.ts (validates JSON against exam schema)
+- [x] T070 [US6] Create POST /api/admin/content/upload route in src/app/api/admin/content/upload/route.ts (stores validated content as forum_post with is_admin_upload=true)
+- [x] T071 [US6] Create GET /api/admin/content route in src/app/api/admin/content/route.ts (lists admin-uploaded content)
+- [x] T072 [US6] Create DELETE /api/admin/content/[id] route in src/app/api/admin/content/[id]/route.ts (removes admin content)
+- [x] T073 [US6] Add admin content section to admin dashboard in src/app/(admin)/admin/page.tsx
 
 **Checkpoint**: User Story 6 complete - admins can upload and manage JSON content
 
