@@ -156,17 +156,14 @@ export function formatPriceWithOriginal(tier: SubscriptionTier): {
   current: string
   original: string | null
 } {
-  const plan = brand.subscription[tier]
   if (tier === 'free') {
     return { current: 'مجاناً', original: null }
   }
-  if (tier === 'premium' && plan.originalPrice) {
-    return {
-      current: `${plan.price} ${plan.currency}`,
-      original: `${plan.originalPrice} ${plan.currency}`,
-    }
+  const plan = brand.subscription.premium
+  return {
+    current: `${plan.price} ${plan.currency}`,
+    original: plan.originalPrice ? `${plan.originalPrice} ${plan.currency}` : null,
   }
-  return { current: `${plan.price} ${plan.currency}`, original: null }
 }
 
 export function getLimitText(

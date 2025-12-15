@@ -71,19 +71,19 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 ### Implementation for User Story 1
 
-- [ ] T023 [P] [US1] Create LibraryExamCard component in src/components/library/LibraryExamCard.tsx (displays title, section, question count, creator)
-- [ ] T024 [P] [US1] Create LibraryExamList component in src/components/library/LibraryExamList.tsx (grid/list view of exams)
-- [ ] T025 [P] [US1] Create LibraryAccessButton component in src/components/library/LibraryAccessButton.tsx (handles free/premium access flow)
-- [ ] T026 [P] [US1] Create LibraryEmptyState component in src/components/library/LibraryEmptyState.tsx (message when library is empty)
-- [ ] T027 [P] [US1] Create LibraryUpgradePrompt component in src/components/library/LibraryUpgradePrompt.tsx (shown when free user exceeds limit)
-- [ ] T028 [US1] Create library listing page in src/app/(main)/library/page.tsx (displays LibraryExamList with pagination)
-- [ ] T029 [US1] Create library exam detail page in src/app/(main)/library/[postId]/page.tsx (exam preview and access button)
-- [ ] T030 [US1] Create GET /api/library route in src/app/api/library/route.ts (fetches library exams using get_library_exams function)
-- [ ] T031 [US1] Create GET /api/library/[postId] route in src/app/api/library/[postId]/route.ts (fetches single library exam)
-- [ ] T032 [US1] Create POST /api/library/[postId]/access route in src/app/api/library/[postId]/access/route.ts (grants access with tier check)
-- [ ] T033 [US1] Create POST /api/library/[postId]/start route in src/app/api/library/[postId]/start/route.ts (starts exam session)
-- [ ] T034 [US1] Update exam completion flow to record library exam completions and prevent re-sharing of library exams
-- [ ] T035 [US1] Add library exam indicator to exam history in src/app/(main)/dashboard/page.tsx
+- [x] T023 [P] [US1] Create LibraryExamCard component in src/components/library/LibraryExamCard.tsx (displays title, section, question count, creator)
+- [x] T024 [P] [US1] Create LibraryExamList component in src/components/library/LibraryExamList.tsx (grid/list view of exams)
+- [x] T025 [P] [US1] Create LibraryAccessButton component in src/components/library/LibraryAccessButton.tsx (handles free/premium access flow)
+- [x] T026 [P] [US1] Create LibraryEmptyState component in src/components/library/LibraryEmptyState.tsx (message when library is empty)
+- [x] T027 [P] [US1] Create LibraryUpgradePrompt component in src/components/library/LibraryUpgradePrompt.tsx (shown when free user exceeds limit)
+- [x] T028 [US1] Create library listing page in src/app/(main)/library/page.tsx (displays LibraryExamList with pagination)
+- [x] T029 [US1] Create library exam detail page in src/app/(main)/library/[postId]/page.tsx (exam preview and access button)
+- [x] T030 [US1] Create GET /api/library route in src/app/api/library/route.ts (fetches library exams using get_library_exams function)
+- [x] T031 [US1] Create GET /api/library/[postId] route in src/app/api/library/[postId]/route.ts (fetches single library exam)
+- [x] T032 [US1] Create POST /api/library/[postId]/access route in src/app/api/library/[postId]/access/route.ts (grants access with tier check)
+- [x] T033 [US1] Create POST /api/library/[postId]/start route in src/app/api/library/[postId]/start/route.ts (starts exam session)
+- [x] T034 [US1] Update exam completion flow to record library exam completions and prevent re-sharing of library exams
+- [x] T035 [US1] Add library exam indicator to exam history in src/components/profile/ExamHistory.tsx
 
 **Checkpoint**: User Story 1 complete - users can browse library, access exams based on tier, and complete them
 

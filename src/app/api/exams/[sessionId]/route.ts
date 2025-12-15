@@ -375,6 +375,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
               completedByName: userProfile?.display_name || 'مستخدم',
             })
           }
+
+          // T034: Handle library exam completion - update library_access record
+          // This marks the library access as completed, which prevents re-sharing
+          if (session.is_library_exam) {
+            await supabase
+              .from('library_access')
+              .update({ exam_completed: true })
+              .eq('user_id', user.id)
+              .eq('post_id', session.shared_from_post_id)
+          }
         } catch (sharedExamError) {
           // Log but don't fail the main operation
           console.error('Failed to record shared exam completion:', sharedExamError)

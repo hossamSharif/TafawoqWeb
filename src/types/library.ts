@@ -3,13 +3,17 @@
  */
 
 import type { AcademicTrack } from './exam'
+import type { QuestionSection } from './question'
 
 export type LibraryAccessStatus = 'not_accessed' | 'accessed' | 'started' | 'completed'
+
+// Section type for library exams - can be verbal, quantitative, or mixed (null for both)
+export type LibraryExamSection = QuestionSection | 'mixed' | null
 
 export interface LibraryExam {
   postId: string
   title: string
-  section: AcademicTrack | null
+  section: LibraryExamSection
   questionCount: number
   creator: {
     id: string

@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { History, ChevronDown, ChevronUp, Calendar, TrendingUp, TrendingDown, Share2, CheckCircle } from 'lucide-react'
+import { History, ChevronDown, ChevronUp, Calendar, TrendingUp, TrendingDown, Share2, CheckCircle, Library } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { getScoreColor } from '@/lib/utils/scoring'
 import { ShareExamModal } from '@/components/forum/ShareExamModal'
@@ -23,6 +24,7 @@ interface ExamHistoryItem {
     topic?: string
   }>
   isShared?: boolean
+  isLibraryExam?: boolean // T035: Flag to indicate library exam
 }
 
 interface ExamHistoryProps {
@@ -153,8 +155,9 @@ export function ExamHistory({ history, maxItems = 5, className, onShare }: ExamH
         </div>
 
         {/* Table Header */}
-        <div className="hidden md:grid grid-cols-7 gap-4 px-6 py-3 bg-gray-50 text-sm text-gray-500 font-medium">
+        <div className="hidden md:grid grid-cols-8 gap-4 px-6 py-3 bg-gray-50 text-sm text-gray-500 font-medium">
           <div>التاريخ</div>
+          <div className="text-center">النوع</div>
           <div className="text-center">لفظي</div>
           <div className="text-center">كمي</div>
           <div className="text-center">الإجمالي</div>
@@ -173,15 +176,30 @@ export function ExamHistory({ history, maxItems = 5, className, onShare }: ExamH
               day: 'numeric',
             })
             const isAlreadyShared = sharedExams.has(exam.id)
+            // T035: Library exams cannot be shared (they came from shared content)
+            const canShare = onShare && !exam.isLibraryExam && !isAlreadyShared
 
             return (
               <div key={exam.id} className="hover:bg-gray-50 transition-colors">
                 {/* Desktop View */}
-                <div className="hidden md:grid grid-cols-7 gap-4 px-6 py-4 items-center">
+                <div className="hidden md:grid grid-cols-8 gap-4 px-6 py-4 items-center">
                   <Link href={`/exam/results/${exam.id}`} className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-700 hover:text-primary">{formattedDate}</span>
                   </Link>
+                  {/* T035: Exam type indicator */}
+                  <div className="text-center">
+                    {exam.isLibraryExam ? (
+                      <Badge variant="secondary" className="gap-1 bg-purple-100 text-purple-700 text-xs">
+                        <Library className="w-3 h-3" />
+                        مكتبة
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        ذاتي
+                      </Badge>
+                    )}
+                  </div>
                   <div className="text-center">
                     <ScoreBadge score={exam.verbal} />
                   </div>
@@ -205,24 +223,24 @@ export function ExamHistory({ history, maxItems = 5, className, onShare }: ExamH
                     }
                   </div>
                   <div className="text-center">
-                    {onShare && (
-                      isAlreadyShared ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                          <CheckCircle className="w-4 h-4" />
-                          تمت المشاركة
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => handleShareClick(e, exam)}
-                          className="gap-1 text-primary hover:text-primary/80"
-                        >
-                          <Share2 className="w-4 h-4" />
-                          شارك
-                        </Button>
-                      )
-                    )}
+                    {exam.isLibraryExam ? (
+                      <span className="text-xs text-gray-400">--</span>
+                    ) : isAlreadyShared ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle className="w-4 h-4" />
+                        تمت المشاركة
+                      </span>
+                    ) : canShare ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => handleShareClick(e, exam)}
+                        className="gap-1 text-primary hover:text-primary/80"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        شارك
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
 
@@ -232,15 +250,22 @@ export function ExamHistory({ history, maxItems = 5, className, onShare }: ExamH
                     <span className="text-gray-700 flex items-center gap-1">
                       <Calendar className="w-4 h-4 text-gray-400" />
                       {formattedDate}
+                      {/* T035: Library exam indicator on mobile */}
+                      {exam.isLibraryExam && (
+                        <Badge variant="secondary" className="gap-1 bg-purple-100 text-purple-700 text-xs mr-2">
+                          <Library className="w-3 h-3" />
+                          مكتبة
+                        </Badge>
+                      )}
                     </span>
                     <div className="flex items-center gap-2">
                       {prevExam && (
                         <TrendIndicator current={exam.overall} previous={prevExam.overall} />
                       )}
-                      {onShare && (
+                      {!exam.isLibraryExam && (
                         isAlreadyShared ? (
                           <CheckCircle className="w-4 h-4 text-green-600" />
-                        ) : (
+                        ) : canShare ? (
                           <Button
                             size="sm"
                             variant="ghost"
@@ -249,7 +274,7 @@ export function ExamHistory({ history, maxItems = 5, className, onShare }: ExamH
                           >
                             <Share2 className="w-4 h-4 text-primary" />
                           </Button>
-                        )
+                        ) : null
                       )}
                     </div>
                   </div>
