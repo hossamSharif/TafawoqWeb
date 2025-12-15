@@ -200,15 +200,15 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 ### Implementation for User Story 7
 
-- [ ] T074 [P] [US7] Create MaintenanceToggle component in src/components/admin/MaintenanceToggle.tsx
-- [ ] T075 [P] [US7] Create MaintenanceBanner component in src/components/shared/MaintenanceBanner.tsx (displays maintenance message to users)
-- [ ] T076 [US7] Create PATCH /api/admin/maintenance route in src/app/api/admin/maintenance/route.ts (enable/disable maintenance mode)
-- [ ] T077 [US7] Create GET /api/admin/maintenance route in src/app/api/admin/maintenance/route.ts (get current maintenance status)
-- [ ] T078 [US7] Add maintenance mode toggle to admin settings in src/app/(main)/admin/settings/page.tsx
-- [ ] T079 [US7] Update middleware.ts to show MaintenanceBanner and block write operations when maintenance mode active
-- [ ] T080 [US7] Update exam generation page to show maintenance message when blocked
-- [ ] T081 [US7] Update practice creation page to show maintenance message when blocked
-- [ ] T082 [US7] Update subscription page to show maintenance message when blocked
+- [x] T074 [P] [US7] Create MaintenanceToggle component in src/components/admin/MaintenanceToggle.tsx
+- [x] T075 [P] [US7] Create MaintenanceBanner component in src/components/shared/MaintenanceBanner.tsx (displays maintenance message to users)
+- [x] T076 [US7] Create PATCH /api/admin/maintenance route in src/app/api/admin/maintenance/route.ts (enable/disable maintenance mode)
+- [x] T077 [US7] Create GET /api/admin/maintenance route in src/app/api/admin/maintenance/route.ts (get current maintenance status)
+- [x] T078 [US7] Add maintenance mode toggle to admin settings in src/app/(main)/admin/settings/page.tsx
+- [x] T079 [US7] Update middleware.ts to show MaintenanceBanner and block write operations when maintenance mode active
+- [x] T080 [US7] Update exam generation page to show maintenance message when blocked
+- [x] T081 [US7] Update practice creation page to show maintenance message when blocked
+- [x] T082 [US7] Update subscription page to show maintenance message when blocked
 
 **Checkpoint**: User Story 7 complete - maintenance mode fully functional
 

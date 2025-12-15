@@ -1,11 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { MaintenanceBanner } from '@/components/shared/MaintenanceBanner'
 import { Loader2, Check, Crown, Zap, X } from 'lucide-react'
+
+interface MaintenanceStatus {
+  enabled: boolean
+  message: string | null
+}
 
 const features = {
   free: [
@@ -33,10 +39,27 @@ export default function SubscriptionPage() {
   const { subscription, isLoading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [maintenanceStatus, setMaintenanceStatus] = useState<MaintenanceStatus | null>(null)
 
   const isPremium = subscription?.tier === 'premium' && subscription?.status === 'active'
   const isTrialing = subscription?.tier === 'premium' && subscription?.status === 'trialing'
   const isCanceled = subscription?.status === 'canceled'
+
+  // T082: Check maintenance status on mount
+  useEffect(() => {
+    async function checkMaintenance() {
+      try {
+        const response = await fetch('/api/admin/maintenance')
+        if (response.ok) {
+          const data = await response.json()
+          setMaintenanceStatus(data)
+        }
+      } catch (error) {
+        console.error('Error checking maintenance status:', error)
+      }
+    }
+    checkMaintenance()
+  }, [])
 
   const handleUpgrade = async () => {
     setIsLoading(true)
@@ -102,6 +125,15 @@ export default function SubscriptionPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* T082: Maintenance Banner */}
+      {maintenanceStatus?.enabled && (
+        <MaintenanceBanner
+          message={maintenanceStatus.message}
+          variant="inline"
+          dismissible={false}
+        />
+      )}
+
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold">خطط الاشتراك</h1>
         <p className="text-muted-foreground">
@@ -127,8 +159,18 @@ export default function SubscriptionPage() {
                   )}
                 </div>
               </div>
-              <Button variant="outline" onClick={handleManageSubscription} disabled={isLoading}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إدارة الاشتراك'}
+              <Button
+                variant="outline"
+                onClick={handleManageSubscription}
+                disabled={isLoading || maintenanceStatus?.enabled}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : maintenanceStatus?.enabled ? (
+                  'غير متاح أثناء الصيانة'
+                ) : (
+                  'إدارة الاشتراك'
+                )}
               </Button>
             </div>
           </CardContent>
@@ -224,12 +266,19 @@ export default function SubscriptionPage() {
             )}
 
             {!isPremium && !isTrialing && (
-              <Button onClick={handleUpgrade} disabled={isLoading} className="w-full" size="lg">
+              <Button
+                onClick={handleUpgrade}
+                disabled={isLoading || maintenanceStatus?.enabled}
+                className="w-full"
+                size="lg"
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="ml-2 h-5 w-5 animate-spin" />
                     جاري التحميل...
                   </>
+                ) : maintenanceStatus?.enabled ? (
+                  'غير متاح أثناء الصيانة'
                 ) : (
                   <>
                     <Crown className="ml-2 h-5 w-5" />

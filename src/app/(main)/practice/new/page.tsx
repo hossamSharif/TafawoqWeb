@@ -11,6 +11,7 @@ import {
   QuestionCountSelector,
 } from '@/components/practice'
 import { PageLoadingSkeleton } from '@/components/shared'
+import { MaintenanceBlock } from '@/components/shared/MaintenanceBanner'
 import type { QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 
 type WizardStep = 'section' | 'categories' | 'difficulty' | 'questionCount' | 'confirm'
@@ -26,6 +27,11 @@ interface PracticeLimit {
 interface PracticeLimits {
   quantitative: PracticeLimit
   verbal: PracticeLimit
+}
+
+interface MaintenanceStatus {
+  enabled: boolean
+  message: string | null
 }
 
 export default function NewPracticePage() {
@@ -47,14 +53,18 @@ export default function NewPracticePage() {
   // T049: Practice limits state (FR-016, FR-017)
   const [practiceLimits, setPracticeLimits] = useState<PracticeLimits | null>(null)
 
-  // Check subscription status and fetch practice limits
+  // T081: Maintenance status state
+  const [maintenanceStatus, setMaintenanceStatus] = useState<MaintenanceStatus | null>(null)
+
+  // Check subscription status, maintenance status, and fetch practice limits
   useEffect(() => {
     async function fetchInitialData() {
       try {
-        // Fetch subscription and practice limits in parallel
-        const [subResponse, categoriesResponse] = await Promise.all([
+        // Fetch subscription, maintenance status, and practice limits in parallel
+        const [subResponse, categoriesResponse, maintenanceResponse] = await Promise.all([
           fetch('/api/subscription'),
           fetch('/api/practice/categories'),
+          fetch('/api/admin/maintenance'),
         ])
 
         if (subResponse.ok) {
@@ -68,6 +78,12 @@ export default function NewPracticePage() {
           if (categoriesData.practiceLimits) {
             setPracticeLimits(categoriesData.practiceLimits)
           }
+        }
+
+        // T081: Get maintenance status
+        if (maintenanceResponse.ok) {
+          const maintenanceData = await maintenanceResponse.json()
+          setMaintenanceStatus(maintenanceData)
         }
       } catch (error) {
         console.error('Initial data fetch error:', error)
@@ -175,6 +191,17 @@ export default function NewPracticePage() {
       <div className="container mx-auto px-4 py-8">
         <PageLoadingSkeleton className="h-96" />
       </div>
+    )
+  }
+
+  // T081: Show maintenance block if maintenance mode is active
+  if (maintenanceStatus?.enabled) {
+    return (
+      <MaintenanceBlock
+        message={maintenanceStatus.message}
+        operation="practice_creation"
+        onGoBack={() => router.push('/dashboard')}
+      />
     )
   }
 

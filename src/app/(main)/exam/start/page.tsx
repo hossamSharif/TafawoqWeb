@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { MaintenanceBlock } from '@/components/shared/MaintenanceBanner'
 import { Loader2, AlertCircle, FileText, Clock, CheckCircle2 } from 'lucide-react'
+
+interface MaintenanceStatus {
+  enabled: boolean
+  message: string | null
+}
 
 export default function ExamStartPage() {
   const router = useRouter()
@@ -14,6 +20,26 @@ export default function ExamStartPage() {
     exams_taken?: number
     max_exams?: number
   } | null>(null)
+  const [maintenanceStatus, setMaintenanceStatus] = useState<MaintenanceStatus | null>(null)
+  const [checkingMaintenance, setCheckingMaintenance] = useState(true)
+
+  // Check maintenance status on mount
+  useEffect(() => {
+    async function checkMaintenance() {
+      try {
+        const response = await fetch('/api/admin/maintenance')
+        if (response.ok) {
+          const data = await response.json()
+          setMaintenanceStatus(data)
+        }
+      } catch (error) {
+        console.error('Error checking maintenance status:', error)
+      } finally {
+        setCheckingMaintenance(false)
+      }
+    }
+    checkMaintenance()
+  }, [])
 
   const startExam = async () => {
     setIsLoading(true)
@@ -43,6 +69,26 @@ export default function ExamStartPage() {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
       setIsLoading(false)
     }
+  }
+
+  // Show loading state while checking maintenance
+  if (checkingMaintenance) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Show maintenance block if maintenance mode is active
+  if (maintenanceStatus?.enabled) {
+    return (
+      <MaintenanceBlock
+        message={maintenanceStatus.message}
+        operation="exam_generation"
+        onGoBack={() => router.push('/dashboard')}
+      />
+    )
   }
 
   return (

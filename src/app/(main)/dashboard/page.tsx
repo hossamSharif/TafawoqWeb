@@ -2,21 +2,44 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { OnboardingTutorial } from '@/components/shared/OnboardingTutorial'
 import { CreditsDisplay } from '@/components/subscription/CreditsDisplay'
 import { CreditBalance } from '@/components/rewards/CreditBalance'
+import { MaintenanceBanner } from '@/components/shared/MaintenanceBanner'
 import { FileText, Target, TrendingUp, Clock, Award, ChevronLeft, Library } from 'lucide-react'
 import { brand } from '@/lib/brand'
 import type { UserLimits } from '@/types/subscription'
 
 export default function DashboardPage() {
   const { profile, subscription, isLoading, user } = useAuth()
+  const searchParams = useSearchParams()
   const [showTutorial, setShowTutorial] = useState(false)
   const [limits, setLimits] = useState<UserLimits | null>(null)
   const [limitsLoading, setLimitsLoading] = useState(true)
+  const [showMaintenanceBanner, setShowMaintenanceBanner] = useState(false)
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(null)
+
+  // Check for maintenance redirect params
+  useEffect(() => {
+    const isMaintenance = searchParams.get('maintenance') === 'true'
+    const message = searchParams.get('message')
+
+    if (isMaintenance) {
+      setShowMaintenanceBanner(true)
+      setMaintenanceMessage(message)
+
+      // Clear URL params after showing banner
+      const url = new URL(window.location.href)
+      url.searchParams.delete('maintenance')
+      url.searchParams.delete('message')
+      url.searchParams.delete('blocked_operation')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams])
 
   useEffect(() => {
     // Show tutorial for first-time users
@@ -69,6 +92,15 @@ export default function DashboardPage() {
       {showTutorial && <OnboardingTutorial onComplete={handleTutorialComplete} />}
 
       <div className="space-y-6">
+        {/* Maintenance Banner */}
+        {showMaintenanceBanner && (
+          <MaintenanceBanner
+            message={maintenanceMessage}
+            variant="inline"
+            onDismiss={() => setShowMaintenanceBanner(false)}
+          />
+        )}
+
         {/* Welcome Section */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">مرحباً بك في {brand.name.arabic}</h1>

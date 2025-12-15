@@ -23,13 +23,35 @@ const PROTECTED_ROUTES = [
 const MAINTENANCE_BLOCKED_ROUTES = [
   '/exam/start',
   '/exam/generate',
+  '/exam/new',
   '/practice/start',
   '/practice/create',
+  '/practice/new',
   '/subscription/checkout',
   '/subscription/manage',
+  '/subscription/upgrade',
   '/forum/new',
   '/forum/share',
+  '/library/access', // Prevent accessing new library exams during maintenance
 ]
+
+/**
+ * Map of blocked routes to their operation types for specific error messages
+ */
+const ROUTE_OPERATION_MAP: Record<string, string> = {
+  '/exam/start': 'exam_generation',
+  '/exam/generate': 'exam_generation',
+  '/exam/new': 'exam_generation',
+  '/practice/start': 'practice_creation',
+  '/practice/create': 'practice_creation',
+  '/practice/new': 'practice_creation',
+  '/subscription/checkout': 'subscription_change',
+  '/subscription/manage': 'subscription_change',
+  '/subscription/upgrade': 'subscription_change',
+  '/forum/new': 'forum_post_creation',
+  '/forum/share': 'content_sharing',
+  '/library/access': 'content_sharing',
+}
 
 /**
  * Routes that require premium subscription
@@ -106,10 +128,15 @@ export async function middleware(request: NextRequest) {
       .maybeSingle()
 
     if (maintenanceToggle?.is_enabled) {
-      // Redirect to maintenance page or dashboard with message
+      // Find the matching route to get the operation type
+      const matchedRoute = MAINTENANCE_BLOCKED_ROUTES.find(route => pathname.startsWith(route))
+      const operation = matchedRoute ? ROUTE_OPERATION_MAP[matchedRoute] : 'unknown'
+
+      // Redirect to dashboard with maintenance info
       const maintenanceUrl = new URL('/dashboard', request.url)
       maintenanceUrl.searchParams.set('maintenance', 'true')
       maintenanceUrl.searchParams.set('message', maintenanceToggle.description || 'النظام قيد الصيانة')
+      maintenanceUrl.searchParams.set('blocked_operation', operation)
       return NextResponse.redirect(maintenanceUrl)
     }
   }
