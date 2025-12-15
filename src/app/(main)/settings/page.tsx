@@ -29,7 +29,11 @@ import {
   Play,
   MessageCircle,
   FileQuestion,
+  Bell,
+  Gift,
 } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog,
@@ -72,6 +76,14 @@ export default function SettingsPage() {
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
 
+  // Notification preferences state
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    rewardNotifications: true,
+    forumNotifications: true,
+    examCompletionNotifications: true,
+  })
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false)
+
   // Check for subscription success/cancel in URL
   useEffect(() => {
     const subscriptionStatus = searchParams.get('subscription')
@@ -81,7 +93,7 @@ export default function SettingsPage() {
     }
   }, [searchParams, refetch])
 
-  // Fetch profile data
+  // Fetch profile data and notification preferences
   useEffect(() => {
     async function fetchProfile() {
       try {
@@ -92,6 +104,14 @@ export default function SettingsPage() {
             email: data.profile?.email || data.email,
             academicTrack: data.profile?.academic_track || 'scientific',
           })
+          // Set notification preferences from profile if available
+          if (data.profile) {
+            setNotificationPrefs({
+              rewardNotifications: data.profile.reward_notifications_enabled ?? true,
+              forumNotifications: data.profile.forum_email_enabled ?? true,
+              examCompletionNotifications: data.profile.exam_completion_notifications_enabled ?? true,
+            })
+          }
         }
       } catch (err) {
         console.error('Error fetching profile:', err)
@@ -101,6 +121,32 @@ export default function SettingsPage() {
     }
     fetchProfile()
   }, [])
+
+  // Handle notification preference changes
+  const handleNotificationPrefChange = async (key: keyof typeof notificationPrefs, value: boolean) => {
+    const oldValue = notificationPrefs[key]
+    setNotificationPrefs(prev => ({ ...prev, [key]: value }))
+    setIsSavingNotifications(true)
+
+    try {
+      const response = await fetch('/api/profile/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value }),
+      })
+
+      if (!response.ok) {
+        // Revert on error
+        setNotificationPrefs(prev => ({ ...prev, [key]: oldValue }))
+        console.error('Failed to update notification preferences')
+      }
+    } catch (err) {
+      setNotificationPrefs(prev => ({ ...prev, [key]: oldValue }))
+      console.error('Error updating notification preferences:', err)
+    } finally {
+      setIsSavingNotifications(false)
+    }
+  }
 
   // Fetch invoices when subscription section is active
   useEffect(() => {
@@ -413,6 +459,98 @@ export default function SettingsPage() {
                   </Button>
                 </Link>
               </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Notifications Section */}
+        <section id="notifications" className="mb-8">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Bell className="w-6 h-6 text-gray-400" />
+                <div>
+                  <CardTitle>الإشعارات</CardTitle>
+                  <CardDescription>إدارة تفضيلات الإشعارات</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Reward Notifications */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Gift className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <Label htmlFor="reward-notifications" className="font-medium text-gray-900 cursor-pointer">
+                      إشعارات المكافآت
+                    </Label>
+                    <p className="text-sm text-gray-500">
+                      إشعار عند اكتساب رصيد من محتواك المشارك
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="reward-notifications"
+                  checked={notificationPrefs.rewardNotifications}
+                  onCheckedChange={(checked) => handleNotificationPrefChange('rewardNotifications', checked)}
+                  disabled={isSavingNotifications}
+                />
+              </div>
+
+              {/* Forum Notifications */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <Label htmlFor="forum-notifications" className="font-medium text-gray-900 cursor-pointer">
+                      إشعارات المنتدى
+                    </Label>
+                    <p className="text-sm text-gray-500">
+                      إشعار عند التعليق أو الرد على منشوراتك
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="forum-notifications"
+                  checked={notificationPrefs.forumNotifications}
+                  onCheckedChange={(checked) => handleNotificationPrefChange('forumNotifications', checked)}
+                  disabled={isSavingNotifications}
+                />
+              </div>
+
+              {/* Exam Completion Notifications */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <Check className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <Label htmlFor="exam-completion-notifications" className="font-medium text-gray-900 cursor-pointer">
+                      إشعارات إكمال الاختبارات
+                    </Label>
+                    <p className="text-sm text-gray-500">
+                      إشعار عند إكمال أحد المستخدمين لاختبارك المشارك
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="exam-completion-notifications"
+                  checked={notificationPrefs.examCompletionNotifications}
+                  onCheckedChange={(checked) => handleNotificationPrefChange('examCompletionNotifications', checked)}
+                  disabled={isSavingNotifications}
+                />
+              </div>
+
+              {isSavingNotifications && (
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  جاري الحفظ...
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>

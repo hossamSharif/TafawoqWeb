@@ -138,14 +138,14 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 ### Implementation for User Story 4
 
-- [ ] T051 [P] [US4] Update page metadata with new brand name in src/app/layout.tsx
-- [ ] T052 [P] [US4] Create new logo component in src/components/shared/Logo.tsx using brand.ts config
-- [ ] T053 [P] [US4] Create HeroSection component for landing page in src/components/landing/HeroSection.tsx
-- [ ] T054 [P] [US4] Create FeatureSection component for landing page in src/components/landing/FeatureSection.tsx (exam sharing, library, forum, practice)
-- [ ] T055 [P] [US4] Create PricingSection component for landing page in src/components/landing/PricingSection.tsx
-- [ ] T056 [US4] Redesign landing page in src/app/page.tsx with Hero, Features, Pricing sections
-- [ ] T057 [US4] Update all hardcoded app name references to use brand.ts configuration
-- [ ] T058 [US4] Update onboarding tutorial to explain rewards, forum, and library features in src/components/onboarding/
+- [x] T051 [P] [US4] Update page metadata with new brand name in src/app/layout.tsx
+- [x] T052 [P] [US4] Create new logo component in src/components/shared/Logo.tsx using brand.ts config
+- [x] T053 [P] [US4] Create HeroSection component for landing page in src/components/landing/HeroSection.tsx
+- [x] T054 [P] [US4] Create FeatureSection component for landing page in src/components/landing/FeatureSection.tsx (exam sharing, library, forum, practice)
+- [x] T055 [P] [US4] Create PricingSection component for landing page in src/components/landing/PricingSection.tsx
+- [x] T056 [US4] Redesign landing page in src/app/page.tsx with Hero, Features, Pricing sections
+- [x] T057 [US4] Update all hardcoded app name references to use brand.ts configuration
+- [x] T058 [US4] Update onboarding tutorial to explain rewards, forum, and library features in src/components/onboarding/
 
 **Checkpoint**: User Story 4 complete - new branding applied throughout, landing page updated
 
@@ -159,12 +159,12 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 ### Implementation for User Story 5
 
-- [ ] T059 [P] [US5] Create RewardNotificationCard component in src/components/notifications/RewardNotificationCard.tsx
-- [ ] T060 [P] [US5] Create NotificationBanner component in src/components/notifications/NotificationBanner.tsx (shows pending rewards summary)
-- [ ] T061 [US5] Update notifications context/hook to subscribe to real-time reward notifications via Supabase Realtime
-- [ ] T062 [US5] Create GET /api/notifications/rewards route in src/app/api/notifications/rewards/route.ts (fetch reward notifications)
-- [ ] T063 [US5] Add notification preferences for reward alerts in src/app/(main)/profile/settings/page.tsx
-- [ ] T064 [US5] Display notification badge in navigation when new rewards pending
+- [x] T059 [P] [US5] Create RewardNotificationCard component in src/components/notifications/RewardNotificationCard.tsx
+- [x] T060 [P] [US5] Create NotificationBanner component in src/components/notifications/NotificationBanner.tsx (shows pending rewards summary)
+- [x] T061 [US5] Update notifications context/hook to subscribe to real-time reward notifications via Supabase Realtime
+- [x] T062 [US5] Create GET /api/notifications/rewards route in src/app/api/notifications/rewards/route.ts (fetch reward notifications)
+- [x] T063 [US5] Add notification preferences for reward alerts in src/app/(main)/profile/settings/page.tsx
+- [x] T064 [US5] Display notification badge in navigation when new rewards pending
 
 **Checkpoint**: User Story 5 complete - users receive instant notifications for rewards
 
