@@ -15,7 +15,12 @@ import {
   Settings2,
   Award,
   BarChart3,
-  Dumbbell
+  Dumbbell,
+  Library,
+  MessageSquare,
+  Gift,
+  Share2,
+  Users,
 } from 'lucide-react'
 
 interface OnboardingTutorialProps {
@@ -64,7 +69,7 @@ const tutorialScreens: TutorialScreen[] = [
     tips: [
       'ابدأ باختبار كامل لمعرفة مستواك الحالي',
       'استخدم التدريب المخصص لتقوية نقاط الضعف',
-      'المستخدم المجاني: 3 اختبارات أسبوعياً و 5 أسئلة تدريب',
+      'المستخدم المجاني: اختبارين شهرياً و 3 تمارين',
     ],
   },
   // Screen 2: Academic Track explanation
@@ -96,7 +101,65 @@ const tutorialScreens: TutorialScreen[] = [
       'التغيير يؤثر على الاختبارات الجديدة فقط',
     ],
   },
-  // Screen 3: Three-score system and practice hours
+  // Screen 3: Library and Forum
+  {
+    title: 'المكتبة والمنتدى',
+    subtitle: 'استفد من مجتمع الطلاب',
+    description: 'تصفح اختبارات الآخرين وشارك في النقاشات',
+    icon: <Library className="h-16 w-16" />,
+    primaryFeatures: [
+      {
+        icon: <Library className="h-5 w-5" />,
+        title: 'مكتبة الاختبارات',
+        description: 'تصفح اختبارات وتمارين شاركها طلاب آخرون واستفد منها',
+      },
+      {
+        icon: <MessageSquare className="h-5 w-5" />,
+        title: 'منتدى الطلاب',
+        description: 'اطرح أسئلتك وناقش مع طلاب آخرين وشارك تجربتك',
+      },
+      {
+        icon: <Users className="h-5 w-5" />,
+        title: 'مجتمع داعم',
+        description: 'تواصل مع طلاب يشاركونك نفس الهدف وتبادلوا الخبرات',
+      },
+    ],
+    tips: [
+      'المستخدم المجاني يمكنه الوصول لاختبار واحد من المكتبة',
+      'المشترك المميز لديه وصول غير محدود للمكتبة',
+      'شارك في المنتدى لتستفيد من خبرات الآخرين',
+    ],
+  },
+  // Screen 4: Rewards System
+  {
+    title: 'نظام المكافآت',
+    subtitle: 'شارك واكسب',
+    description: 'احصل على مكافآت عندما يستفيد الآخرون من محتواك',
+    icon: <Gift className="h-16 w-16" />,
+    primaryFeatures: [
+      {
+        icon: <Share2 className="h-5 w-5" />,
+        title: 'شارك اختباراتك',
+        description: 'شارك الاختبارات والتمارين التي أنشأتها مع المجتمع',
+      },
+      {
+        icon: <Gift className="h-5 w-5" />,
+        title: 'اكسب مكافآت',
+        description: 'عندما يحل طالب آخر اختبارك تحصل على رصيد إضافي',
+      },
+      {
+        icon: <Award className="h-5 w-5" />,
+        title: 'استخدم رصيدك',
+        description: 'استخدم المكافآت لإنشاء المزيد من الاختبارات والتمارين',
+      },
+    ],
+    tips: [
+      'كلما شاركت أكثر، كسبت أكثر',
+      'المحتوى عالي الجودة يجذب المزيد من المستخدمين',
+      'تابع إشعاراتك لمعرفة متى تحصل على مكافأة',
+    ],
+  },
+  // Screen 5: Three-score system and practice hours
   {
     title: 'نظام التقييم',
     subtitle: 'ثلاث درجات لمتابعة تقدمك',

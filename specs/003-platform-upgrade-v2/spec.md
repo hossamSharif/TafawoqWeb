@@ -144,8 +144,9 @@ Administrators can enable maintenance mode to temporarily prevent users from gen
 
 **Exam Library**
 - **FR-001**: System MUST provide a browsable library of exams shared by other users
+- **FR-001a**: System MUST display "Library" as a main navigation tab alongside Dashboard, Exams, Practice, and Forum
 - **FR-002**: System MUST display exam preview information (title, section, question count, creator name) before access
-- **FR-003**: System MUST limit free users to accessing exactly 1 exam from the library total
+- **FR-003**: System MUST limit free users to accessing exactly 1 exam from the library total (permanently tracked; does not reset)
 - **FR-004**: System MUST allow premium users unlimited library access
 - **FR-005**: System MUST add completed library exams to user's exam history
 - **FR-006**: System MUST prevent library exams from being re-shared by users who took them
@@ -168,12 +169,13 @@ Administrators can enable maintenance mode to temporarily prevent users from gen
 - **FR-017**: System MUST display the maximum allowed questions when creating a practice
 
 **Branding & Onboarding**
-- **FR-018**: System MUST display new app name and logo throughout the application [NEEDS CLARIFICATION: What should the new app name be? See options below]
+- **FR-018**: System MUST display new app name "Qudratak - قدراتك" (meaning "Your Abilities") and logo throughout the application
 - **FR-019**: System MUST update landing page to feature: exam sharing rewards, library access, forum discussions
 - **FR-020**: System MUST update onboarding tutorial to explain new features
 
 **Admin Features**
 - **FR-021**: System MUST provide admin interface for uploading exam/practice content via JSON
+- **FR-021a**: System MUST accept JSON matching the existing internal exam/practice data structure (no custom format)
 - **FR-022**: System MUST validate and preview JSON content before storing
 - **FR-023**: System MUST make admin-uploaded content available in the library
 
@@ -183,9 +185,21 @@ Administrators can enable maintenance mode to temporarily prevent users from gen
 - **FR-026**: System MUST allow read-only operations (browsing, taking existing content) during maintenance
 - **FR-027**: System MUST display clear maintenance messaging to users
 
+### Non-Functional Requirements
+
+**Security & Access Control**
+- **NFR-001**: Admin features MUST use existing Supabase authentication with an `is_admin` boolean flag in the user profile
+- **NFR-002**: Admin access MUST be enforced via Supabase RLS policies checking the `is_admin` flag
+
+**Payment & Subscription Reliability**
+- **NFR-003**: System MUST retry failed subscription payments with a 3-day grace period before taking action
+- **NFR-004**: System MUST auto-downgrade users to free plan after grace period expires without successful payment
+- **NFR-005**: System MUST notify users of payment failures and pending downgrade during grace period
+
 ### Key Entities
 
 - **ExamLibrary**: Collection of shareable exams; attributes include source (user-generated vs admin-uploaded), access count, availability status
+- **LibraryAccess**: Permanent record of library exams accessed by each user; used to enforce free tier 1-exam limit
 - **SubscriptionPlan**: User's current plan type (free/premium) with associated limits for generation and sharing
 - **UserCredits**: Tracks available exam/practice credits, earned rewards, and sharing quota remaining
 - **RewardTransaction**: Records of rewards earned; includes source user, action type (exam/practice completion), timestamp
@@ -204,6 +218,16 @@ Administrators can enable maintenance mode to temporarily prevent users from gen
 - **SC-006**: 90% of new users complete the updated onboarding tutorial
 - **SC-007**: Maintenance mode can be enabled/disabled within 1 minute by admin
 - **SC-008**: Users understand their remaining credits/limits at a glance (visible on dashboard)
+
+## Clarifications
+
+### Session 2025-12-15
+
+- Q: How should user authentication be handled for admin features? → A: Existing Supabase auth with `is_admin` flag in user profile (checked via RLS policies)
+- Q: How should Stripe payment integration handle subscription failures? → A: Retry with 3-day grace period, then auto-downgrade to free plan
+- Q: How should the system track which library exam a free user has accessed? → A: Permanent record in database (user can never access another library exam on free plan)
+- Q: Where should the exam library be accessible from in the app navigation? → A: Main navigation tab alongside existing sections (Dashboard, Exams, Practice, Forum, Library)
+- Q: What is the expected JSON schema format for admin exam/practice uploads? → A: Match existing internal exam data structure used by the platform
 
 ## Assumptions
 

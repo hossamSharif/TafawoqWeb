@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: Exam Library API
+  description: API endpoints for the Exam Library feature
+  version: 1.0.0
+
+paths:
+  /api/library:
+    get:
+      summary: List library exams
+      description: Returns paginated list of library-visible exams
+      tags: [Library]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+        - name: section
+          in: query
+          description: Filter by exam section
+          schema:
+            type: string
+            enum: [verbal, quantitative]
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [popular, recent]
+            default: popular
+      responses:
+        '200':
+          description: List of library exams
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exams:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LibraryExam'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  userAccess:
+                    $ref: '#/components/schemas/UserLibraryAccess'
+        '401':
+          description: Unauthorized
+
+  /api/library/{postId}:
+    get:
+      summary: Get library exam details
+      description: Returns detailed information about a specific library exam
+      tags: [Library]
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exam details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryExamDetail'
+        '404':
+          description: Exam not found or not in library
+
+  /api/library/{postId}/access:
+    post:
+      summary: Request access to library exam
+      description: Grants access to a library exam (enforces free tier limit)
+      tags: [Library]
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Access granted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  accessId: { type: string, format: uuid }
+        '403':
+          description: Access denied (free tier limit reached)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  upgradeRequired: { type: boolean }
+        '409':
+          description: Already has access
+
+  /api/library/{postId}/start:
+    post:
+      summary: Start library exam
+      description: Starts exam session from library (requires prior access)
+      tags: [Library]
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exam session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId: { type: string, format: uuid }
+                  examData:
+                    $ref: '#/components/schemas/ExamSession'
+        '403':
+          description: No access to this exam
+
+components:
+  schemas:
+    LibraryExam:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        section:
+          type: string
+          enum: [verbal, quantitative]
+        questionCount:
+          type: integer
+        creator:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            displayName: { type: string }
+        completionCount:
+          type: integer
+        userHasAccess:
+          type: boolean
+        userCompleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    LibraryExamDetail:
+      allOf:
+        - $ref: '#/components/schemas/LibraryExam'
+        - type: object
+          properties:
+            description:
+              type: string
+            difficulty:
+              type: string
+              enum: [easy, medium, hard, mixed]
+            estimatedTime:
+              type: integer
+              description: Estimated completion time in minutes
+
+    UserLibraryAccess:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [free, premium]
+        accessUsed:
+          type: integer
+          description: Number of library exams accessed
+        accessLimit:
+          type: integer
+          nullable: true
+          description: Max library access (null for premium = unlimited)
+        canAccessMore:
+          type: boolean
+
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        hasMore: { type: boolean }
+
+    ExamSession:
+      type: object
+      description: Reference to existing exam session schema

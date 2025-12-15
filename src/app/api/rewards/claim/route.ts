@@ -46,8 +46,8 @@ export async function POST(_request: NextRequest) {
       .eq('completed_at', 'completed_at')
 
     // Also check for unclaimed practice completions if that table exists
-    let totalExamCredits = 0
-    let totalPracticeCredits = 0
+    const totalExamCredits = 0
+    const totalPracticeCredits = 0
 
     // Process unclaimed completions and credit the content owners
     // Note: In practice, the trigger should handle this automatically

@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: Subscription API Extensions
+  description: Extended subscription endpoints for new plan structure and rewards
+  version: 1.0.0
+
+paths:
+  /api/subscription/limits:
+    get:
+      summary: Get user's current limits and usage
+      description: Returns detailed breakdown of user's plan limits and current usage
+      tags: [Subscription]
+      responses:
+        '200':
+          description: User limits and usage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLimits'
+
+  /api/subscription/grace-period:
+    get:
+      summary: Get grace period status
+      description: Returns grace period status for users with payment issues
+      tags: [Subscription]
+      responses:
+        '200':
+          description: Grace period status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GracePeriodStatus'
+
+  /api/rewards:
+    get:
+      summary: Get reward balance and history
+      description: Returns user's credit balance and recent reward transactions
+      tags: [Rewards]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Reward information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardInfo'
+
+  /api/rewards/redeem:
+    post:
+      summary: Redeem reward credits
+      description: Use accumulated credits to generate exam or practice
+      tags: [Rewards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [exam, practice]
+      responses:
+        '200':
+          description: Credits redeemed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  remainingCredits:
+                    type: object
+                    properties:
+                      exam: { type: integer }
+                      practice: { type: integer }
+        '400':
+          description: Insufficient credits
+
+  /api/sharing/quota:
+    get:
+      summary: Get sharing quota status
+      description: Returns how many exams/practices user can still share
+      tags: [Sharing]
+      responses:
+        '200':
+          description: Sharing quota
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SharingQuota'
+
+  /api/sharing/share:
+    post:
+      summary: Share exam or practice to library
+      description: Makes user's exam/practice visible in the library
+      tags: [Sharing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - contentId
+              properties:
+                type:
+                  type: string
+                  enum: [exam, practice]
+                contentId:
+                  type: string
+                  format: uuid
+                  description: ID of exam_session or practice_session
+                title:
+                  type: string
+                description:
+                  type: string
+                libraryVisible:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Content shared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  postId: { type: string, format: uuid }
+                  remainingQuota:
+                    $ref: '#/components/schemas/SharingQuota'
+        '403':
+          description: Sharing quota exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  upgradeRequired: { type: boolean }
+                  currentQuota:
+                    $ref: '#/components/schemas/SharingQuota'
+
+components:
+  schemas:
+    UserLimits:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [free, premium]
+        generation:
+          type: object
+          properties:
+            exams:
+              type: object
+              properties:
+                used: { type: integer }
+                limit: { type: integer }
+                remaining: { type: integer }
+            practices:
+              type: object
+              properties:
+                used: { type: integer }
+                limit: { type: integer }
+                remaining: { type: integer }
+        sharing:
+          $ref: '#/components/schemas/SharingQuota'
+        library:
+          type: object
+          properties:
+            accessUsed: { type: integer }
+            accessLimit:
+              type: integer
+              nullable: true
+              description: null = unlimited
+        rewards:
+          type: object
+          properties:
+            examCredits: { type: integer }
+            practiceCredits: { type: integer }
+
+    SharingQuota:
+      type: object
+      properties:
+        exams:
+          type: object
+          properties:
+            shared: { type: integer }
+            limit: { type: integer }
+            remaining: { type: integer }
+        practices:
+          type: object
+          properties:
+            shared: { type: integer }
+            limit: { type: integer }
+            remaining: { type: integer }
+
+    GracePeriodStatus:
+      type: object
+      properties:
+        inGracePeriod: { type: boolean }
+        gracePeriodEnd:
+          type: string
+          format: date-time
+          nullable: true
+        daysRemaining:
+          type: integer
+          nullable: true
+        paymentFailedAt:
+          type: string
+          format: date-time
+          nullable: true
+        willDowngrade: { type: boolean }
+
+    RewardInfo:
+      type: object
+      properties:
+        balance:
+          type: object
+          properties:
+            examCredits: { type: integer }
+            practiceCredits: { type: integer }
+        totalEarned:
+          type: object
+          properties:
+            examCredits: { type: integer }
+            practiceCredits: { type: integer }
+        recentTransactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardTransaction'
+
+    RewardTransaction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [exam_completion, practice_completion, milestone, admin_grant]
+        creditType:
+          type: string
+          enum: [exam, practice]
+        amount: { type: integer }
+        source:
+          type: object
+          properties:
+            userId: { type: string, format: uuid }
+            displayName: { type: string }
+            contentType: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    PlanPricing:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [free, premium]
+        price:
+          type: integer
+          description: Price in SAR
+        originalPrice:
+          type: integer
+          nullable: true
+          description: Original price before discount (null if no discount)
+        currency:
+          type: string
+          default: SAR
+        features:
+          type: array
+          items: { type: string }

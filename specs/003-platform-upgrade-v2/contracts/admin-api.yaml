@@ -1,0 +1,299 @@
+openapi: 3.0.3
+info:
+  title: Admin API Extensions
+  description: New admin endpoints for content upload and maintenance mode
+  version: 1.0.0
+
+paths:
+  /api/admin/content/upload:
+    post:
+      summary: Upload exam/practice content via JSON
+      description: Admin uploads content that appears in the library
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentUploadRequest'
+      responses:
+        '200':
+          description: Content uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  postId: { type: string, format: uuid }
+                  preview:
+                    $ref: '#/components/schemas/ContentPreview'
+        '400':
+          description: Invalid JSON format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '403':
+          description: Admin access required
+
+  /api/admin/content/validate:
+    post:
+      summary: Validate content JSON without saving
+      description: Validates JSON structure and returns preview
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentUploadRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  preview:
+                    $ref: '#/components/schemas/ContentPreview'
+                  warnings:
+                    type: array
+                    items: { type: string }
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /api/admin/maintenance:
+    get:
+      summary: Get maintenance mode status
+      description: Returns current maintenance mode configuration
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Maintenance status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStatus'
+
+    post:
+      summary: Enable maintenance mode
+      description: Enables maintenance mode with optional message
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Custom maintenance message
+                  example: "جارٍ تحديث النظام. سنعود قريباً!"
+      responses:
+        '200':
+          description: Maintenance mode enabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStatus'
+
+    delete:
+      summary: Disable maintenance mode
+      description: Disables maintenance mode
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Maintenance mode disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStatus'
+
+  /api/admin/maintenance/log:
+    get:
+      summary: Get maintenance mode history
+      description: Returns log of maintenance mode changes
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Maintenance log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MaintenanceLogEntry'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    ContentUploadRequest:
+      type: object
+      required:
+        - type
+        - title
+        - content
+      properties:
+        type:
+          type: string
+          enum: [exam, practice]
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 500
+        section:
+          type: string
+          enum: [verbal, quantitative]
+        content:
+          $ref: '#/components/schemas/ExamContent'
+        libraryVisible:
+          type: boolean
+          default: true
+
+    ExamContent:
+      type: object
+      description: Must match existing internal exam data structure
+      required:
+        - questions
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        metadata:
+          type: object
+          properties:
+            difficulty:
+              type: string
+              enum: [easy, medium, hard, mixed]
+            estimatedMinutes:
+              type: integer
+
+    Question:
+      type: object
+      required:
+        - id
+        - text
+        - choices
+        - correctAnswer
+        - section
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              text: { type: string }
+          minItems: 4
+          maxItems: 4
+        correctAnswer:
+          type: string
+        section:
+          type: string
+          enum: [verbal, quantitative]
+        category:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        explanation:
+          type: string
+        solvingStrategy:
+          type: string
+        diagramUrl:
+          type: string
+          format: uri
+
+    ContentPreview:
+      type: object
+      properties:
+        title: { type: string }
+        type: { type: string }
+        section: { type: string }
+        questionCount: { type: integer }
+        sampleQuestions:
+          type: array
+          items:
+            type: object
+            properties:
+              text: { type: string }
+              category: { type: string }
+          maxItems: 3
+
+    ValidationError:
+      type: object
+      properties:
+        error: { type: string }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+
+    MaintenanceStatus:
+      type: object
+      properties:
+        enabled: { type: boolean }
+        message: { type: string }
+        enabledAt:
+          type: string
+          format: date-time
+          nullable: true
+        enabledBy:
+          type: string
+          format: uuid
+          nullable: true
+
+    MaintenanceLogEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        adminId: { type: string, format: uuid }
+        adminName: { type: string }
+        action:
+          type: string
+          enum: [enabled, disabled]
+        message: { type: string }
+        createdAt: { type: string, format: date-time }

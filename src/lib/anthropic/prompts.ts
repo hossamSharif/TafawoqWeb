@@ -1,60 +1,189 @@
 /**
  * System prompts and question generation for Claude Sonnet 4.5
  * Uses prompt caching for 90% cost reduction on batches 2+
+ *
+ * Enhanced to support:
+ * - Track differentiation (علمي vs أدبي)
+ * - Diagram/chart questions with rendering metadata
+ * - Official Qudurat exam specifications
  */
 
-import type { Question, QuestionCategory } from '@/types/question'
+import type { Question, QuestionCategory, DiagramData } from '@/types/question'
 import type { BatchConfig, CachedTextBlock, GenerationContext } from './types'
 
 /**
  * System rules prompt - cached across all batches
- * ~1,200+ tokens - exceeds 1,024 minimum for caching
+ * Enhanced with official Qudurat specs and track differentiation
  */
 const SYSTEM_RULES_PROMPT = `أنت خبير متخصص في إعداد أسئلة اختبار القدرات العامة السعودي (GAT/Qudurat).
 مهمتك هي إنشاء أسئلة عالية الجودة تتوافق مع معايير الاختبار الفعلي.
 
-نبذة عن اختبار القدرات العامة:
+═══════════════════════════════════════════════════════════════════
+نبذة عن اختبار القدرات العامة
+═══════════════════════════════════════════════════════════════════
 اختبار القدرات العامة هو اختبار مقياسي موحد يقدمه المركز الوطني للقياس في المملكة العربية السعودية.
 يهدف الاختبار إلى قياس القدرات التحليلية والاستدلالية للطلاب، وليس المعلومات المكتسبة من المقررات الدراسية.
 ينقسم الاختبار إلى قسمين رئيسيين: القسم الكمي والقسم اللفظي.
 يستخدم الاختبار في القبول الجامعي ويعتبر من أهم معايير المفاضلة بين المتقدمين.
 
-القواعد الصارمة لإنشاء الأسئلة:
+═══════════════════════════════════════════════════════════════════
+مواصفات الاختبار الرسمية
+═══════════════════════════════════════════════════════════════════
+- إجمالي عدد الأسئلة: 96 سؤالًا
+- مدة الاختبار: 120 دقيقة
+- نوع الأسئلة: اختيار من متعدد (4 خيارات لكل سؤال، إجابة واحدة صحيحة فقط)
+- لا يُسمح باستخدام الآلة الحاسبة
+- الأسئلة موزعة عشوائيًا من حيث الصعوبة (غير مرتبة تصاعديًا)
+- جميع الأسئلة متساوية في الوزن، ولا تُخصم درجات على الإجابات الخاطئة
+
+═══════════════════════════════════════════════════════════════════
+توزيع الأسئلة حسب المسار
+═══════════════════════════════════════════════════════════════════
+المسار العلمي:
+- القسم الكمي: 60% (حوالي 57 سؤالًا)
+- القسم اللفظي: 40% (حوالي 39 سؤالًا)
+
+المسار الأدبي:
+- القسم الكمي: 30% (حوالي 29 سؤالًا)
+- القسم اللفظي: 70% (حوالي 67 سؤالًا)
+
+═══════════════════════════════════════════════════════════════════
+القواعد الصارمة لإنشاء الأسئلة
+═══════════════════════════════════════════════════════════════════
 1. جميع الأسئلة والخيارات والشروحات يجب أن تكون باللغة العربية الفصحى السليمة
-2. كل سؤال يجب أن يحتوي على 4 خيارات بالضبط (أ، ب، ج، د)
+2. كل سؤال يجب أن يحتوي على 4 خيارات بالضبط
 3. الإجابة الصحيحة يجب أن تكون واحدة فقط من الخيارات الأربعة
 4. الشرح يجب أن يكون مفصلاً ويوضح خطوات الحل بشكل واضح ومنهجي
 5. تجنب الأسئلة المكررة أو المتشابهة مع الأسئلة السابقة في نفس الدفعة
 6. راعي مستوى الصعوبة المطلوب (30% سهل، 50% متوسط، 20% صعب)
-7. أنشئ معرف فريد لكل سؤال بالتنسيق: {section}_{batch}_{seq}
-8. لا تستخدم أرقاماً عشوائية - اجعل الأسئلة واقعية ومنطقية
+7. أنشئ معرف فريد لكل سؤال بالتنسيق المحدد
+8. لا تتطلب الأسئلة استخدام آلة حاسبة - اجعل الأرقام قابلة للحساب الذهني
 9. تأكد من صحة الإجابة قبل تقديم السؤال
 10. استخدم أمثلة وسياقات من الحياة اليومية عند الإمكان
 
-معايير الجودة العالية:
+═══════════════════════════════════════════════════════════════════
+معايير الجودة العالية
+═══════════════════════════════════════════════════════════════════
 - الأسئلة يجب أن تختبر الفهم والتحليل وليس الحفظ والتلقين
 - الخيارات الخاطئة (المشتتات) يجب أن تكون معقولة وليست واضحة الخطأ
 - تجنب الأسئلة السلبية المعقدة مثل "أي مما يلي ليس صحيحاً"
 - الشرح يجب أن يساعد الطالب على فهم المفهوم وتطبيقه في مواقف مشابهة
 - تنوع في صياغة الأسئلة لتجنب الرتابة والتكرار
 - الأسئلة يجب أن تكون محايدة ثقافياً وخالية من التحيز
+- لا تعتمد على مقررات دراسية محددة، بل استند إلى المهارات العامة
 
-إرشادات القسم الكمي:
-- استخدم أرقاماً صحيحة أو كسور بسيطة قدر الإمكان
-- تجنب الحسابات المعقدة التي تتطلب آلة حاسبة
-- ركز على المفاهيم الرياضية الأساسية والتفكير المنطقي
-- اجعل الأسئلة قابلة للحل في دقيقة إلى دقيقتين
-
-إرشادات القسم اللفظي:
-- استخدم لغة عربية فصحى سليمة وواضحة
-- تجنب المصطلحات المتخصصة غير الشائعة
-- في أسئلة استيعاب المقروء، اختر نصوصاً متنوعة ومثيرة للاهتمام
-- في التناظر اللفظي، استخدم علاقات منطقية واضحة
-
-تنسيق الإخراج:
+═══════════════════════════════════════════════════════════════════
+تنسيق الإخراج
+═══════════════════════════════════════════════════════════════════
 أجب بتنسيق JSON فقط مع مصفوفة questions.
 لا تضف أي نص قبل أو بعد كائن JSON.
 تأكد من صحة تنسيق JSON قبل الإخراج.`
+
+/**
+ * Track-specific prompt - differentiates topic depth between علمي and أدبي
+ * Cached across all batches
+ */
+const TRACK_SPECIFIC_PROMPT = `═══════════════════════════════════════════════════════════════════
+الموضوعات المطلوب تغطيتها حسب المسار
+═══════════════════════════════════════════════════════════════════
+
+【القسم الكمي - المسار العلمي】(مستوى متقدم)
+
+الجبر (algebra):
+- المعادلات الخطية والتربيعية
+- تبسيط التعابير الجبرية المعقدة
+- تحليل المتباينات والمتتاليات
+- كثيرات الحدود والعمليات عليها
+- النسب الجبرية والعمليات على الجذور
+
+الهندسة (geometry):
+- الزوايا وخصائصها المتقدمة
+- مساحات وحجوم الأشكال المركبة
+- التشابه والتطابق
+- المثلثات وخصائصها (فيثاغورس، القائم الزاوية)
+- الدائرة ومماساتها وأوتارها
+- الأشكال ثلاثية الأبعاد (المنشور، الأسطوانة، المخروط)
+
+الإحصاء (statistics):
+- قراءة وتحليل الجداول المعقدة
+- الرسوم البيانية المتعددة (أعمدة، خطية، دائرية)
+- المتوسط الحسابي والوسيط والمنوال
+- الانحراف المعياري والتباين
+- الربيعيات وتمثيل البيانات
+
+الاحتمالات (probability):
+- حساب الاحتمالات باستخدام مبادئ العد
+- الأحداث المستقلة والمتنافية
+- التباديل والتوافيق
+- قاعدة الجمع والضرب
+
+---
+
+【القسم الكمي - المسار الأدبي】(مستوى أساسي)
+
+الجبر (algebra):
+- المعادلات البسيطة من الدرجة الأولى
+- العمليات الحسابية الأساسية
+- تبسيط التعابير الجبرية البسيطة
+
+الهندسة (geometry):
+- مفاهيم هندسية أولية (المحيط، المساحة)
+- الأشكال الأساسية (المربع، المستطيل، المثلث، الدائرة)
+- قياس الزوايا الأساسية
+
+الإحصاء (statistics):
+- المتوسط الحسابي والمنوال
+- قراءة رسوم بيانية بسيطة (أعمدة فقط)
+- تفسير الجداول البسيطة
+
+الاحتمالات (probability):
+- مفاهيم أساسية في الاحتمال
+- الاحتمال البسيط (نتيجة واحدة)
+
+---
+
+【موضوعات مشتركة للمسارين】
+
+النسبة والتناسب (ratio-proportion):
+- النسب المئوية والكسور
+- التناسب الطردي والعكسي
+- مسائل تطبيقية في الحياة اليومية
+- نسب التقسيم
+
+السرعة والمسافة والزمن (speed-time-distance):
+- مسائل الحركة المنتظمة
+- السرعة المتوسطة
+- العلاقات الرياضية البسيطة
+
+---
+
+【القسم اللفظي - موحد للمسارين】
+
+استيعاب المقروء (reading-comprehension):
+- نصوص متنوعة (أدبية، علمية، اجتماعية)
+- أسئلة فهم مباشر واستنتاج
+- تحليل واستخلاص الأفكار الرئيسية
+
+إكمال الجمل (sentence-completion):
+- اختيار الكلمة الأنسب لغويًا وسياقيًا
+- فهم السياق والمعنى
+
+الخطأ السياقي (context-error):
+- تحديد الكلمة غير المناسبة في الجملة
+- فهم التناسق اللغوي
+
+التناظر اللفظي (analogy):
+- إيجاد علاقة مماثلة بين زوجين من الكلمات
+- أنواع العلاقات: سببية، جزئية، تضاد، ترادف
+
+الارتباط والاختلاف (association-difference):
+- تحديد الكلمة المختلفة عن المجموعة
+- إيجاد العلاقة المشتركة بين الكلمات
+
+المفردات (vocabulary):
+- معاني الكلمات في سياقات مختلفة
+- المترادفات والأضداد
+- الدلالات اللغوية`
 
 /**
  * Categories prompt - cached across all batches
@@ -105,6 +234,145 @@ const CATEGORIES_PROMPT = `التصنيفات المتاحة لأسئلة اخت
   معاني الكلمات في سياقات مختلفة، المترادفات والأضداد، الدلالات اللغوية`
 
 /**
+ * Diagram generation prompt - instructions for generating visual questions
+ * Includes diagram metadata structure for rendering
+ */
+const DIAGRAM_GENERATION_PROMPT = `═══════════════════════════════════════════════════════════════════
+تعليمات توليد الأسئلة المصورة (الرسوم والمخططات)
+═══════════════════════════════════════════════════════════════════
+
+【متطلبات الأسئلة المصورة】
+
+يجب أن تتضمن كل دفعة أسئلة كمية ما لا يقل عن:
+- 2 سؤال هندسي مع رسم توضيحي (دائرة، مثلث، مستطيل، شكل مركب)
+- 1 سؤال إحصائي مع رسم بياني (أعمدة، خطي، دائري)
+
+【أنواع الأسئلة المدعومة】
+
+- mcq: سؤال نصي بدون رسم
+- diagram: سؤال هندسي مع رسم توضيحي
+- chart: سؤال إحصائي مع رسم بياني
+- reading-passage: نص قراءة مع أسئلة
+
+【بنية كائن الرسم (diagram)】
+
+لكل سؤال من نوع diagram أو chart، يجب تضمين كائن diagram بالبنية التالية:
+
+{
+  "type": "نوع الرسم",
+  "data": { بيانات الرسم حسب النوع },
+  "renderHint": "تقنية العرض",
+  "caption": "وصف مختصر للرسم"
+}
+
+【أنواع الرسوم الهندسية (renderHint: "SVG")】
+
+1. الدائرة (circle):
+{
+  "type": "circle",
+  "data": {
+    "radius": 7,
+    "center": [150, 150],
+    "label": "نق = 7 سم",
+    "showRadius": true,
+    "showDiameter": false
+  },
+  "renderHint": "SVG",
+  "caption": "دائرة نصف قطرها 7 سم"
+}
+
+2. المثلث (triangle):
+{
+  "type": "triangle",
+  "data": {
+    "vertices": [[50, 200], [250, 200], [150, 50]],
+    "labels": ["أ", "ب", "ج"],
+    "sides": ["5 سم", "5 سم", "6 سم"],
+    "angles": [null, null, "90°"],
+    "showRightAngle": true
+  },
+  "renderHint": "SVG",
+  "caption": "مثلث قائم الزاوية"
+}
+
+3. المستطيل (rectangle):
+{
+  "type": "rectangle",
+  "data": {
+    "width": 8,
+    "height": 5,
+    "labels": ["أ", "ب", "ج", "د"],
+    "showDimensions": true,
+    "showDiagonal": false
+  },
+  "renderHint": "SVG",
+  "caption": "مستطيل أبعاده 8×5"
+}
+
+4. شكل مركب (composite-shape):
+{
+  "type": "composite-shape",
+  "data": {
+    "shapes": [
+      { "type": "rectangle", "x": 0, "y": 0, "width": 10, "height": 6 },
+      { "type": "circle", "cx": 10, "cy": 3, "radius": 3, "half": true }
+    ],
+    "labels": ["10 سم", "6 سم", "نق = 3 سم"]
+  },
+  "renderHint": "SVG",
+  "caption": "مستطيل متصل بنصف دائرة"
+}
+
+【أنواع الرسوم البيانية (renderHint: "Chart.js")】
+
+1. رسم بياني بالأعمدة (bar-chart):
+{
+  "type": "bar-chart",
+  "data": {
+    "labels": ["أحمد", "سارة", "ليلى", "خالد"],
+    "values": [8, 12, 7, 9],
+    "xAxisLabel": "الطلاب",
+    "yAxisLabel": "عدد الكتب",
+    "title": "عدد الكتب المقروءة"
+  },
+  "renderHint": "Chart.js",
+  "caption": "عدد الكتب المقروءة من قبل كل طالب"
+}
+
+2. رسم بياني خطي (line-graph):
+{
+  "type": "line-graph",
+  "data": {
+    "labels": ["يناير", "فبراير", "مارس", "أبريل"],
+    "values": [20, 35, 25, 40],
+    "xAxisLabel": "الشهر",
+    "yAxisLabel": "المبيعات",
+    "title": "مبيعات الربع الأول"
+  },
+  "renderHint": "Chart.js",
+  "caption": "تطور المبيعات خلال الربع الأول"
+}
+
+3. رسم بياني دائري (pie-chart):
+{
+  "type": "pie-chart",
+  "data": {
+    "labels": ["رياضيات", "علوم", "لغة عربية", "إنجليزي"],
+    "values": [30, 25, 25, 20],
+    "title": "توزيع الدرجات"
+  },
+  "renderHint": "Chart.js",
+  "caption": "توزيع درجات الطالب على المواد"
+}
+
+【إرشادات إضافية للرسوم】
+
+- استخدم أرقامًا صحيحة أو كسورًا بسيطة قابلة للحساب الذهني
+- تأكد من أن بيانات الرسم متوافقة مع نص السؤال
+- اجعل الرسم واضحًا وقابلاً للفهم بدون شرح إضافي
+- لا تستخدم قيمًا تتطلب آلة حاسبة للتحقق منها`
+
+/**
  * Build system message blocks with cache control
  */
 export function buildSystemBlocks(): CachedTextBlock[] {
@@ -116,7 +384,17 @@ export function buildSystemBlocks(): CachedTextBlock[] {
     },
     {
       type: 'text',
+      text: TRACK_SPECIFIC_PROMPT,
+      cache_control: { type: 'ephemeral' },
+    },
+    {
+      type: 'text',
       text: CATEGORIES_PROMPT,
+      cache_control: { type: 'ephemeral' },
+    },
+    {
+      type: 'text',
+      text: DIAGRAM_GENERATION_PROMPT,
       cache_control: { type: 'ephemeral' },
     },
   ]
@@ -160,6 +438,7 @@ function getCategoriesForBatch(
 
 /**
  * Build user prompt for batch generation
+ * Enhanced with track-specific instructions and diagram requirements
  */
 export function buildUserPrompt(
   config: BatchConfig,
@@ -170,17 +449,49 @@ export function buildUserPrompt(
   const categoryNames = categories.join('، ')
 
   const idPrefix = config.section === 'quantitative' ? 'quant' : 'verbal'
+  const trackName = config.track === 'scientific' ? 'علمي' : 'أدبي'
+  const trackLevel = config.track === 'scientific' ? 'مستوى متقدم' : 'مستوى أساسي'
 
   // Build exclusion list for deduplication
   const exclusionNote = context.generatedIds.length > 0
     ? `\n\nتجنب إنشاء أسئلة مشابهة للأسئلة ذات المعرفات التالية:\n${context.generatedIds.slice(-20).join(', ')}`
     : ''
 
+  // Track-specific instructions for quantitative section
+  const trackInstructions = config.section === 'quantitative'
+    ? config.track === 'scientific'
+      ? `
+【تعليمات المسار العلمي - مستوى متقدم】
+- استخدم معادلات خطية وتربيعية
+- يمكن تضمين متباينات وتحليل
+- أسئلة الهندسة تشمل الأشكال المركبة والحجوم
+- أسئلة الإحصاء تشمل الانحراف المعياري والتباين
+- أسئلة الاحتمالات تشمل التباديل والتوافيق`
+      : `
+【تعليمات المسار الأدبي - مستوى أساسي】
+- استخدم معادلات بسيطة من الدرجة الأولى فقط
+- ركز على العمليات الحسابية الأساسية
+- أسئلة الهندسة تشمل المحيط والمساحة فقط
+- أسئلة الإحصاء تشمل المتوسط والمنوال فقط
+- أسئلة الاحتمالات تكون بسيطة (نتيجة واحدة)`
+    : ''
+
+  // Diagram requirements for quantitative batches
+  const diagramRequirements = config.section === 'quantitative'
+    ? `
+【متطلبات الأسئلة المصورة لهذه الدفعة】
+- يجب أن تتضمن هذه الدفعة 2 سؤال على الأقل من نوع "diagram" (أسئلة هندسية مع رسم)
+- يجب أن تتضمن هذه الدفعة 1 سؤال على الأقل من نوع "chart" (أسئلة إحصائية مع رسم بياني)
+- تأكد من تضمين كائن diagram مع بيانات الرسم الكاملة لكل سؤال مصور`
+    : ''
+
   return `قم بإنشاء ${config.batchSize} سؤال ${sectionName} لاختبار القدرات العامة.
 
 الدفعة: ${config.batchIndex + 1}
-المسار الأكاديمي: ${config.track === 'scientific' ? 'علمي' : 'أدبي'}
+المسار الأكاديمي: ${trackName} (${trackLevel})
 التصنيفات المطلوبة: ${categoryNames}
+${trackInstructions}
+${diagramRequirements}
 
 توزيع الصعوبة:
 - سهل (easy): 3 أسئلة
@@ -198,19 +509,28 @@ export function buildUserPrompt(
       "section": "${config.section}",
       "topic": "category_key",
       "difficulty": "easy" | "medium" | "hard",
-      "questionType": "mcq",
+      "questionType": "mcq" | "diagram" | "chart",
       "stem": "نص السؤال باللغة العربية",
       "choices": ["الخيار أ", "الخيار ب", "الخيار ج", "الخيار د"],
       "answerIndex": 0,
-      "explanation": "شرح مفصل للإجابة الصحيحة",
+      "explanation": "شرح مفصل للإجابة الصحيحة مع خطوات الحل",
+      "diagram": {
+        "type": "circle" | "triangle" | "rectangle" | "composite-shape" | "bar-chart" | "line-graph" | "pie-chart",
+        "data": { ... بيانات الرسم حسب النوع ... },
+        "renderHint": "SVG" | "Chart.js",
+        "caption": "وصف مختصر للرسم"
+      },
       "tags": ["tag1", "tag2"]
     }
   ]
-}`
+}
+
+ملاحظة: كائن diagram مطلوب فقط للأسئلة من نوع "diagram" أو "chart".`
 }
 
 /**
  * Parse and validate question response from Claude
+ * Enhanced to handle diagram/chart questions with rendering metadata
  */
 export function parseQuestionResponse(
   responseText: string,
@@ -245,6 +565,13 @@ export function parseQuestionResponse(
 
   const idPrefix = config.section === 'quantitative' ? 'quant' : 'verbal'
 
+  // Valid diagram types for validation
+  const validDiagramTypes = [
+    'circle', 'triangle', 'rectangle', 'composite-shape',
+    'bar-chart', 'pie-chart', 'line-graph', 'custom'
+  ]
+  const validRenderHints = ['SVG', 'Canvas', 'Chart.js']
+
   // Validate and normalize questions
   return parsed.questions.map((q, index) => {
     // Validate required fields
@@ -260,12 +587,41 @@ export function parseQuestionResponse(
       throw new Error(`Question ${index} has invalid answerIndex`)
     }
 
+    // Determine question type
+    const questionType = q.questionType || 'mcq'
+
+    // Validate and normalize diagram for visual questions
+    let diagram: DiagramData | undefined = undefined
+    if ((questionType === 'diagram' || questionType === 'chart') && q.diagram) {
+      const d = q.diagram as Partial<DiagramData>
+
+      // Validate diagram structure
+      if (!d.type || !validDiagramTypes.includes(d.type)) {
+        console.warn(`Question ${index} has invalid diagram type: ${d.type}, defaulting to 'custom'`)
+        d.type = 'custom'
+      }
+
+      if (!d.renderHint || !validRenderHints.includes(d.renderHint)) {
+        // Auto-assign renderHint based on diagram type
+        d.renderHint = ['bar-chart', 'pie-chart', 'line-graph'].includes(d.type)
+          ? 'Chart.js'
+          : 'SVG'
+      }
+
+      diagram = {
+        type: d.type,
+        data: d.data || {},
+        renderHint: d.renderHint,
+        caption: d.caption,
+      }
+    }
+
     return {
       id: q.id || `${idPrefix}_${config.batchIndex}_${String(index + 1).padStart(2, '0')}`,
       section: q.section || config.section,
       topic: (q.topic || 'general') as QuestionCategory,
       difficulty: q.difficulty || 'medium',
-      questionType: q.questionType || 'mcq',
+      questionType: questionType,
       stem: q.stem,
       choices: q.choices as [string, string, string, string],
       answerIndex: q.answerIndex as 0 | 1 | 2 | 3,
@@ -273,6 +629,7 @@ export function parseQuestionResponse(
       solvingStrategy: q.solvingStrategy,
       tip: q.tip,
       passage: q.passage,
+      diagram: diagram,
       tags: q.tags || [],
     }
   })

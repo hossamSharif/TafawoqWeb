@@ -2,28 +2,27 @@
 ===============================================================================
 SYNC IMPACT REPORT
 ===============================================================================
-Version Change: 1.1.0 → 1.2.0
-Modified Principles: N/A
-Added Sections:
-  - VII. Chrome MCP Manual Testing Mandate (new principle for browser-based testing)
+Version Change: 1.2.0 → 1.3.0
+Modified Principles:
+  - V. Technology Stack Alignment (expanded to include web platform: Next.js 14+)
+  - VI. Git Commit Discipline (strengthened enforcement for /speckit.implement)
+Added Sections: N/A
 Removed Sections: N/A
 
 Templates Status:
   ✅ .specify/templates/plan-template.md - Validated (Constitution Check present)
   ✅ .specify/templates/spec-template.md - Validated (Requirements align)
   ✅ .specify/templates/tasks-template.md - Validated (Task structure supports constitution)
-  ⚠  CLAUDE.md - Constitutional Governance section already references constitution
-  ℹ  No command files found in .specify/templates/commands/ - no updates needed
+  ✅ CLAUDE.md - Constitutional Governance section references constitution
 
 Follow-up TODOs:
-  - Ensure Chrome MCP server is properly configured and accessible to all agents
-  - Document Chrome MCP tool usage patterns in project onboarding materials
-  - Consider adding screenshot archiving for test evidence retention
+  - Ensure all /speckit.implement executions include mandatory git commit step
+  - Verify Stripe MCP tools are referenced in payment-related tasks
 
 Version Bump Rationale:
-  MINOR (1.1.0 → 1.2.0) - New principle added (Chrome MCP Manual Testing Mandate)
-  with materially expanded governance guidance for browser-based testing workflow.
-  This adds new requirements without breaking existing principles.
+  MINOR (1.2.0 → 1.3.0) - Modified Principle V to support both mobile (React Native)
+  and web (Next.js) platforms. Strengthened Principle VI with explicit enforcement
+  requirements for automated commits after /speckit.implement task completion.
 
 ===============================================================================
 -->
@@ -80,11 +79,22 @@ Version Bump Rationale:
 
 **All implementation decisions MUST align with the approved technology stack and architectural decisions:**
 
+**Web Platform (Next.js Projects):**
+- Primary development: TypeScript 5.x with Next.js 14+ (App Router)
+- Frontend: React 18+, shadcn/ui, Tailwind CSS
+- Backend: Supabase (PostgreSQL with RLS), Stripe for payments
+- AI Integration: @anthropic-ai/sdk for Claude API
+
+**Mobile Platform (React Native Projects):**
 - Primary development: JavaScript/TypeScript with React Native (Expo SDK 51+)
+
+**Shared Standards:**
 - Backend tooling: Node.js 18+ for scripts and utilities
 - Project structure: `src/` for source code, `tests/` for test suites
-- Code style: Follow standard JavaScript/TypeScript conventions for React  projects
+- Code style: Follow standard JavaScript/TypeScript conventions for React projects
 - Quality gates: `npm test` for testing, `npm run lint` for code quality validation
+
+**Platform Selection**: The platform (web or mobile) is determined by the project's `package.json` dependencies. Projects with `next` are web; projects with `expo` are mobile.
 
 **Rationale**: Consistent technology choices reduce cognitive overhead, simplify onboarding, ensure dependency compatibility, and prevent architectural drift that fragments the codebase.
 
@@ -92,10 +102,34 @@ Version Bump Rationale:
 
 **All implementation agents MUST commit all code and asset changes to the active git branch immediately after successfully completing each `/speckit.implement` command:**
 
+**Mandatory Commit Workflow (STRICTLY ENFORCED):**
+1. After completing ANY task in `/speckit.implement`, the agent MUST immediately run `git add` for all changed files
+2. The agent MUST then run `git commit` with a descriptive message following this format:
+   ```
+   feat([task-id]): [brief description of changes]
+
+   - [bullet point of specific change 1]
+   - [bullet point of specific change 2]
+   ```
+3. The agent MUST NOT proceed to the next task until the commit is successful
+4. The agent MUST report the commit hash after each successful commit
+
+**Commit Requirements:**
 - Every commit MUST include a clear, descriptive commit message summarizing the implemented feature or change
 - No code, configuration, or asset changes should remain uncommitted after a completed implementation task
 - Work MUST be organized in project feature branches according to the plan/task structure
-- If a commit cannot be made (e.g., due to merge conflicts or lack of git context), the agent MUST halt and raise an exception for human attention
+- Commits MUST be atomic: one task = one commit (unless tasks are explicitly grouped)
+
+**Failure Handling:**
+- If a commit cannot be made (e.g., due to merge conflicts, uncommitted changes, or git errors), the agent MUST:
+  1. HALT immediately and NOT proceed to the next task
+  2. Report the exact git error to the user
+  3. Wait for user resolution before continuing
+- Agents MUST NEVER skip commits or batch multiple tasks into a single commit without explicit user approval
+
+**Verification:**
+- At the end of each `/speckit.implement` session, the agent MUST run `git log --oneline -n 10` to show recent commits
+- The agent MUST verify that the number of commits matches the number of completed tasks
 
 **Rationale**: Immediate commits after task completion ensure version control hygiene, enable atomic rollbacks, provide clear audit trails, and prevent loss of work. Feature branch organization maintains clean history and enables parallel development. Halting on commit failures prevents silent failures that could lead to lost work or inconsistent repository state.
 
@@ -154,4 +188,4 @@ Version Bump Rationale:
 
 ---
 
-**Version**: 1.2.0 | **Ratified**: 2025-12-03 | **Last Amended**: 2025-12-11
+**Version**: 1.3.0 | **Ratified**: 2025-12-03 | **Last Amended**: 2025-12-15

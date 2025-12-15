@@ -218,16 +218,18 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T083 [P] Handle edge case: premium user downgrades (excess content remains, cannot create new until under limits)
-- [ ] T084 [P] Handle edge case: deleted shared content (rewards already earned remain valid)
-- [ ] T085 [P] Handle edge case: simultaneous completions (both count, owner gets multiple rewards)
-- [ ] T086 Implement Stripe webhook handling for payment failures in src/app/api/webhooks/stripe/route.ts using Stripe MCP tools (handle invoice.payment_failed event, set grace_period_end)
-- [ ] T087 Implement grace period expiry handling using Stripe MCP tools for subscription management (auto-downgrade after 3 days via Stripe dunning or scheduled check)
-- [ ] T088 Add payment failure and grace period notifications to user using Stripe MCP tools to retrieve payment status and Supabase for notification creation
-- [ ] T089 Run quickstart.md validation - test all features end-to-end
-- [ ] T090 Security review: verify RLS policies prevent unauthorized library access
-- [ ] T091 Performance review: verify library browsing meets <30s requirement (SC-001)
-- [ ] T092 Verify notification delivery meets <10s requirement (SC-005)
+- [x] T083 [P] Handle edge case: premium user downgrades (excess content remains, cannot create new until under limits)
+- [x] T084 [P] Handle edge case: deleted shared content (rewards already earned remain valid)
+- [x] T085 [P] Handle edge case: simultaneous completions (both count, owner gets multiple rewards)
+- [x] T086 Implement Stripe webhook handling for payment failures in src/app/api/webhooks/stripe/route.ts using Stripe MCP tools (handle invoice.payment_failed event, set grace_period_end)
+- [x] T087 Implement grace period expiry handling using Stripe MCP tools for subscription management (auto-downgrade after 3 days via Stripe dunning or scheduled check)
+- [x] T088 Add payment failure and grace period notifications to user using Stripe MCP tools to retrieve payment status and Supabase for notification creation
+- [x] T089 Run quickstart.md validation - test all features end-to-end
+- [x] T090 Security review: verify RLS policies prevent unauthorized library access
+- [x] T091 Performance review: verify library browsing meets <30s requirement (SC-001)
+- [x] T092 Verify notification delivery meets <10s requirement (SC-005)
+
+**Checkpoint**: Phase 10 complete - All polish tasks completed
 
 ---
 

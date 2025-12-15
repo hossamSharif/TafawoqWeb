@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { Logo } from '@/components/shared/Logo'
+import { brand } from '@/lib/brand'
 
 export default function AuthLayout({
   children,
@@ -10,9 +11,7 @@ export default function AuthLayout({
       {/* Header */}
       <header className="border-b border-border bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/" className="text-2xl font-bold text-primary">
-            تفوق
-          </Link>
+          <Logo size="md" href="/" />
         </div>
       </header>
 
@@ -25,7 +24,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <footer className="border-t border-border py-4 text-center text-sm text-muted-foreground">
-        <p>© 2024 تفوق. جميع الحقوق محفوظة.</p>
+        <p>© {brand.legal.copyrightYear} {brand.name.arabic}. جميع الحقوق محفوظة.</p>
       </footer>
     </div>
   )

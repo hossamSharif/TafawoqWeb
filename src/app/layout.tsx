@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Noto_Kufi_Arabic } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
+import { brand } from '@/lib/brand'
 
 const notoKufiArabic = Noto_Kufi_Arabic({
   subsets: ['arabic'],
@@ -11,8 +12,16 @@ const notoKufiArabic = Noto_Kufi_Arabic({
 })
 
 export const metadata: Metadata = {
-  title: 'تفوق - منصة التحضير لاختبار القدرات',
-  description: 'منصة متكاملة للتحضير لاختبار القدرات العامة للطلاب السعوديين',
+  title: brand.meta.title,
+  description: brand.meta.description,
+  keywords: [...brand.meta.keywords],
+  openGraph: {
+    title: brand.meta.title,
+    description: brand.meta.description,
+    siteName: brand.name.full,
+    locale: 'ar_SA',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({

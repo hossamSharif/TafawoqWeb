@@ -8,6 +8,7 @@ import { Home, FileText, Target, User, Settings, LogOut, Menu, X, Crown, Message
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { NotificationBadge } from '@/components/notifications/NotificationBadge'
+import { Logo } from '@/components/shared/Logo'
 
 const navItems = [
   { href: '/dashboard', label: 'الرئيسية', icon: Home },
@@ -44,9 +45,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/dashboard" className="text-2xl font-bold text-primary">
-              تفوق
-            </Link>
+            <Logo size="sm" href="/dashboard" />
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1">
