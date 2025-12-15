@@ -121,10 +121,10 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 ### Implementation for User Story 3
 
-- [ ] T047 [US3] Create utility function to calculate practice limit in src/lib/practice/calculateLimit.ts
-- [ ] T048 [US3] Update practice creation API in src/app/api/practice/route.ts to enforce half-question limit
-- [ ] T049 [US3] Update practice creation UI in src/app/(main)/practice/page.tsx to display and enforce max question limit
-- [ ] T050 [US3] Add explanatory tooltip/message when user tries to select more than allowed questions
+- [x] T047 [US3] Create utility function to calculate practice limit in src/lib/practice/calculateLimit.ts
+- [x] T048 [US3] Update practice creation API in src/app/api/practice/route.ts to enforce half-question limit
+- [x] T049 [US3] Update practice creation UI in src/app/(main)/practice/page.tsx to display and enforce max question limit
+- [x] T050 [US3] Add explanatory tooltip/message when user tries to select more than allowed questions
 
 **Checkpoint**: User Story 3 complete - practice limits enforced at half exam section count
 

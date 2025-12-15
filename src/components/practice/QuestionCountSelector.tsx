@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { Info } from 'lucide-react'
+import type { QuestionSection } from '@/types/question'
 
 interface QuestionCountSelectorProps {
   value: number
@@ -11,6 +13,9 @@ interface QuestionCountSelectorProps {
   max?: number
   isPremium?: boolean
   disabled?: boolean
+  // T049: New props for practice limit display (FR-016, FR-017)
+  examSectionCount?: number | null
+  section?: QuestionSection | null
 }
 
 const PRESET_COUNTS = [5, 10, 20, 30, 50]
@@ -22,6 +27,8 @@ export function QuestionCountSelector({
   max = 100,
   isPremium = false,
   disabled = false,
+  examSectionCount,
+  section,
 }: QuestionCountSelectorProps) {
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [customValue, setCustomValue] = useState(value.toString())
@@ -30,10 +37,13 @@ export function QuestionCountSelector({
   const effectiveMin = isPremium ? min : 5
   const effectiveMax = isPremium ? max : 5
 
-  // Filter presets based on tier
+  // T049: Filter presets based on tier AND practice limit (FR-016)
   const availablePresets = isPremium
-    ? PRESET_COUNTS
+    ? PRESET_COUNTS.filter((count) => count <= effectiveMax)
     : PRESET_COUNTS.filter((count) => count === 5)
+
+  // T049: Check if practice limit is lower than the general max (100)
+  const isPracticeLimitApplied = isPremium && max < 100
 
   const handlePresetClick = (count: number) => {
     if (disabled) return
@@ -73,6 +83,22 @@ export function QuestionCountSelector({
         <p className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
           الحد الأقصى للمستخدمين المجانيين: 5 أسئلة
         </p>
+      )}
+
+      {/* T050: Practice limit explanation for premium users (FR-016, FR-017) */}
+      {isPremium && isPracticeLimitApplied && examSectionCount && (
+        <div className="flex items-start gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">
+              الحد الأقصى للتمرين: {effectiveMax} سؤال
+            </p>
+            <p className="text-blue-500 text-xs mt-1">
+              {section === 'quantitative' ? 'القسم الكمي' : 'القسم اللفظي'} يحتوي على {examSectionCount} سؤال في الاختبار.
+              التمرين محدود بنصف عدد أسئلة القسم.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Preset buttons */}

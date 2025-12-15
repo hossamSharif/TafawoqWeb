@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { generateQuestionBatch } from '@/lib/anthropic'
 import { canUsePracticeCredit, consumePracticeCredit } from '@/lib/rewards/calculator'
+import { calculatePracticeLimit, type AcademicTrack } from '@/lib/practice'
 import type { GenerationContext } from '@/lib/anthropic/types'
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 
@@ -71,6 +72,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // T048: Get user's academic track for practice limit calculation (FR-016)
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('academic_track')
+      .eq('user_id', user.id)
+      .single()
+
+    const userTrack = (profile?.academic_track as AcademicTrack) || null
+
+    // T048: Calculate practice limit based on section and track (FR-016)
+    // Practice sessions limited to half the exam section's question count
+    const practiceLimit = calculatePracticeLimit(section, userTrack)
+
     // Get user subscription status for tier restrictions
     const { data: subscription, error: subError } = await supabase
       .from('user_subscriptions')
@@ -93,17 +107,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Apply free tier restrictions (T093)
+    // Apply free tier restrictions (T093) and practice limit (T048)
     let finalQuestionCount = questionCount
     let finalCategories = categories
+    let practiceLimitApplied = false
 
     if (!isPremium) {
       // Free users: max 2 categories, fixed 5 questions
       finalQuestionCount = 5
       finalCategories = categories.slice(0, 2)
     } else {
-      // Premium users: validate question count range (5-100)
-      finalQuestionCount = Math.max(5, Math.min(100, questionCount))
+      // Premium users: validate question count range (5-practiceLimit)
+      // T048: Apply half-section practice limit (FR-016)
+      const maxAllowed = Math.min(100, practiceLimit) // Cap at both 100 and practice limit
+      finalQuestionCount = Math.max(5, Math.min(maxAllowed, questionCount))
+
+      // Track if practice limit was applied
+      if (questionCount > practiceLimit) {
+        practiceLimitApplied = true
+      }
     }
 
     // T047: Create practice session first (with generation_in_progress = true to prevent concurrent generation)
@@ -228,6 +250,10 @@ export async function POST(request: NextRequest) {
         originalCategories: categories,
         finalCategories,
         usedPracticeCredit,
+        // T048: Practice limit information (FR-016, FR-017)
+        practiceLimit,
+        practiceLimitApplied,
+        userTrack,
       },
     })
   } catch (error) {

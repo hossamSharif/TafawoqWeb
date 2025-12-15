@@ -17,6 +17,17 @@ type WizardStep = 'section' | 'categories' | 'difficulty' | 'questionCount' | 'c
 
 const STEPS: WizardStep[] = ['section', 'categories', 'difficulty', 'questionCount', 'confirm']
 
+// T049: Practice limit info from API
+interface PracticeLimit {
+  maxQuestions: number
+  examSectionCount: number
+}
+
+interface PracticeLimits {
+  quantitative: PracticeLimit
+  verbal: PracticeLimit
+}
+
 export default function NewPracticePage() {
   const router = useRouter()
 
@@ -33,28 +44,59 @@ export default function NewPracticePage() {
   const [difficulty, setDifficulty] = useState<QuestionDifficulty | null>(null)
   const [questionCount, setQuestionCount] = useState(5)
 
-  // Check subscription status
+  // T049: Practice limits state (FR-016, FR-017)
+  const [practiceLimits, setPracticeLimits] = useState<PracticeLimits | null>(null)
+
+  // Check subscription status and fetch practice limits
   useEffect(() => {
-    async function checkSubscription() {
+    async function fetchInitialData() {
       try {
-        const response = await fetch('/api/subscription')
-        if (response.ok) {
-          const data = await response.json()
-          setIsPremium(data.subscription?.tier === 'premium' && data.subscription?.status === 'active')
+        // Fetch subscription and practice limits in parallel
+        const [subResponse, categoriesResponse] = await Promise.all([
+          fetch('/api/subscription'),
+          fetch('/api/practice/categories'),
+        ])
+
+        if (subResponse.ok) {
+          const subData = await subResponse.json()
+          setIsPremium(subData.subscription?.tier === 'premium' && subData.subscription?.status === 'active')
+        }
+
+        // T049: Get practice limits from categories API
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json()
+          if (categoriesData.practiceLimits) {
+            setPracticeLimits(categoriesData.practiceLimits)
+          }
         }
       } catch (error) {
-        console.error('Subscription check error:', error)
+        console.error('Initial data fetch error:', error)
       } finally {
         setCheckingSubscription(false)
       }
     }
-    checkSubscription()
+    fetchInitialData()
   }, [])
 
-  // Reset categories when section changes
+  // Reset categories and adjust question count when section changes
   useEffect(() => {
     setCategories([])
-  }, [section])
+    // T049: Reset question count to respect new section's practice limit
+    if (section && practiceLimits) {
+      const newLimit = practiceLimits[section].maxQuestions
+      // Use functional update to avoid dependency on questionCount
+      setQuestionCount(prevCount => Math.min(prevCount, newLimit))
+    }
+  }, [section, practiceLimits])
+
+  // T049: Get current section's practice limit (FR-016, FR-017)
+  const currentPracticeLimit = section && practiceLimits
+    ? practiceLimits[section].maxQuestions
+    : 100 // Default to 100 if no limits available
+
+  const currentExamSectionCount = section && practiceLimits
+    ? practiceLimits[section].examSectionCount
+    : null
 
   const currentStepIndex = STEPS.indexOf(currentStep)
 
@@ -219,6 +261,10 @@ export default function NewPracticePage() {
             value={questionCount}
             onChange={setQuestionCount}
             isPremium={isPremium}
+            // T049: Pass practice limit based on selected section (FR-016, FR-017)
+            max={currentPracticeLimit}
+            examSectionCount={currentExamSectionCount}
+            section={section}
           />
         )}
 
@@ -275,6 +321,16 @@ export default function NewPracticePage() {
                 >
                   ترقية للحساب المميز للحصول على المزيد
                 </Button>
+              </div>
+            )}
+
+            {/* T049: Show practice limit info for premium users */}
+            {isPremium && currentExamSectionCount && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-blue-800 text-sm">
+                  <strong>ملاحظة:</strong> الحد الأقصى للتمرين هو {currentPracticeLimit} سؤال
+                  ({section === 'quantitative' ? 'القسم الكمي' : 'القسم اللفظي'} يحتوي على {currentExamSectionCount} سؤال في الاختبار)
+                </p>
               </div>
             )}
 
