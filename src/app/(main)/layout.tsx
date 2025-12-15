@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
-import { Home, FileText, Target, User, Settings, LogOut, Menu, X, Crown, MessageSquare, Bell } from 'lucide-react'
+import { Home, FileText, Target, User, Settings, LogOut, Menu, X, Crown, MessageSquare, Bell, Library } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { NotificationBadge } from '@/components/notifications/NotificationBadge'
@@ -12,6 +12,7 @@ import { NotificationBadge } from '@/components/notifications/NotificationBadge'
 const navItems = [
   { href: '/dashboard', label: 'الرئيسية', icon: Home },
   { href: '/forum', label: 'المنتدى', icon: MessageSquare },
+  { href: '/library', label: 'المكتبة', icon: Library },
   { href: '/exam', label: 'اختبار تجريبي', icon: FileText },
   { href: '/practice', label: 'تمارين مخصصة', icon: Target },
   { href: '/profile', label: 'الملف الشخصي', icon: User },

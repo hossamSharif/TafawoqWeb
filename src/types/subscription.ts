@@ -109,3 +109,104 @@ export interface UsageStats {
   canTakeExam: boolean
   remainingExams: number | null
 }
+
+// ============================================
+// Platform Upgrade V2 - New Types
+// ============================================
+
+/**
+ * Sharing limits by subscription tier
+ */
+export interface SharingLimits {
+  examSharesPerMonth: number
+  practiceSharesPerMonth: number
+  examSharesUsed: number
+  practiceSharesUsed: number
+  canShareExam: boolean
+  canSharePractice: boolean
+}
+
+/**
+ * Grace period status for payment failures
+ */
+export interface GracePeriodStatus {
+  inGracePeriod: boolean
+  gracePeriodEnd: string | null
+  daysRemaining: number | null
+  paymentFailedAt: string | null
+  willDowngrade: boolean
+}
+
+/**
+ * Extended subscription with grace period fields
+ */
+export interface SubscriptionWithGracePeriod extends Subscription {
+  gracePeriodEnd?: string | null
+  paymentFailedAt?: string | null
+  downgradeScheduled?: boolean
+}
+
+/**
+ * User's complete subscription limits and usage
+ */
+export interface UserLimits {
+  tier: 'free' | 'premium'
+  generation: {
+    exams: {
+      used: number
+      limit: number
+      remaining: number
+    }
+    practices: {
+      used: number
+      limit: number
+      remaining: number
+    }
+  }
+  sharing: SharingLimits
+  library: {
+    accessUsed: number
+    accessLimit: number | null // null = unlimited
+  }
+  rewards: {
+    examCredits: number
+    practiceCredits: number
+  }
+}
+
+/**
+ * Sharing quota response type
+ */
+export interface SharingQuota {
+  exams: {
+    shared: number
+    limit: number
+    remaining: number
+  }
+  practices: {
+    shared: number
+    limit: number
+    remaining: number
+  }
+}
+
+// Limits constants by tier
+export const TIER_LIMITS = {
+  free: {
+    examsPerMonth: 2,
+    practicesPerMonth: 3,
+    examSharesPerMonth: 2,
+    practiceSharesPerMonth: 3,
+    libraryAccessCount: 1,
+  },
+  premium: {
+    examsPerMonth: 10,
+    practicesPerMonth: 15,
+    examSharesPerMonth: 10,
+    practiceSharesPerMonth: 15,
+    libraryAccessCount: null, // unlimited
+  },
+} as const
+
+// Grace period constants
+export const GRACE_PERIOD_DAYS = 3

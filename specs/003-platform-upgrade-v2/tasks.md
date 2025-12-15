@@ -47,17 +47,17 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T012 [P] Create library types in src/types/library.ts (LibraryExam, LibraryAccess, LibraryAccessStatus)
-- [ ] T013 [P] Create rewards types in src/types/rewards.ts (RewardTransaction, RewardNotification)
-- [ ] T014 [P] Create maintenance types in src/types/maintenance.ts (MaintenanceConfig, MaintenanceLog)
-- [ ] T015 [P] Update subscription types in src/types/subscription.ts (add sharing limits, grace period fields)
-- [ ] T016 Create library queries in src/lib/library/queries.ts (getLibraryExams, getLibraryExamById, checkLibraryAccess)
-- [ ] T017 [P] Create library actions in src/lib/library/actions.ts (grantLibraryAccess, startLibraryExam, completeLibraryExam)
-- [ ] T018 [P] Create rewards utilities in src/lib/rewards/index.ts (getRewardHistory, checkRewardEligibility)
-- [ ] T019 [P] Create maintenance utilities in src/lib/maintenance/index.ts (getMaintenanceStatus, isMaintenanceModeActive)
-- [ ] T020 Update middleware.ts to add maintenance mode check for write operations (exam generation, practice creation, subscription)
-- [ ] T021 Add "Library" navigation item to src/components/shared/Navigation.tsx (between Forum and Profile)
-- [ ] T022 Backfill default values for existing users' share credits based on subscription tier
+- [x] T012 [P] Create library types in src/types/library.ts (LibraryExam, LibraryAccess, LibraryAccessStatus)
+- [x] T013 [P] Create rewards types in src/types/rewards.ts (RewardTransaction, RewardNotification)
+- [x] T014 [P] Create maintenance types in src/types/maintenance.ts (MaintenanceConfig, MaintenanceLog)
+- [x] T015 [P] Update subscription types in src/types/subscription.ts (add sharing limits, grace period fields)
+- [x] T016 Create library queries in src/lib/library/queries.ts (getLibraryExams, getLibraryExamById, checkLibraryAccess)
+- [x] T017 [P] Create library actions in src/lib/library/actions.ts (grantLibraryAccess, startLibraryExam, completeLibraryExam)
+- [x] T018 [P] Create rewards utilities in src/lib/rewards/index.ts (getRewardHistory, checkRewardEligibility)
+- [x] T019 [P] Create maintenance utilities in src/lib/maintenance/index.ts (getMaintenanceStatus, isMaintenanceModeActive)
+- [x] T020 Update middleware.ts to add maintenance mode check for write operations (exam generation, practice creation, subscription)
+- [x] T021 Add "Library" navigation item to src/components/shared/Navigation.tsx (between Forum and Profile)
+- [x] T022 Backfill default values for existing users' share credits based on subscription tier
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

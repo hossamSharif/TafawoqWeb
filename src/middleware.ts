@@ -13,6 +13,22 @@ const PROTECTED_ROUTES = [
   '/subscription',
   '/settings',
   '/onboarding',
+  '/library',
+]
+
+/**
+ * Routes blocked during maintenance mode (write operations)
+ * Read operations (browsing) are still allowed
+ */
+const MAINTENANCE_BLOCKED_ROUTES = [
+  '/exam/start',
+  '/exam/generate',
+  '/practice/start',
+  '/practice/create',
+  '/subscription/checkout',
+  '/subscription/manage',
+  '/forum/new',
+  '/forum/share',
 ]
 
 /**
@@ -67,6 +83,7 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
   const isPremiumRoute = PREMIUM_ROUTES.some(route => pathname.startsWith(route))
   const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route))
+  const isMaintenanceBlockedRoute = MAINTENANCE_BLOCKED_ROUTES.some(route => pathname.startsWith(route))
 
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !session) {
@@ -78,6 +95,23 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && session) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Check maintenance mode for blocked routes
+  if (isMaintenanceBlockedRoute && session) {
+    const { data: maintenanceToggle } = await supabase
+      .from('feature_toggles')
+      .select('is_enabled, description')
+      .eq('feature_name', 'maintenance_mode')
+      .maybeSingle()
+
+    if (maintenanceToggle?.is_enabled) {
+      // Redirect to maintenance page or dashboard with message
+      const maintenanceUrl = new URL('/dashboard', request.url)
+      maintenanceUrl.searchParams.set('maintenance', 'true')
+      maintenanceUrl.searchParams.set('message', maintenanceToggle.description || 'النظام قيد الصيانة')
+      return NextResponse.redirect(maintenanceUrl)
+    }
   }
 
   // Check premium access for premium routes
