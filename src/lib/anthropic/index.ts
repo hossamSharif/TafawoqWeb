@@ -22,3 +22,14 @@ export type {
   UsageMetrics,
   BatchResponse,
 } from './types'
+
+export {
+  calculateCacheHitRate,
+  calculateCostMetrics,
+  logCachePerformance,
+  logUsageMetrics,
+  logRequestTiming,
+  logProviderSwitch,
+} from './monitoring'
+
+export type { CachePerformanceMetrics } from './monitoring'

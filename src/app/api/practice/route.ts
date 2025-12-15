@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { generateQuestionBatch } from '@/lib/anthropic'
+import { canUsePracticeCredit, consumePracticeCredit } from '@/lib/rewards/calculator'
 import type { GenerationContext } from '@/lib/anthropic/types'
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 
@@ -30,11 +31,12 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { section, categories, difficulty, questionCount } = body as {
+    const { section, categories, difficulty, questionCount, useCredit } = body as {
       section: QuestionSection
       categories: QuestionCategory[]
       difficulty: QuestionDifficulty
       questionCount: number
+      useCredit?: boolean // Optional: use practice credit for premium features
     }
 
     // Validate required fields
@@ -76,7 +78,20 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
-    const isPremium = subscription?.tier === 'premium' && subscription?.status === 'active'
+    let isPremium = subscription?.tier === 'premium' && subscription?.status === 'active'
+    let usedPracticeCredit = false
+
+    // Check if user wants to use a practice credit for premium features
+    if (!isPremium && useCredit) {
+      const creditCheck = await canUsePracticeCredit(user.id)
+      if (creditCheck.canUse) {
+        const creditUsed = await consumePracticeCredit(user.id)
+        if (creditUsed) {
+          isPremium = true // Grant premium features for this session
+          usedPracticeCredit = true
+        }
+      }
+    }
 
     // Apply free tier restrictions (T093)
     let finalQuestionCount = questionCount
@@ -207,11 +222,12 @@ export async function POST(request: NextRequest) {
       },
       questions: questionsWithoutAnswers,
       restrictions: {
-        appliedFreeTierRestrictions: !isPremium,
+        appliedFreeTierRestrictions: !isPremium && !usedPracticeCredit,
         originalQuestionCount: questionCount,
         finalQuestionCount,
         originalCategories: categories,
         finalCategories,
+        usedPracticeCredit,
       },
     })
   } catch (error) {

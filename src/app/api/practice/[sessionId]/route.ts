@@ -1,6 +1,7 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
+import { notifyExamCompleted } from '@/lib/notifications/service'
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>
@@ -174,6 +175,50 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           onConflict: 'user_id',
           ignoreDuplicates: false,
         })
+
+      // Handle shared practice completion - record completion and notify post author
+      if (currentSession.shared_from_post_id) {
+        try {
+          // Get the forum post and author info
+          const { data: post } = await supabase
+            .from('forum_posts')
+            .select('id, title, author_id')
+            .eq('id', currentSession.shared_from_post_id)
+            .single()
+
+          if (post && post.author_id !== user.id) {
+            // Get completing user's display name
+            const { data: userProfile } = await supabase
+              .from('user_profiles')
+              .select('display_name')
+              .eq('user_id', user.id)
+              .single()
+
+            // Record the completion
+            await supabase
+              .from('shared_exam_completions')
+              .insert({
+                post_id: post.id,
+                user_id: user.id,
+                practice_session_id: sessionId,
+                score: 0, // Practice sessions don't have an overall score
+              })
+
+            // Update completion count on the post
+            await supabase.rpc('increment_completion_count', { post_id: post.id })
+
+            // Notify the post author
+            await notifyExamCompleted(post.author_id, {
+              postId: post.id,
+              postTitle: post.title,
+              completedByName: userProfile?.display_name || 'مستخدم',
+            })
+          }
+        } catch (sharedPracticeError) {
+          // Log but don't fail the main operation
+          console.error('Failed to record shared practice completion:', sharedPracticeError)
+        }
+      }
     }
 
     return NextResponse.json({

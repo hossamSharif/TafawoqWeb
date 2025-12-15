@@ -163,15 +163,15 @@
 
 **Purpose**: Performance optimization, monitoring, and production readiness
 
-- [ ] T050 [P] Add cache performance logging (cacheRead, cacheWrite, hitRate) in src/lib/anthropic/client.ts
-- [ ] T051 [P] Add usage metrics tracking (tokens used per batch) for cost monitoring
-- [ ] T052 Validate system prompts exceed 1,024 token minimum for caching
-- [ ] T053 [P] Add request timing instrumentation for latency monitoring
-- [ ] T054 Run quickstart.md test-claude.ts verification script
-- [ ] T055 Run quickstart.md test-caching.ts verification script
-- [ ] T056 Verify first batch latency <5s target via Chrome MCP manual testing
-- [ ] T057 [P] Update TypeScript types in src/types/question.ts if needed for new batch fields
-- [ ] T058 Code cleanup: Remove any unused OpenRouter-only code paths superseded by this feature
+- [X] T050 [P] Add cache performance logging (cacheRead, cacheWrite, hitRate) in src/lib/anthropic/client.ts
+- [X] T051 [P] Add usage metrics tracking (tokens used per batch) for cost monitoring
+- [X] T052 Validate system prompts exceed 1,024 token minimum for caching
+- [X] T053 [P] Add request timing instrumentation for latency monitoring
+- [X] T054 Run quickstart.md test-claude.ts verification script
+- [X] T055 Run quickstart.md test-caching.ts verification script
+- [X] T056 Verify first batch latency <5s target via Chrome MCP manual testing
+- [X] T057 [P] Update TypeScript types in src/types/question.ts if needed for new batch fields
+- [X] T058 Code cleanup: Remove any unused OpenRouter-only code paths superseded by this feature
 
 ---
 

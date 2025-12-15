@@ -1,7 +1,8 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { generateQuestionBatch } from '@/lib/anthropic'
+import { canUseExamCredit, consumeExamCredit } from '@/lib/rewards/calculator'
 import type { GenerationContext } from '@/lib/anthropic/types'
 
 type AcademicTrack = 'scientific' | 'literary'
@@ -63,17 +64,44 @@ export async function POST(request: NextRequest) {
     }
 
     const eligibilityResult = eligibility?.[0]
+    let usedExamCredit = false
+
     if (!eligibilityResult?.is_eligible) {
-      return NextResponse.json(
-        {
-          error: 'لقد تجاوزت الحد الأسبوعي للاختبارات',
-          exams_taken: eligibilityResult?.exams_taken_this_week || 0,
-          max_exams: eligibilityResult?.max_exams_per_week || 3,
-          next_eligible_at: eligibilityResult?.next_eligible_at,
-          reason: eligibilityResult?.reason,
-        },
-        { status: 429 }
-      )
+      // Check if user has exam credits to use as fallback
+      const creditCheck = await canUseExamCredit(user.id)
+
+      if (creditCheck.canUse) {
+        // Try to use exam credit
+        const creditUsed = await consumeExamCredit(user.id)
+        if (creditUsed) {
+          usedExamCredit = true
+          // Continue with exam creation using credit
+        } else {
+          return NextResponse.json(
+            {
+              error: 'فشل في استخدام رصيد الاختبار',
+              exams_taken: eligibilityResult?.exams_taken_this_week || 0,
+              max_exams: eligibilityResult?.max_exams_per_week || 3,
+              next_eligible_at: eligibilityResult?.next_eligible_at,
+              reason: eligibilityResult?.reason,
+              creditsAvailable: creditCheck.creditsAvailable,
+            },
+            { status: 429 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          {
+            error: 'لقد تجاوزت الحد الأسبوعي للاختبارات',
+            exams_taken: eligibilityResult?.exams_taken_this_week || 0,
+            max_exams: eligibilityResult?.max_exams_per_week || 3,
+            next_eligible_at: eligibilityResult?.next_eligible_at,
+            reason: eligibilityResult?.reason,
+            creditsAvailable: 0,
+          },
+          { status: 429 }
+        )
+      }
     }
 
     const track = profile.academic_track as AcademicTrack

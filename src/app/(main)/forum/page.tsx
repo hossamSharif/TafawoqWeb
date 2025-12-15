@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PostList } from '@/components/forum/PostList'
+import { ForumErrorBoundary } from '@/components/forum/ForumErrorBoundary'
+import { PostCardSkeleton } from '@/components/forum/PostCardSkeleton'
 import {
   Plus,
   Search,
@@ -278,24 +280,28 @@ export default function ForumPage() {
       </div>
 
       {/* Posts List */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <PostList
-          posts={posts}
-          currentUserId={user?.id}
-          hasMore={hasMore}
-          isLoading={isLoadingMore}
-          onLoadMore={loadMorePosts}
-          onReaction={handleReaction}
-          onRemoveReaction={handleRemoveReaction}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onReport={handleReport}
-        />
-      )}
+      <ForumErrorBoundary>
+        {isLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <PostCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : (
+          <PostList
+            posts={posts}
+            currentUserId={user?.id}
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onLoadMore={loadMorePosts}
+            onReaction={handleReaction}
+            onRemoveReaction={handleRemoveReaction}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onReport={handleReport}
+          />
+        )}
+      </ForumErrorBoundary>
     </div>
   )
 }

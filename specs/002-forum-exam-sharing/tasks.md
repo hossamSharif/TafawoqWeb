@@ -158,18 +158,18 @@
 
 ### Implementation for User Story 5
 
-- [ ] T063 [P] [US5] Create NotificationBadge component in src/components/notifications/NotificationBadge.tsx
-- [ ] T064 [P] [US5] Create NotificationItem component in src/components/notifications/NotificationItem.tsx
-- [ ] T065 [P] [US5] Create NotificationList component in src/components/notifications/NotificationList.tsx
-- [ ] T066 [US5] Create GET /api/notifications route with pagination in src/app/api/notifications/route.ts
-- [ ] T067 [US5] Create GET /api/notifications/count route in src/app/api/notifications/count/route.ts
-- [ ] T068 [US5] Create POST /api/notifications/[id]/read route in src/app/api/notifications/[id]/read/route.ts
-- [ ] T069 [US5] Create POST /api/notifications/read-all route in src/app/api/notifications/read-all/route.ts
-- [ ] T070 [US5] Create notifications center page in src/app/(main)/notifications/page.tsx
-- [ ] T071 [US5] Add NotificationBadge to main navigation layout
-- [ ] T072 [US5] Trigger exam_completed notification when shared exam is completed (update start-exam route)
-- [ ] T073 [US5] Trigger new_comment notification when comment is added (update comments POST route)
-- [ ] T074 [US5] Trigger comment_reply notification when reply is added (update comments POST route)
+- [x] T063 [P] [US5] Create NotificationBadge component in src/components/notifications/NotificationBadge.tsx
+- [x] T064 [P] [US5] Create NotificationItem component in src/components/notifications/NotificationItem.tsx
+- [x] T065 [P] [US5] Create NotificationList component in src/components/notifications/NotificationList.tsx
+- [x] T066 [US5] Create GET /api/notifications route with pagination in src/app/api/notifications/route.ts
+- [x] T067 [US5] Create GET /api/notifications/count route in src/app/api/notifications/count/route.ts
+- [x] T068 [US5] Create POST /api/notifications/[id]/read route in src/app/api/notifications/[id]/read/route.ts
+- [x] T069 [US5] Create POST /api/notifications/read-all route in src/app/api/notifications/read-all/route.ts
+- [x] T070 [US5] Create notifications center page in src/app/(main)/notifications/page.tsx
+- [x] T071 [US5] Add NotificationBadge to main navigation layout
+- [x] T072 [US5] Trigger exam_completed notification when shared exam is completed (update exam/practice completion routes)
+- [x] T073 [US5] Trigger new_comment notification when comment is added (update comments POST route)
+- [x] T074 [US5] Trigger comment_reply notification when reply is added (update comments POST route)
 
 **Checkpoint**: User Story 5 complete - users receive and view notifications
 
@@ -183,13 +183,13 @@
 
 ### Implementation for User Story 6
 
-- [ ] T075 [P] [US6] Create CreditBalance component in src/components/rewards/CreditBalance.tsx
-- [ ] T076 [P] [US6] Create RewardProgress component in src/components/rewards/RewardProgress.tsx
-- [ ] T077 [US6] Create GET /api/rewards route in src/app/api/rewards/route.ts
-- [ ] T078 [US6] Create POST /api/rewards/redeem route in src/app/api/rewards/redeem/route.ts
-- [ ] T079 [US6] Extend user profile page with rewards section showing credits and progress
-- [ ] T080 [US6] Integrate credit check with existing subscription feature checks for exam access
-- [ ] T081 [US6] Trigger reward_earned notification when milestone is reached
+- [X] T075 [P] [US6] Create CreditBalance component in src/components/rewards/CreditBalance.tsx
+- [X] T076 [P] [US6] Create RewardProgress component in src/components/rewards/RewardProgress.tsx
+- [X] T077 [US6] Create GET /api/rewards route in src/app/api/rewards/route.ts
+- [X] T078 [US6] Create POST /api/rewards/redeem route in src/app/api/rewards/redeem/route.ts
+- [X] T079 [US6] Extend user profile page with rewards section showing credits and progress
+- [X] T080 [US6] Integrate credit check with existing subscription feature checks for exam access
+- [X] T081 [US6] Trigger reward_earned notification when milestone is reached
 
 **Checkpoint**: User Story 6 complete - users earn and redeem credits
 
@@ -203,10 +203,10 @@
 
 ### Implementation for User Story 7
 
-- [ ] T082 [P] [US7] Create ReportModal component in src/components/forum/ReportModal.tsx
-- [ ] T083 [US7] Create POST /api/reports route in src/app/api/reports/route.ts
-- [ ] T084 [US7] Add report button to PostCard and CommentItem components
-- [ ] T085 [US7] Trigger report_resolved notification when report is resolved (admin action)
+- [x] T082 [P] [US7] Create ReportModal component in src/components/forum/ReportModal.tsx
+- [x] T083 [US7] Create POST /api/reports route in src/app/api/reports/route.ts
+- [x] T084 [US7] Add report button to PostCard and CommentItem components
+- [x] T085 [US7] Trigger report_resolved notification when report is resolved (admin action)
 
 **Checkpoint**: User Story 7 complete - users can report content
 
@@ -220,30 +220,30 @@
 
 ### Implementation for User Story 8
 
-- [ ] T086 [US8] Create admin layout with auth guard in src/app/(admin)/admin/layout.tsx
-- [ ] T087 [P] [US8] Create AdminSidebar component in src/components/admin/AdminSidebar.tsx
-- [ ] T088 [US8] Create admin dashboard page in src/app/(admin)/admin/page.tsx
-- [ ] T089 [US8] Create GET /api/admin/dashboard route in src/app/api/admin/dashboard/route.ts
-- [ ] T090 [P] [US8] Create UserTable component in src/components/admin/UserTable.tsx
-- [ ] T091 [US8] Create admin users page in src/app/(admin)/admin/users/page.tsx
-- [ ] T092 [US8] Create GET /api/admin/users route with search/pagination in src/app/api/admin/users/route.ts
-- [ ] T093 [US8] Create PUT /api/admin/users/[id] route for updating user status in src/app/api/admin/users/[id]/route.ts
-- [ ] T094 [US8] Create POST /api/admin/users/[id]/reset-password route in src/app/api/admin/users/[id]/reset-password/route.ts
-- [ ] T095 [US8] Create DELETE /api/admin/users/[id] route in src/app/api/admin/users/[id]/route.ts
-- [ ] T096 [P] [US8] Create ModerationQueue component in src/components/admin/ModerationQueue.tsx
-- [ ] T097 [US8] Create admin moderation page in src/app/(admin)/admin/moderation/page.tsx
-- [ ] T098 [US8] Create GET /api/admin/moderation route in src/app/api/admin/moderation/route.ts
-- [ ] T099 [US8] Create POST /api/admin/moderation/[id]/resolve route in src/app/api/admin/moderation/[id]/resolve/route.ts
-- [ ] T100 [P] [US8] Create FeatureToggles component in src/components/admin/FeatureToggles.tsx
-- [ ] T101 [US8] Create admin settings page in src/app/(admin)/admin/settings/page.tsx
-- [ ] T102 [US8] Create GET /api/admin/settings route in src/app/api/admin/settings/route.ts
-- [ ] T103 [US8] Create PUT /api/admin/settings/[feature_name] route in src/app/api/admin/settings/[feature_name]/route.ts
-- [ ] T104 [US8] Create admin subscriptions page in src/app/(admin)/admin/subscriptions/page.tsx
-- [ ] T105 [US8] Create PUT /api/admin/users/[id]/subscription route in src/app/api/admin/users/[id]/subscription/route.ts
-- [ ] T106 [P] [US8] Create AnalyticsCharts component in src/components/admin/AnalyticsCharts.tsx
-- [ ] T107 [US8] Create admin analytics page in src/app/(admin)/admin/analytics/page.tsx
-- [ ] T108 [US8] Create GET /api/admin/analytics route in src/app/api/admin/analytics/route.ts
-- [ ] T109 [US8] Add audit logging to all admin action routes
+- [x] T086 [US8] Create admin layout with auth guard in src/app/(admin)/admin/layout.tsx
+- [x] T087 [P] [US8] Create AdminSidebar component in src/components/admin/AdminSidebar.tsx
+- [x] T088 [US8] Create admin dashboard page in src/app/(admin)/admin/page.tsx
+- [x] T089 [US8] Create GET /api/admin/dashboard route in src/app/api/admin/dashboard/route.ts
+- [x] T090 [P] [US8] Create UserTable component in src/components/admin/UserTable.tsx
+- [x] T091 [US8] Create admin users page in src/app/(admin)/admin/users/page.tsx
+- [x] T092 [US8] Create GET /api/admin/users route with search/pagination in src/app/api/admin/users/route.ts
+- [x] T093 [US8] Create PUT /api/admin/users/[id] route for updating user status in src/app/api/admin/users/[id]/route.ts
+- [x] T094 [US8] Create POST /api/admin/users/[id]/reset-password route in src/app/api/admin/users/[id]/reset-password/route.ts
+- [x] T095 [US8] Create DELETE /api/admin/users/[id] route in src/app/api/admin/users/[id]/route.ts
+- [x] T096 [P] [US8] Create ModerationQueue component in src/components/admin/ModerationQueue.tsx
+- [x] T097 [US8] Create admin moderation page in src/app/(admin)/admin/moderation/page.tsx
+- [x] T098 [US8] Create GET /api/admin/moderation route in src/app/api/admin/moderation/route.ts
+- [x] T099 [US8] Create POST /api/admin/moderation/[id]/resolve route in src/app/api/admin/moderation/[id]/resolve/route.ts
+- [x] T100 [P] [US8] Create FeatureToggles component in src/components/admin/FeatureToggles.tsx
+- [x] T101 [US8] Create admin settings page in src/app/(admin)/admin/settings/page.tsx
+- [x] T102 [US8] Create GET /api/admin/settings route in src/app/api/admin/settings/route.ts
+- [x] T103 [US8] Create PUT /api/admin/settings/[feature_name] route in src/app/api/admin/settings/[feature_name]/route.ts
+- [x] T104 [US8] Create admin subscriptions page in src/app/(admin)/admin/subscriptions/page.tsx
+- [x] T105 [US8] Create PUT /api/admin/users/[id]/subscription route in src/app/api/admin/users/[id]/subscription/route.ts
+- [x] T106 [P] [US8] Create AnalyticsCharts component in src/components/admin/AnalyticsCharts.tsx
+- [x] T107 [US8] Create admin analytics page in src/app/(admin)/admin/analytics/page.tsx
+- [x] T108 [US8] Create GET /api/admin/analytics route in src/app/api/admin/analytics/route.ts
+- [x] T109 [US8] Add audit logging to all admin action routes
 
 **Checkpoint**: User Story 8 complete - full admin control panel
 
@@ -253,11 +253,11 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T110 [P] Add Arabic RTL styling to all forum components
-- [ ] T111 [P] Add loading states and skeletons to forum feed and notifications
-- [ ] T112 [P] Add error boundaries and graceful error handling to forum pages
-- [ ] T113 Run npm run lint and fix any linting issues
-- [ ] T114 Run npm run type-check and fix any type errors
+- [x] T110 [P] Add Arabic RTL styling to all forum components
+- [x] T111 [P] Add loading states and skeletons to forum feed and notifications
+- [x] T112 [P] Add error boundaries and graceful error handling to forum pages
+- [x] T113 Run npm run lint and fix any linting issues
+- [x] T114 Run npm run type-check and fix any type errors
 - [ ] T115 Manual validation via Chrome MCP: Test forum flow (browse, create, react, comment)
 - [ ] T116 Manual validation via Chrome MCP: Test notifications flow
 - [ ] T117 Manual validation via Chrome MCP: Test admin panel flow

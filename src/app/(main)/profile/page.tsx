@@ -20,6 +20,8 @@ import {
   ExamHistory,
   DeleteAccountModal,
 } from '@/components/profile'
+import { RewardsSection } from '@/components/rewards'
+import { SharingStats } from '@/components/forum/SharingStats'
 import {
   Settings,
   BarChart3,
@@ -273,6 +275,14 @@ export default function ProfilePage() {
               <Button size="sm">ترقية الآن</Button>
             </Link>
           </div>
+        )}
+
+        {/* Rewards Section */}
+        <RewardsSection className="mb-6" />
+
+        {/* Sharing Stats */}
+        {profile.id && (
+          <SharingStats userId={profile.id} className="mb-6" />
         )}
 
         {/* Last Exam Scores */}

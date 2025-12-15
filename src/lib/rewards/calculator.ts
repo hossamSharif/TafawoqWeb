@@ -3,6 +3,7 @@
 // Server-side reward calculation and credit management
 
 import { createServerClient } from '@/lib/supabase/server';
+import { notifyRewardEarned } from '@/lib/notifications/service';
 import type {
   UserCreditsRow,
   CreditHistoryEntry,
@@ -29,7 +30,7 @@ export async function getUserRewards(userId: string): Promise<RewardsResponse> {
   const supabase = await createServerClient();
 
   // Get or create user credits record
-  let credits = await getOrCreateUserCredits(userId);
+  const credits = await getOrCreateUserCredits(userId);
 
   // Get total shares count
   const { count: totalShares } = await supabase
@@ -216,6 +217,18 @@ export async function checkAndAwardMilestone(userId: string): Promise<{
     throw new Error(`Failed to award milestone: ${error.message}`);
   }
 
+  // Trigger reward_earned notification
+  try {
+    await notifyRewardEarned(userId, {
+      milestone: newMilestone,
+      examCredits: creditsToAdd,
+      practiceCredits: creditsToAdd,
+    });
+  } catch (notifyError) {
+    // Log but don't throw - notification is not critical
+    console.error('Failed to send reward notification:', notifyError);
+  }
+
   return {
     awarded: true,
     milestone: newMilestone,
@@ -363,9 +376,9 @@ export async function canUsePracticeCredit(userId: string): Promise<{
 }
 
 /**
- * Use an exam credit (call after subscription check fails but credit available)
+ * Consume an exam credit (call after subscription check fails but credit available)
  */
-export async function useExamCredit(userId: string): Promise<boolean> {
+export async function consumeExamCredit(userId: string): Promise<boolean> {
   try {
     await redeemCredit(userId, 'exam');
     return true;
@@ -375,9 +388,9 @@ export async function useExamCredit(userId: string): Promise<boolean> {
 }
 
 /**
- * Use a practice credit
+ * Consume a practice credit for premium features
  */
-export async function usePracticeCredit(userId: string): Promise<boolean> {
+export async function consumePracticeCredit(userId: string): Promise<boolean> {
   try {
     await redeemCredit(userId, 'practice');
     return true;

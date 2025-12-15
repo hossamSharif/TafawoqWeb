@@ -83,7 +83,7 @@ Version Bump Rationale:
 - Primary development: JavaScript/TypeScript with React Native (Expo SDK 51+)
 - Backend tooling: Node.js 18+ for scripts and utilities
 - Project structure: `src/` for source code, `tests/` for test suites
-- Code style: Follow standard JavaScript/TypeScript conventions for React Native projects
+- Code style: Follow standard JavaScript/TypeScript conventions for React  projects
 - Quality gates: `npm test` for testing, `npm run lint` for code quality validation
 
 **Rationale**: Consistent technology choices reduce cognitive overhead, simplify onboarding, ensure dependency compatibility, and prevent architectural drift that fragments the codebase.

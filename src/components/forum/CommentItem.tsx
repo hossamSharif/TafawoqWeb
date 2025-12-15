@@ -163,7 +163,7 @@ export function CommentItem({
   }
 
   return (
-    <div className={cn('group', isReply && 'mr-8 mt-3')}>
+    <div className={cn('group', isReply && 'ms-8 mt-3')}>
       <div className="flex gap-3">
         {/* Avatar */}
         <div className={cn(

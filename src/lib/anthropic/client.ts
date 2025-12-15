@@ -13,11 +13,24 @@ import type {
   UsageMetrics,
 } from './types'
 import { buildSystemBlocks, buildUserPrompt, parseQuestionResponse } from './prompts'
+import {
+  logCachePerformance,
+  logUsageMetrics,
+  logRequestTiming,
+  logProviderSwitch,
+} from './monitoring'
+
+// Re-export monitoring utilities for external use
+export {
+  calculateCacheHitRate,
+  calculateCostMetrics,
+  type CachePerformanceMetrics,
+} from './monitoring'
 
 /**
  * Claude model to use for generation
  */
-const CLAUDE_MODEL = 'claude-sonnet-4-5-20250514'
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
 /**
  * Maximum tokens for response
@@ -148,9 +161,7 @@ async function generateWithOpenRouter(
   config: BatchConfig,
   context: GenerationContext
 ): Promise<Question[]> {
-  console.log(`[Anthropic] Falling back to OpenRouter for batch ${config.batchIndex}`)
-
-  const sectionName = config.section === 'quantitative' ? 'كمي' : 'لفظي'
+  logProviderSwitch(config, 'Claude rate limit exceeded after max retries')
 
   const systemPrompt = `أنت خبير في إعداد أسئلة اختبار القدرات العامة السعودي.
 قم بإنشاء أسئلة عالية الجودة تتوافق مع معايير الاختبار الفعلي.
@@ -179,20 +190,28 @@ export async function generateQuestionBatch(
 ): Promise<BatchResponse> {
   const startTime = Date.now()
   let lastError: Error | null = null
-  let usedFallback = false
+  let attemptsUsed = 0
+
+  // Log request start timing
+  logRequestTiming(config, 'start')
 
   // Try Claude with retries
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    attemptsUsed = attempt + 1
     try {
       const { questions, usage } = await generateWithClaude(config, context)
+      const durationMs = Date.now() - startTime
 
-      // Log cache performance
+      // Log comprehensive cache performance metrics
+      logCachePerformance(config, usage, durationMs)
+
+      // Log usage metrics for cost monitoring
+      logUsageMetrics(config, usage, 'claude')
+
+      // Log request completion timing
+      logRequestTiming(config, 'end', durationMs, attemptsUsed)
+
       const cacheHit = usage.cacheReadTokens > 0
-      console.log(`[Anthropic] Batch ${config.batchIndex}:`, {
-        cacheRead: usage.cacheReadTokens,
-        cacheWrite: usage.cacheCreationTokens,
-        hitRate: usage.cacheReadTokens / (usage.cacheReadTokens + usage.cacheCreationTokens + 0.001),
-      })
 
       // Build updated context
       const updatedContext: GenerationContext = {
@@ -207,11 +226,15 @@ export async function generateQuestionBatch(
         meta: {
           cacheHit,
           provider: 'claude',
-          durationMs: Date.now() - startTime,
+          durationMs,
         },
       }
     } catch (error) {
-      console.error(`[Anthropic] Attempt ${attempt + 1} failed:`, error)
+      console.error(`[Anthropic] Attempt ${attempt + 1}/${MAX_RETRIES} failed:`, {
+        error: error instanceof Error ? error.message : String(error),
+        sessionId: config.sessionId,
+        batchIndex: config.batchIndex,
+      })
       lastError = error instanceof Error ? error : new Error(String(error))
 
       // Only retry on retryable errors
@@ -229,8 +252,18 @@ export async function generateQuestionBatch(
   // If rate limited, try OpenRouter fallback
   if (lastError && isRateLimitError(lastError)) {
     try {
-      usedFallback = true
       const questions = await generateWithOpenRouter(config, context)
+      const durationMs = Date.now() - startTime
+
+      // Log usage for OpenRouter (minimal metrics)
+      const fallbackUsage: UsageMetrics = {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+      }
+      logUsageMetrics(config, fallbackUsage, 'openrouter')
+      logRequestTiming(config, 'end', durationMs, attemptsUsed)
 
       // Build updated context
       const updatedContext: GenerationContext = {
@@ -241,20 +274,19 @@ export async function generateQuestionBatch(
       return {
         questions,
         updatedContext,
-        usage: {
-          inputTokens: 0,
-          outputTokens: 0,
-          cacheReadTokens: 0,
-          cacheCreationTokens: 0,
-        },
+        usage: fallbackUsage,
         meta: {
           cacheHit: false,
           provider: 'openrouter',
-          durationMs: Date.now() - startTime,
+          durationMs,
         },
       }
     } catch (fallbackError) {
-      console.error('[Anthropic] OpenRouter fallback also failed:', fallbackError)
+      console.error('[Anthropic] OpenRouter fallback also failed:', {
+        error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+        sessionId: config.sessionId,
+        batchIndex: config.batchIndex,
+      })
       // Continue to throw the original error
     }
   }

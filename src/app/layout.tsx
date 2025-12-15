@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Noto_Kufi_Arabic } from 'next/font/google'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const notoKufiArabic = Noto_Kufi_Arabic({
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" className={notoKufiArabic.variable}>
       <body className={`${notoKufiArabic.className} antialiased`}>
         {children}
+        <Toaster position="top-center" richColors dir="rtl" />
       </body>
     </html>
   )

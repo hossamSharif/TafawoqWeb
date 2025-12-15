@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { calculateSectionScores, calculateCategoryBreakdown, identifyStrengthsWeaknesses } from '@/lib/utils/scoring'
+import { notifyExamCompleted } from '@/lib/notifications/service'
 import type { Question } from '@/types/question'
 
 interface RouteParams {
@@ -335,6 +336,50 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id)
+
+      // Handle shared exam completion - record completion and notify post author
+      if (session.shared_from_post_id) {
+        try {
+          // Get the forum post and author info
+          const { data: post } = await supabase
+            .from('forum_posts')
+            .select('id, title, author_id')
+            .eq('id', session.shared_from_post_id)
+            .single()
+
+          if (post && post.author_id !== user.id) {
+            // Get completing user's display name
+            const { data: userProfile } = await supabase
+              .from('user_profiles')
+              .select('display_name')
+              .eq('user_id', user.id)
+              .single()
+
+            // Record the completion
+            await supabase
+              .from('shared_exam_completions')
+              .insert({
+                post_id: post.id,
+                user_id: user.id,
+                exam_session_id: sessionId,
+                score: typedScores.overall_score || 0,
+              })
+
+            // Update completion count on the post
+            await supabase.rpc('increment_completion_count', { post_id: post.id })
+
+            // Notify the post author
+            await notifyExamCompleted(post.author_id, {
+              postId: post.id,
+              postTitle: post.title,
+              completedByName: userProfile?.display_name || 'مستخدم',
+            })
+          }
+        } catch (sharedExamError) {
+          // Log but don't fail the main operation
+          console.error('Failed to record shared exam completion:', sharedExamError)
+        }
+      }
     }
 
     return NextResponse.json({

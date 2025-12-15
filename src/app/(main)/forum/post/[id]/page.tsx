@@ -9,8 +9,11 @@ import { ar } from 'date-fns/locale'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { ReactionButtons } from '@/components/forum/ReactionButtons'
 import { CommentSection } from '@/components/forum/CommentSection'
+import { ReportModal } from '@/components/forum/ReportModal'
+import { ForumErrorBoundary } from '@/components/forum/ForumErrorBoundary'
 import {
   ArrowRight,
   FileText,
@@ -61,6 +64,9 @@ export default function PostDetailPage() {
   const [localLoveCount, setLocalLoveCount] = useState(0)
   const [localCommentCount, setLocalCommentCount] = useState(0)
   const [isReacting, setIsReacting] = useState(false)
+
+  // Report modal state
+  const [showReportModal, setShowReportModal] = useState(false)
 
   useEffect(() => {
     fetchPost()
@@ -193,8 +199,67 @@ export default function PostDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Back Button Skeleton */}
+        <Skeleton className="h-10 w-32" />
+
+        {/* Post Content Skeleton */}
+        <Card>
+          <CardContent className="p-6">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-12 h-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+
+            {/* Title */}
+            <Skeleton className="h-8 w-3/4 mt-4" />
+
+            {/* Body */}
+            <div className="mt-4 space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-8 w-16 rounded-md" />
+                <Skeleton className="h-8 w-16 rounded-md" />
+              </div>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Comments Skeleton */}
+        <Card>
+          <CardContent className="p-6">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <Skeleton className="h-20 w-full mb-4" />
+            <div className="space-y-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -306,7 +371,7 @@ export default function PostDetailPage() {
                       </>
                     )}
                     {!isAuthor && (
-                      <DropdownMenuItem onClick={() => console.log('Report')}>
+                      <DropdownMenuItem onClick={() => setShowReportModal(true)}>
                         <Flag className="w-4 h-4 ml-2" />
                         إبلاغ
                       </DropdownMenuItem>
@@ -424,12 +489,14 @@ export default function PostDetailPage() {
       </Card>
 
       {/* Comments Section */}
-      <CommentSection
-        postId={postId}
-        commentCount={localCommentCount}
-        currentUserId={user?.id}
-        onCommentCountChange={handleCommentCountChange}
-      />
+      <ForumErrorBoundary>
+        <CommentSection
+          postId={postId}
+          commentCount={localCommentCount}
+          currentUserId={user?.id}
+          onCommentCountChange={handleCommentCountChange}
+        />
+      </ForumErrorBoundary>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -459,6 +526,15 @@ export default function PostDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        contentType="post"
+        contentId={postId}
+        contentPreview={post.title}
+      />
     </div>
   )
 }

@@ -1,0 +1,347 @@
+openapi: 3.0.3
+info:
+  title: Tafawoq Batch Generation API
+  description: API endpoints for batched question generation with Claude Sonnet 4.5
+  version: 1.0.0
+
+servers:
+  - url: /api
+    description: Next.js API routes
+
+paths:
+  /exams:
+    post:
+      summary: Create exam session with first batch
+      description: |
+        Creates a new exam session and generates the first batch of 10 questions.
+        Returns the session with initial questions (answers redacted).
+      operationId: createExamSession
+      tags:
+        - Exams
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExamRequest'
+      responses:
+        '201':
+          description: Exam session created with first batch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/GenerationError'
+
+  /exams/{sessionId}/questions:
+    post:
+      summary: Generate next batch of questions
+      description: |
+        Generates the next batch of questions for an in-progress exam.
+        - Validates batch index matches expected next batch
+        - Blocks concurrent requests (returns 409)
+        - Returns questions with answers redacted
+      operationId: generateExamBatch
+      tags:
+        - Exams
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBatchRequest'
+      responses:
+        '200':
+          description: Batch generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Invalid batch index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: 'رقم الدفعة غير صالح'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: 'الجلسة غير موجودة'
+        '409':
+          description: Generation already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: 'جاري توليد الأسئلة بالفعل'
+        '503':
+          description: Generation unavailable (both providers failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: 'خدمة التوليد غير متاحة حالياً'
+
+  /exams/{sessionId}:
+    get:
+      summary: Get exam session with loaded questions
+      description: |
+        Returns the exam session including all generated questions.
+        Questions are returned without answers (for in-progress exams).
+      operationId: getExamSession
+      tags:
+        - Exams
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Exam session retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /practice/{sessionId}/questions:
+    post:
+      summary: Generate next batch for practice session
+      description: |
+        Generates the next batch of questions for a practice session.
+        Same behavior as exam batch generation but for practice mode.
+      operationId: generatePracticeBatch
+      tags:
+        - Practice
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBatchRequest'
+      responses:
+        '200':
+          description: Batch generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Invalid batch index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Generation already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT token
+
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      description: UUID of the exam or practice session
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateExamRequest:
+      type: object
+      required:
+        - track
+      properties:
+        track:
+          type: string
+          enum: [scientific, literary]
+          description: Student track determines question distribution
+
+    GenerateBatchRequest:
+      type: object
+      required:
+        - batchIndex
+      properties:
+        batchIndex:
+          type: integer
+          minimum: 0
+          maximum: 9
+          description: 0-indexed batch number to generate
+
+    ExamSessionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        track:
+          type: string
+          enum: [scientific, literary]
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionWithoutAnswer'
+        generatedBatches:
+          type: integer
+          description: Number of batches generated so far
+        totalQuestions:
+          type: integer
+          description: Total questions for this exam (96)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BatchResponse:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionWithoutAnswer'
+          description: Newly generated questions (answers redacted)
+        meta:
+          type: object
+          properties:
+            batchIndex:
+              type: integer
+              description: Index of the generated batch
+            totalLoaded:
+              type: integer
+              description: Total questions loaded after this batch
+            cacheHit:
+              type: boolean
+              description: Whether prompt cache was used
+
+    QuestionWithoutAnswer:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'quant_2_05'
+        index:
+          type: integer
+          description: 0-indexed position in the exam
+        section:
+          type: string
+          enum: [quantitative, verbal]
+        topic:
+          type: string
+          example: 'algebra'
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        questionType:
+          type: string
+          enum: [mcq]
+        stem:
+          type: string
+          description: Arabic question text
+        choices:
+          type: array
+          items:
+            type: string
+          minItems: 4
+          maxItems: 4
+          description: Four answer choices in Arabic
+      description: Question without answerIndex and explanation (for active exams)
+
+    Question:
+      allOf:
+        - $ref: '#/components/schemas/QuestionWithoutAnswer'
+        - type: object
+          properties:
+            answerIndex:
+              type: integer
+              minimum: 0
+              maximum: 3
+              description: Index of correct answer (0-3)
+            explanation:
+              type: string
+              description: Arabic explanation of the answer
+            tags:
+              type: array
+              items:
+                type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Arabic error message
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: 'غير مصرح'
+
+    GenerationError:
+      description: Question generation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: 'فشل توليد الأسئلة'

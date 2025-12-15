@@ -4,12 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
-import { Home, FileText, Target, User, Settings, LogOut, Menu, X, Crown } from 'lucide-react'
+import { Home, FileText, Target, User, Settings, LogOut, Menu, X, Crown, MessageSquare, Bell } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { NotificationBadge } from '@/components/notifications/NotificationBadge'
 
 const navItems = [
   { href: '/dashboard', label: 'الرئيسية', icon: Home },
+  { href: '/forum', label: 'المنتدى', icon: MessageSquare },
   { href: '/exam', label: 'اختبار تجريبي', icon: FileText },
   { href: '/practice', label: 'تمارين مخصصة', icon: Target },
   { href: '/profile', label: 'الملف الشخصي', icon: User },
@@ -69,7 +71,10 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* User Info & Actions */}
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
+              {/* Notification Badge */}
+              <NotificationBadge />
+
               {isPremium ? (
                 <span className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
                   <Crown className="h-4 w-4" />
@@ -91,13 +96,16 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-muted-foreground"
-            >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+            {/* Mobile: Notification + Menu Button */}
+            <div className="md:hidden flex items-center gap-2">
+              <NotificationBadge />
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 text-muted-foreground"
+              >
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -123,6 +131,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   </Link>
                 )
               })}
+              {/* Notifications link in mobile menu */}
+              <Link
+                href="/notifications"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium',
+                  pathname === '/notifications' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                )}
+              >
+                <Bell className="h-5 w-5" />
+                الإشعارات
+              </Link>
               <hr className="my-2" />
               <button
                 onClick={handleLogout}

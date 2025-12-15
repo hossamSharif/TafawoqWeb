@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { Loader2 } from 'lucide-react'
 import { PostCard } from './PostCard'
+import { PostCardSkeleton } from './PostCardSkeleton'
 import type { ForumPost } from '@/lib/forum/types'
 
 interface PostListProps {
@@ -10,6 +11,7 @@ interface PostListProps {
   currentUserId?: string
   hasMore: boolean
   isLoading: boolean
+  isInitialLoading?: boolean
   onLoadMore: () => void
   onReaction?: (postId: string, type: 'like' | 'love') => Promise<void>
   onRemoveReaction?: (postId: string, type: 'like' | 'love') => Promise<void>
@@ -24,6 +26,7 @@ export function PostList({
   currentUserId,
   hasMore,
   isLoading,
+  isInitialLoading = false,
   onLoadMore,
   onReaction,
   onRemoveReaction,
@@ -59,6 +62,17 @@ export function PostList({
       observer.disconnect()
     }
   }, [handleIntersection])
+
+  // Show skeletons during initial loading
+  if (isInitialLoading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <PostCardSkeleton key={i} isCompact={isCompact} />
+        ))}
+      </div>
+    )
+  }
 
   if (posts.length === 0 && !isLoading) {
     return (

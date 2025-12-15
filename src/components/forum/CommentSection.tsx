@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CommentItem } from './CommentItem'
 import type { Comment, CommentListResponse } from '@/lib/forum/types'
+import { ReportModal } from './ReportModal'
 import { FORUM_LIMITS } from '@/lib/forum/types'
 
 interface CommentSectionProps {
@@ -35,6 +36,11 @@ export function CommentSection({
   const [newComment, setNewComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Report modal state
+  const [reportModalOpen, setReportModalOpen] = useState(false)
+  const [reportingCommentId, setReportingCommentId] = useState<string | null>(null)
+  const [reportingCommentContent, setReportingCommentContent] = useState<string | undefined>(undefined)
 
   const fetchComments = useCallback(async (cursor?: string) => {
     const isInitial = !cursor
@@ -249,8 +255,29 @@ export function CommentSection({
   }
 
   const handleReport = (commentId: string) => {
-    // TODO: Implement report modal (Phase 9)
-    console.log('Report comment:', commentId)
+    // Find the comment content for preview
+    let commentContent: string | undefined
+    for (const comment of comments) {
+      if (comment.id === commentId) {
+        commentContent = comment.content
+        break
+      }
+      const reply = comment.replies.find((r) => r.id === commentId)
+      if (reply) {
+        commentContent = reply.content
+        break
+      }
+    }
+
+    setReportingCommentId(commentId)
+    setReportingCommentContent(commentContent)
+    setReportModalOpen(true)
+  }
+
+  const handleCloseReportModal = () => {
+    setReportModalOpen(false)
+    setReportingCommentId(null)
+    setReportingCommentContent(undefined)
   }
 
   return (
@@ -376,6 +403,17 @@ export function CommentSection({
           </div>
         )}
       </CardContent>
+
+      {/* Report Modal */}
+      {reportingCommentId && (
+        <ReportModal
+          isOpen={reportModalOpen}
+          onClose={handleCloseReportModal}
+          contentType="comment"
+          contentId={reportingCommentId}
+          contentPreview={reportingCommentContent}
+        />
+      )}
     </Card>
   )
 }

@@ -122,7 +122,7 @@ export async function getPosts(options: GetPostsOptions): Promise<PostsResult> {
   const nextCursor = hasMore && posts.length > 0 ? posts[posts.length - 1].id : null;
 
   // Get user reactions if userId provided
-  let userReactions: Map<string, UserReaction> = new Map();
+  const userReactions: Map<string, UserReaction> = new Map();
   if (userId && posts.length > 0) {
     const postIds = posts.map(p => p.id);
     const { data: reactions } = await supabase
@@ -199,7 +199,7 @@ export async function getPostById(postId: string, userId?: string): Promise<Foru
   }
 
   // Get user reactions
-  let userReaction: UserReaction = { like: false, love: false };
+  const userReaction: UserReaction = { like: false, love: false };
   let userCompleted = false;
 
   if (userId) {
@@ -644,7 +644,7 @@ export async function getPostReactionStatus(
     .eq('id', postId)
     .single();
 
-  let userReaction: UserReaction = { like: false, love: false };
+  const userReaction: UserReaction = { like: false, love: false };
 
   if (userId) {
     const { data: reactions } = await supabase
