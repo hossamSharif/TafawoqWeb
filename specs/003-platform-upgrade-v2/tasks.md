@@ -97,17 +97,17 @@ Per Constitution VI, after completing each task via `/speckit.implement`, the ag
 
 ### Implementation for User Story 2
 
-- [ ] T036 [P] [US2] Create CreditsDisplay component in src/components/subscription/CreditsDisplay.tsx (shows remaining exam/practice/share credits)
-- [ ] T037 [P] [US2] Create RewardBadge component in src/components/rewards/RewardBadge.tsx (displays reward notification badge)
-- [ ] T038 [P] [US2] Create ShareLimitIndicator component in src/components/subscription/ShareLimitIndicator.tsx (shows remaining share quota)
-- [ ] T039 [US2] Update PlanCard component in src/components/subscription/PlanCard.tsx (display 49 SAR with 100 SAR strikethrough)
-- [ ] T040 [US2] Update dashboard to display current plan limits and credits in src/app/(main)/dashboard/page.tsx
-- [ ] T041 [US2] Create GET /api/subscription/limits route in src/app/api/subscription/limits/route.ts (returns user's current limits and usage)
-- [ ] T042 [US2] Create POST /api/rewards/claim route in src/app/api/rewards/claim/route.ts (manually claim pending rewards if needed)
-- [ ] T043 [US2] Update exam sharing flow to decrement share_credits_exam and check limits in src/app/api/forum/share/route.ts
-- [ ] T044 [US2] Update practice sharing flow to decrement share_credits_practice and check limits in src/app/api/forum/share/route.ts
-- [ ] T045 [US2] Add upgrade prompt when user hits generation or sharing limits
-- [ ] T046 [US2] Verify reward trigger works: when user completes shared content, owner receives credit and notification
+- [x] T036 [P] [US2] Create CreditsDisplay component in src/components/subscription/CreditsDisplay.tsx (shows remaining exam/practice/share credits)
+- [x] T037 [P] [US2] Create RewardBadge component in src/components/rewards/RewardBadge.tsx (displays reward notification badge)
+- [x] T038 [P] [US2] Create ShareLimitIndicator component in src/components/subscription/ShareLimitIndicator.tsx (shows remaining share quota)
+- [x] T039 [US2] Update PlanCard component in src/components/subscription/PlanCard.tsx (display 49 SAR with 100 SAR strikethrough)
+- [x] T040 [US2] Update dashboard to display current plan limits and credits in src/app/(main)/dashboard/page.tsx
+- [x] T041 [US2] Create GET /api/subscription/limits route in src/app/api/subscription/limits/route.ts (returns user's current limits and usage)
+- [x] T042 [US2] Create POST /api/rewards/claim route in src/app/api/rewards/claim/route.ts (manually claim pending rewards if needed)
+- [x] T043 [US2] Update exam sharing flow to decrement share_credits_exam and check limits in src/app/api/forum/posts/route.ts
+- [x] T044 [US2] Update practice sharing flow to decrement share_credits_practice and check limits in src/app/api/forum/posts/route.ts
+- [x] T045 [US2] Add upgrade prompt when user hits generation or sharing limits
+- [x] T046 [US2] Verify reward trigger works: when user completes shared content, owner receives credit and notification
 
 **Checkpoint**: User Story 2 complete - plan limits enforced, rewards credited automatically
 

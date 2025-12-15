@@ -1,16 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { OnboardingTutorial } from '@/components/shared/OnboardingTutorial'
-import { FileText, Target, TrendingUp, Clock, Award, ChevronLeft } from 'lucide-react'
+import { CreditsDisplay } from '@/components/subscription/CreditsDisplay'
+import { CreditBalance } from '@/components/rewards/CreditBalance'
+import { FileText, Target, TrendingUp, Clock, Award, ChevronLeft, Library } from 'lucide-react'
+import { brand } from '@/lib/brand'
+import type { UserLimits } from '@/types/subscription'
 
 export default function DashboardPage() {
-  const { profile, subscription, isLoading } = useAuth()
+  const { profile, subscription, isLoading, user } = useAuth()
   const [showTutorial, setShowTutorial] = useState(false)
+  const [limits, setLimits] = useState<UserLimits | null>(null)
+  const [limitsLoading, setLimitsLoading] = useState(true)
 
   useEffect(() => {
     // Show tutorial for first-time users
@@ -18,6 +24,29 @@ export default function DashboardPage() {
       setShowTutorial(true)
     }
   }, [profile])
+
+  const fetchLimits = useCallback(async () => {
+    if (!user) {
+      setLimitsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/subscription/limits')
+      if (response.ok) {
+        const data = await response.json()
+        setLimits(data)
+      }
+    } catch (error) {
+      console.error('Error fetching limits:', error)
+    } finally {
+      setLimitsLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    fetchLimits()
+  }, [fetchLimits])
 
   const handleTutorialComplete = () => {
     localStorage.setItem('tutorialCompleted', 'true')
@@ -42,14 +71,35 @@ export default function DashboardPage() {
       <div className="space-y-6">
         {/* Welcome Section */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold">مرحباً بك في تفوق</h1>
+          <h1 className="text-3xl font-bold">مرحباً بك في {brand.name.arabic}</h1>
           <p className="text-muted-foreground">
             المسار: <span className="font-medium text-foreground">{trackLabel}</span>
           </p>
         </div>
 
-        {/* Quick Actions */}
+        {/* Credits and Limits Display */}
         <div className="grid gap-4 md:grid-cols-2">
+          {/* User Limits */}
+          {limits && (
+            <CreditsDisplay
+              limits={limits}
+              isLoading={limitsLoading}
+              showShareCredits={true}
+            />
+          )}
+
+          {/* Reward Credits */}
+          {limits && (limits.rewards.examCredits > 0 || limits.rewards.practiceCredits > 0) && (
+            <CreditBalance
+              examCredits={limits.rewards.examCredits}
+              practiceCredits={limits.rewards.practiceCredits}
+              showRedeemButtons={false}
+            />
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid gap-4 md:grid-cols-3">
           {/* Start Full Exam */}
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
@@ -73,9 +123,9 @@ export default function DashboardPage() {
                   <ChevronLeft className="h-4 w-4 mr-2" />
                 </Button>
               </Link>
-              {!isPremium && (
+              {!isPremium && limits && (
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  متبقي لك 3 اختبارات هذا الأسبوع
+                  متبقي لك {limits.generation.exams.remaining} اختبارات هذا الشهر
                 </p>
               )}
             </CardContent>
@@ -104,6 +154,37 @@ export default function DashboardPage() {
                   <ChevronLeft className="h-4 w-4 mr-2" />
                 </Button>
               </Link>
+            </CardContent>
+          </Card>
+
+          {/* Exam Library */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                  <Library className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">مكتبة الاختبارات</CardTitle>
+                  <CardDescription>اختبارات من المجتمع</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                تصفح اختبارات أنشأها مستخدمون آخرون وشارك اختباراتك معهم.
+              </p>
+              <Link href="/library">
+                <Button variant="outline" className="w-full" size="lg">
+                  تصفح المكتبة
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                </Button>
+              </Link>
+              {!isPremium && limits && limits.library.accessLimit && (
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  متبقي لك {limits.library.accessLimit - limits.library.accessUsed} وصول للمكتبة
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>

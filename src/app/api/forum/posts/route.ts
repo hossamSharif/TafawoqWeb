@@ -15,6 +15,7 @@ import type {
   ForumPostInsert,
 } from '@/lib/forum/types'
 import { FORUM_LIMITS } from '@/lib/forum/types'
+import { TIER_LIMITS } from '@/types/subscription'
 
 /**
  * GET /api/forum/posts - List forum posts with pagination and filtering
@@ -253,6 +254,54 @@ export async function POST(request: NextRequest) {
           )
         }
       }
+
+      // Check share credits based on subscription tier
+      // Get user's subscription tier and share credits
+      const [subscriptionResult, creditsResult] = await Promise.all([
+        supabase
+          .from('user_subscriptions')
+          .select('tier, status')
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('user_credits')
+          .select('share_credits_exam, share_credits_practice')
+          .eq('user_id', user.id)
+          .single(),
+      ])
+
+      const isPremium = subscriptionResult.data?.tier === 'premium' &&
+                        ['active', 'trialing'].includes(subscriptionResult.data?.status || '')
+      const tier = isPremium ? 'premium' : 'free'
+      const limits = TIER_LIMITS[tier]
+
+      // Get remaining share credits (default to tier limits if not set)
+      const examSharesRemaining = creditsResult.data?.share_credits_exam ?? limits.examSharesPerMonth
+      const practiceSharesRemaining = creditsResult.data?.share_credits_practice ?? limits.practiceSharesPerMonth
+
+      // Check if user has share credits for exam
+      if (body.shared_exam_id && examSharesRemaining <= 0) {
+        return NextResponse.json(
+          {
+            error: 'لقد وصلت للحد الأقصى من مشاركات الاختبارات هذا الشهر',
+            code: 'SHARE_LIMIT_REACHED',
+            tier,
+          },
+          { status: 403 }
+        )
+      }
+
+      // Check if user has share credits for practice
+      if (body.shared_practice_id && practiceSharesRemaining <= 0) {
+        return NextResponse.json(
+          {
+            error: 'لقد وصلت للحد الأقصى من مشاركات التدريبات هذا الشهر',
+            code: 'SHARE_LIMIT_REACHED',
+            tier,
+          },
+          { status: 403 }
+        )
+      }
     }
 
     // For text posts, body is required
@@ -274,6 +323,32 @@ export async function POST(request: NextRequest) {
     }
 
     const post = await createPost(postData)
+
+    // Decrement share credits and optionally set library visibility for exam_share posts
+    if (body.post_type === 'exam_share') {
+      // Decrement appropriate share credit
+      if (body.shared_exam_id) {
+        // Decrement exam share credits
+        await supabase.rpc('decrement_share_credit', {
+          p_user_id: user.id,
+          p_credit_type: 'exam',
+        })
+
+        // Set library visibility if requested
+        if (body.is_library_visible) {
+          await supabase
+            .from('forum_posts')
+            .update({ is_library_visible: true })
+            .eq('id', post.id)
+        }
+      } else if (body.shared_practice_id) {
+        // Decrement practice share credits
+        await supabase.rpc('decrement_share_credit', {
+          p_user_id: user.id,
+          p_credit_type: 'practice',
+        })
+      }
+    }
 
     // Get author info for response
     const { data: profile } = await supabase
