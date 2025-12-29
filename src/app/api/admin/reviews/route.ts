@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { verifyAdminAccess } from '@/lib/admin/queries'
-import type { AdminReviewsResponse } from '@/lib/reviews/types'
+import type { AdminReviewsResponse, AppReview } from '@/lib/reviews/types'
 
 /**
  * GET /api/admin/reviews - Get all reviews for admin dashboard
@@ -68,11 +68,11 @@ export async function GET(request: NextRequest) {
 
     // Apply cursor pagination
     if (cursor) {
-      const { data: cursorReview } = await supabase
+      const { data: cursorReview } = await (supabase
         .from('app_reviews')
         .select('created_at')
         .eq('id', cursor)
-        .single()
+        .single() as Promise<{ data: Pick<AppReview, 'created_at'> | null; error: any }>)
 
       if (cursorReview) {
         query = query.lt('created_at', cursorReview.created_at)
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     query = query.limit(limit + 1)
 
-    const { data: reviews, error } = await query
+    const { data: reviews, error } = await (query as any)
 
     if (error) {
       throw error
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     const hasMore = reviews && reviews.length > limit
     const paginatedReviews = reviews?.slice(0, limit) || []
     const nextCursor = hasMore && paginatedReviews.length > 0
-      ? paginatedReviews[paginatedReviews.length - 1].id
+      ? (paginatedReviews[paginatedReviews.length - 1] as any).id
       : null
 
     // Transform reviews to match expected type

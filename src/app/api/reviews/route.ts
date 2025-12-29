@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     // Apply cursor pagination
     if (cursor) {
-      const { data: cursorReview } = await supabase
+      const { data: cursorReview } = await (supabase as any)
         .from('app_reviews')
         .select('created_at')
         .eq('id', cursor)
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's own review if authenticated
     if (user) {
-      const { data: ownReview } = await supabase
+      const { data: ownReview } = await (supabase as any)
         .from('app_reviews')
         .select(`
           *,
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has a review
-    const { data: existingReview } = await supabase
+    const { data: existingReview } = await (supabase as any)
       .from('app_reviews')
       .select('id')
       .eq('user_id', user.id)
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
 
     if (existingReview) {
       // Update existing review
-      const { data: updatedReview, error: updateError } = await supabase
+      const { data: updatedReview, error: updateError } = await (supabase as any)
         .from('app_reviews')
         .update({
           rating: body.rating,
@@ -266,7 +266,7 @@ export async function POST(request: NextRequest) {
       })
     } else {
       // Create new review
-      const { data: newReview, error: insertError } = await supabase
+      const { data: newReview, error: insertError } = await (supabase as any)
         .from('app_reviews')
         .insert({
           user_id: user.id,
