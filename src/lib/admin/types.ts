@@ -30,7 +30,10 @@ export type AdminActionType =
   | 'report_dismissed'
   | 'subscription_modified'
   | 'credits_added'
-  | 'feature_toggled';
+  | 'feature_toggled'
+  | 'review_featured'
+  | 'review_unfeatured'
+  | 'review_deleted';
 
 export type AdminTargetType =
   | 'user'
@@ -38,7 +41,8 @@ export type AdminTargetType =
   | 'comment'
   | 'report'
   | 'subscription'
-  | 'feature';
+  | 'feature'
+  | 'review';
 
 export type UserStatus = 'active' | 'disabled' | 'banned';
 

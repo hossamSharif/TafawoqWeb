@@ -44,6 +44,47 @@ export type Database = {
         }
         Relationships: []
       }
+      app_reviews: {
+        Row: {
+          id: string
+          user_id: string
+          rating: number
+          review_text: string
+          is_featured: boolean
+          helpful_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          rating: number
+          review_text: string
+          is_featured?: boolean
+          helpful_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          rating?: number
+          review_text?: string
+          is_featured?: boolean
+          helpful_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_reviews_user_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          }
+        ]
+      }
       answers: {
         Row: {
           created_at: string

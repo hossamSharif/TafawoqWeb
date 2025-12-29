@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { verifyAdminAccess, logAdminAction } from '@/lib/admin/queries'
+import { verifyAdminAccess } from '@/lib/admin/queries'
+import { logAdminAction } from '@/lib/admin/audit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
