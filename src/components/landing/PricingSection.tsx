@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { brand, formatPriceWithOriginal, getLimitText } from '@/lib/brand'
 import { Button } from '@/components/ui/button'
-import { Check } from 'lucide-react'
+import { Check, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface PlanFeature {
   text: string
@@ -19,6 +20,8 @@ interface PlanCardProps {
   currency: string
   features: PlanFeature[]
   isPopular?: boolean
+  isCurrentPlan?: boolean
+  isAuthenticated?: boolean
   ctaText: string
   ctaHref: string
 }
@@ -31,6 +34,8 @@ function PlanCard({
   currency,
   features,
   isPopular,
+  isCurrentPlan,
+  isAuthenticated,
   ctaText,
   ctaHref,
 }: PlanCardProps) {
@@ -40,12 +45,22 @@ function PlanCard({
     <div
       className={cn(
         'relative p-8 rounded-2xl border-2 transition-all',
-        isPopular
+        isCurrentPlan
+          ? 'border-primary bg-primary/5 shadow-xl scale-105'
+          : isPopular
           ? 'border-primary bg-primary/5 shadow-xl scale-105'
           : 'border-border bg-background hover:border-primary/50'
       )}
     >
-      {isPopular && (
+      {isCurrentPlan && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <span className="px-4 py-1 rounded-full bg-primary text-white text-sm font-medium flex items-center gap-1">
+            <Crown className="h-3 w-3" />
+            الخطة الحالية
+          </span>
+        </div>
+      )}
+      {!isCurrentPlan && isPopular && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <span className="px-4 py-1 rounded-full bg-primary text-white text-sm font-medium">
             الأكثر شعبية
@@ -94,21 +109,37 @@ function PlanCard({
         ))}
       </ul>
 
-      <Button
-        asChild
-        className="w-full"
-        variant={isPopular ? 'default' : 'outline'}
-        size="lg"
-      >
-        <Link href={ctaHref}>{ctaText}</Link>
-      </Button>
+      {isCurrentPlan ? (
+        <Button
+          className="w-full"
+          variant="outline"
+          size="lg"
+          disabled
+        >
+          الخطة الحالية
+        </Button>
+      ) : (
+        <Button
+          asChild
+          className="w-full"
+          variant={isPopular ? 'default' : 'outline'}
+          size="lg"
+        >
+          <Link href={ctaHref}>{ctaText}</Link>
+        </Button>
+      )}
     </div>
   )
 }
 
 export function PricingSection() {
+  const { isAuthenticated, isPremium, subscription } = useAuth()
   const freePlan = brand.subscription.free
   const premiumPlan = brand.subscription.premium
+
+  // Determine current plan
+  const isFreeUser = isAuthenticated && !isPremium
+  const isPremiumUser = isAuthenticated && isPremium
 
   const freeFeatures: PlanFeature[] = [
     { text: `${freePlan.limits.examsPerMonth} اختبارات شهرياً`, included: true },
@@ -151,6 +182,8 @@ export function PricingSection() {
             price={freePlan.price}
             currency={freePlan.currency}
             features={freeFeatures}
+            isCurrentPlan={isFreeUser}
+            isAuthenticated={isAuthenticated}
             ctaText="ابدأ مجاناً"
             ctaHref="/register"
           />
@@ -161,9 +194,11 @@ export function PricingSection() {
             originalPrice={premiumPlan.originalPrice}
             currency={premiumPlan.currency}
             features={premiumFeatures}
-            isPopular
+            isPopular={!isAuthenticated}
+            isCurrentPlan={isPremiumUser}
+            isAuthenticated={isAuthenticated}
             ctaText="اشترك الآن"
-            ctaHref="/register?plan=premium"
+            ctaHref={isAuthenticated ? "/subscription" : "/register?plan=premium"}
           />
         </div>
 

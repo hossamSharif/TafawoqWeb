@@ -3,6 +3,8 @@ import { Noto_Kufi_Arabic } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
 import { brand } from '@/lib/brand'
+import { QueryProvider } from '@/components/providers/QueryProvider'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 const notoKufiArabic = Noto_Kufi_Arabic({
   subsets: ['arabic'],
@@ -32,8 +34,12 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className={notoKufiArabic.variable}>
       <body className={`${notoKufiArabic.className} antialiased`}>
-        {children}
-        <Toaster position="top-center" richColors dir="rtl" />
+        <QueryProvider>
+          <AuthProvider>
+            {children}
+            <Toaster position="top-center" richColors dir="rtl" />
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )

@@ -1,22 +1,32 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import { clientEnv } from '@/lib/env'
 import type { Database } from './types'
 
 /**
  * Supabase client for browser/client-side usage
- * Uses the anon key which has RLS policies applied
+ * Uses createBrowserClient from @supabase/ssr for cookie-based session storage
+ * This ensures session is shared between client and server (middleware, API routes)
  */
-export const supabase = createClient<Database>(
+export const supabase = createBrowserClient<Database>(
   clientEnv.supabase.url,
   clientEnv.supabase.anonKey,
   {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
+    global: {
+      headers: {
+        'x-application-name': 'tafawqoq-web',
+      },
     },
   }
 )
+
+// Debug: Log Supabase initialization
+if (typeof window !== 'undefined') {
+  console.log('[Supabase Client] Initialized with:', {
+    url: clientEnv.supabase.url,
+    hasAnonKey: !!clientEnv.supabase.anonKey,
+    storage: 'cookies (via @supabase/ssr)',
+  })
+}
 
 /**
  * Helper to get the current user session

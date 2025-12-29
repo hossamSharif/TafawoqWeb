@@ -1,13 +1,25 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { QuestionCard, AnswerOptions, ProgressIndicator, ExplanationPanel } from '@/components/exam'
 import { PageLoadingSkeleton } from '@/components/shared'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Pause, Loader2, AlertTriangle, Minimize2, Maximize2, ChevronRight, ChevronLeft, Flag } from 'lucide-react'
 import type { Question } from '@/types/question'
-import { CATEGORY_LABELS } from '@/types/question'
+import { cn } from '@/lib/utils'
 
 interface PracticeData {
   questions: Omit<Question, 'answerIndex' | 'explanation'>[]
@@ -38,6 +50,10 @@ export default function PracticeSessionPage() {
   const [questionStartTime, setQuestionStartTime] = useState(Date.now())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
+  const [showPauseDialog, setShowPauseDialog] = useState(false)
+  const [isPausing, setIsPausing] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isFullScreen, setIsFullScreen] = useState(true)
 
   // Load practice data from sessionStorage
   useEffect(() => {
@@ -73,12 +89,80 @@ export default function PracticeSessionPage() {
         throw new Error('لم يتم العثور على جلسة التمرين')
       }
       const data = await response.json()
-      // Note: Questions won't be available from API after session creation
-      // This is a fallback scenario
-      if (data.session.status !== 'in_progress') {
+
+      // Handle different session states
+      if (data.session.status === 'paused') {
+        console.log('[Practice] Session is paused, attempting auto-resume...')
+
+        // Attempt to resume the paused session
+        const resumeResponse = await fetch(`/api/practice/${sessionId}/resume`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+
+        if (!resumeResponse.ok) {
+          const resumeData = await resumeResponse.json()
+          throw new Error(resumeData.error || 'فشل في استئناف التمرين')
+        }
+
+        const resumeData = await resumeResponse.json()
+
+        // Update state with resumed session data
+        if (resumeData.questions && resumeData.questions.length > 0) {
+          setQuestions(resumeData.questions)
+          setFullQuestions(resumeData._questionsWithAnswers || resumeData.questions)
+
+          // Restore answers
+          const answersMap = new Map<string, Answer>()
+          if (resumeData.answers) {
+            resumeData.answers.forEach((ans: any) => {
+              const question = resumeData.questions[ans.questionIndex]
+              if (question) {
+                answersMap.set(question.id, {
+                  questionId: question.id,
+                  selectedAnswer: ans.selectedAnswer,
+                  isCorrect: ans.isCorrect,
+                  timeSpentSeconds: ans.timeSpentSeconds || 0,
+                })
+              }
+            })
+          }
+          setAnswers(answersMap)
+
+          // Set elapsed time
+          setElapsedTime(resumeData.session.timeSpentSeconds || 0)
+
+          // Update sessionStorage with resumed data
+          const practiceData: PracticeData = {
+            questions: resumeData.questions,
+            _questionsWithAnswers: resumeData._questionsWithAnswers || resumeData.questions,
+          }
+          sessionStorage.setItem(`practice_${sessionId}`, JSON.stringify(practiceData))
+
+          // Navigate to first unanswered question
+          const firstUnanswered = resumeData.questions.findIndex(
+            (_: any, i: number) => !answersMap.has(resumeData.questions[i]?.id)
+          )
+          if (firstUnanswered >= 0) {
+            setCurrentQuestionIndex(firstUnanswered)
+          }
+
+          setIsLoading(false)
+          return
+        }
+      } else if (data.session.status === 'completed') {
+        router.replace(`/practice/results/${sessionId}`)
+        return
+      } else if (data.session.status === 'abandoned') {
+        setError('تم إلغاء هذه الجلسة')
+        setIsLoading(false)
+        return
+      } else if (data.session.status !== 'in_progress') {
         router.replace(`/practice/results/${sessionId}`)
         return
       }
+
+      // If we reach here, session is in_progress but no questions available
       setError('تحتاج إلى بدء جلسة جديدة')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'خطأ في تحميل الجلسة')
@@ -107,6 +191,7 @@ export default function PracticeSessionPage() {
     if (selectedAnswer === null || !currentQuestion || isSubmitting) return
 
     setIsSubmitting(true)
+    setSubmitError(null) // Clear previous errors
     const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000)
 
     try {
@@ -125,6 +210,14 @@ export default function PracticeSessionPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Special handling for session status errors
+        if (response.status === 400 && data.error.includes('منتهية')) {
+          setSubmitError(
+            'انتهت صلاحية الجلسة. يرجى العودة إلى لوحة التحكم وإعادة المحاولة.'
+          )
+        } else {
+          setSubmitError(data.error || 'فشل في حفظ الإجابة')
+        }
         throw new Error(data.error || 'فشل في حفظ الإجابة')
       }
 
@@ -141,8 +234,10 @@ export default function PracticeSessionPage() {
       })
 
       setShowExplanation(true)
+      setSubmitError(null) // Clear error on success
     } catch (error) {
       console.error('Submit answer error:', error)
+      // Error already set in state above
     } finally {
       setIsSubmitting(false)
     }
@@ -208,6 +303,32 @@ export default function PracticeSessionPage() {
     }
   }
 
+  const handlePause = async () => {
+    setIsPausing(true)
+    try {
+      const response = await fetch(`/api/practice/${sessionId}/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timeSpentSeconds: elapsedTime,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'فشل في إيقاف التمرين')
+      }
+
+      // Keep session data in sessionStorage for resume
+      setShowPauseDialog(false)
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Pause error:', error)
+    } finally {
+      setIsPausing(false)
+    }
+  }
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -241,42 +362,66 @@ export default function PracticeSessionPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">تمرين مخصص</h1>
-          <p className="text-gray-600 text-sm">
-            السؤال {currentQuestionIndex + 1} من {questions.length}
-          </p>
-        </div>
+    <div
+      className={cn(
+        "min-h-screen bg-gray-50",
+        isFullScreen && "fixed inset-0 z-[9999] overflow-y-auto"
+      )}
+      dir="rtl"
+    >
+      {/* Full-Screen Toggle Button - Top Left */}
+      <button
+        onClick={() => setIsFullScreen(!isFullScreen)}
+        className={cn(
+          "fixed top-4 left-4 z-[10000] bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg p-2 shadow-lg hover:bg-white transition-all",
+          "flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-primary"
+        )}
+        title={isFullScreen ? "تصغير الشاشة" : "ملء الشاشة"}
+      >
+        {isFullScreen ? (
+          <>
+            <Minimize2 className="w-4 h-4" />
+            <span className="hidden sm:inline">تصغير</span>
+          </>
+        ) : (
+          <>
+            <Maximize2 className="w-4 h-4" />
+            <span className="hidden sm:inline">ملء الشاشة</span>
+          </>
+        )}
+      </button>
 
-        <div className="flex items-center gap-4">
-          {/* Elapsed time */}
-          <div className="bg-gray-100 px-4 py-2 rounded-lg">
-            <span className="text-gray-600 text-sm ml-2">الوقت:</span>
-            <span className="font-mono font-bold text-lg">{formatTime(elapsedTime)}</span>
+      <div className="container mx-auto px-4 py-6 max-w-4xl pb-32">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">تمرين مخصص</h1>
+            <p className="text-gray-600 text-sm">
+              السؤال {currentQuestionIndex + 1} من {questions.length}
+            </p>
           </div>
 
-          {/* Abandon button */}
-          <Button variant="outline" size="sm" onClick={handleAbandon}>
-            إلغاء
-          </Button>
+          <div className="flex items-center gap-4">
+            {/* Elapsed time */}
+            <div className="bg-gray-100 px-4 py-2 rounded-lg">
+              <span className="text-gray-600 text-sm ml-2">الوقت:</span>
+              <span className="font-mono font-bold text-lg">{formatTime(elapsedTime)}</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Progress */}
-      <div className="mb-6">
-        <ProgressIndicator
-          currentIndex={currentQuestionIndex}
-          totalQuestions={questions.length}
-          answeredQuestions={Array.from(answers.keys()).map((id) =>
-            questions.findIndex(q => q.id === id)
-          ).filter(i => i >= 0)}
-          onQuestionClick={setCurrentQuestionIndex}
-          compact
-        />
-      </div>
+        {/* Progress */}
+        <div className="mb-6">
+          <ProgressIndicator
+            currentIndex={currentQuestionIndex}
+            totalQuestions={questions.length}
+            answeredQuestions={Array.from(answers.keys()).map((id) =>
+              questions.findIndex(q => q.id === id)
+            ).filter(i => i >= 0)}
+            onQuestionClick={setCurrentQuestionIndex}
+            compact
+          />
+        </div>
 
       {/* Question */}
       {currentQuestion && (
@@ -289,6 +434,8 @@ export default function PracticeSessionPage() {
             section={currentQuestion.section}
             topic={currentQuestion.topic}
             difficulty={currentQuestion.difficulty}
+            diagram={currentQuestion.diagram}
+            questionType={currentQuestion.questionType}
           />
 
           <div className="mt-6">
@@ -301,6 +448,33 @@ export default function PracticeSessionPage() {
               showResult={showExplanation}
             />
           </div>
+
+          {/* Error Display */}
+          {submitError && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>خطأ في الإجابة</AlertTitle>
+              <AlertDescription className="flex flex-col gap-2">
+                <span>{submitError}</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/dashboard')}
+                  >
+                    العودة للوحة التحكم
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSubmitError(null)}
+                  >
+                    إغلاق
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Submit or feedback */}
           {!showExplanation ? (
@@ -328,85 +502,248 @@ export default function PracticeSessionPage() {
         </Card>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePreviousQuestion}
-          disabled={currentQuestionIndex === 0}
-        >
-          السؤال السابق
-        </Button>
-
-        {currentQuestionIndex === questions.length - 1 ? (
-          <Button
-            onClick={handleCompletePractice}
-            disabled={isCompleting || answers.size < questions.length}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            {isCompleting ? 'جاري الإنهاء...' : 'إنهاء التمرين'}
-          </Button>
-        ) : (
-          <Button onClick={handleNextQuestion} disabled={!showExplanation}>
-            السؤال التالي
-          </Button>
-        )}
+        {/* Stats */}
+        <div className="mt-6 bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-around text-center">
+            <div>
+              <div className="text-2xl font-bold text-primary">{progress.answered}</div>
+              <div className="text-sm text-gray-600">تم الإجابة</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {Array.from(answers.values()).filter((a) => a.isCorrect).length}
+              </div>
+              <div className="text-sm text-gray-600">صحيحة</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-red-600">
+                {Array.from(answers.values()).filter((a) => !a.isCorrect).length}
+              </div>
+              <div className="text-sm text-gray-600">خاطئة</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-700">
+                {questions.length - progress.answered}
+              </div>
+              <div className="text-sm text-gray-600">متبقية</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Question navigation grid */}
-      <div className="mt-8">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">انتقال سريع</h3>
-        <div className="flex flex-wrap gap-2">
-          {questions.map((q, index) => {
-            const answer = answers.get(q.id)
-            return (
-              <button
-                key={q.id}
-                onClick={() => setCurrentQuestionIndex(index)}
-                className={`h-10 w-10 rounded-lg font-medium text-sm transition-colors ${
-                  index === currentQuestionIndex
-                    ? 'bg-primary text-white'
-                    : answer
-                      ? answer.isCorrect
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-red-100 text-red-700 border border-red-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+      {/* Fixed Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
+        <div className="container mx-auto px-2 sm:px-4 py-3">
+          {/* Mobile Layout - Stacked */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            {/* Top Row: Question Navigator Grid */}
+            <div className="w-full">
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {questions.map((q, index) => {
+                  const answer = answers.get(q.id)
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => setCurrentQuestionIndex(index)}
+                      className={`h-8 w-8 rounded-lg font-medium text-xs transition-colors ${
+                        index === currentQuestionIndex
+                          ? 'bg-primary text-white'
+                          : answer
+                            ? answer.isCorrect
+                              ? 'bg-green-100 text-green-700 border border-green-300'
+                              : 'bg-red-100 text-red-700 border border-red-300'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Bottom Row: Action Buttons */}
+            <div className="flex items-center justify-between gap-2">
+              {/* Left: Previous */}
+              <Button
+                variant="outline"
+                onClick={handlePreviousQuestion}
+                disabled={currentQuestionIndex === 0}
+                size="sm"
+                className="gap-1"
               >
-                {index + 1}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+                <ChevronRight className="w-4 h-4" />
+                <span className="text-xs">السابق</span>
+              </Button>
 
-      {/* Stats */}
-      <div className="mt-6 bg-gray-50 rounded-lg p-4">
-        <div className="flex justify-around text-center">
-          <div>
-            <div className="text-2xl font-bold text-primary">{progress.answered}</div>
-            <div className="text-sm text-gray-600">تم الإجابة</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-green-600">
-              {Array.from(answers.values()).filter((a) => a.isCorrect).length}
+              {/* Center: Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPauseDialog(true)}
+                  className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 text-xs"
+                >
+                  <Pause className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAbandon}
+                  className="text-red-500 border-red-200 hover:bg-red-50 text-xs"
+                >
+                  <Flag className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Right: Next/Complete */}
+              {currentQuestionIndex === questions.length - 1 ? (
+                <Button
+                  onClick={handleCompletePractice}
+                  disabled={isCompleting || answers.size < questions.length}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-xs"
+                >
+                  {isCompleting ? 'جاري...' : 'إنهاء'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNextQuestion}
+                  disabled={!showExplanation}
+                  size="sm"
+                  className="gap-1"
+                >
+                  <span className="text-xs">التالي</span>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              )}
             </div>
-            <div className="text-sm text-gray-600">صحيحة</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-red-600">
-              {Array.from(answers.values()).filter((a) => !a.isCorrect).length}
+
+          {/* Desktop Layout - Single Row */}
+          <div className="hidden lg:flex items-center gap-3 max-w-full">
+            {/* Left: Previous Button */}
+            <div className="flex-shrink-0">
+              <Button
+                variant="outline"
+                onClick={handlePreviousQuestion}
+                disabled={currentQuestionIndex === 0}
+                className="gap-2"
+              >
+                <ChevronRight className="w-4 h-4" />
+                <span>السابق</span>
+              </Button>
             </div>
-            <div className="text-sm text-gray-600">خاطئة</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-700">
-              {questions.length - progress.answered}
+
+            {/* Center: Question Navigator Grid */}
+            <div className="flex-1 flex justify-center min-w-0 overflow-x-auto">
+              <div className="flex flex-wrap gap-2 max-w-3xl">
+                {questions.map((q, index) => {
+                  const answer = answers.get(q.id)
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => setCurrentQuestionIndex(index)}
+                      className={`h-10 w-10 rounded-lg font-medium text-sm transition-colors flex-shrink-0 ${
+                        index === currentQuestionIndex
+                          ? 'bg-primary text-white'
+                          : answer
+                            ? answer.isCorrect
+                              ? 'bg-green-100 text-green-700 border border-green-300'
+                              : 'bg-red-100 text-red-700 border border-red-300'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            <div className="text-sm text-gray-600">متبقية</div>
+
+            {/* Right: Action Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPauseDialog(true)}
+                className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:text-yellow-700"
+              >
+                <Pause className="w-4 h-4 ml-1" />
+                <span className="hidden xl:inline">إيقاف مؤقت</span>
+                <span className="xl:hidden">إيقاف</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAbandon}
+                className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                <Flag className="w-4 h-4 ml-1" />
+                <span className="hidden xl:inline">إلغاء</span>
+              </Button>
+
+              {/* Next/Complete Button */}
+              {currentQuestionIndex === questions.length - 1 ? (
+                <Button
+                  onClick={handleCompletePractice}
+                  disabled={isCompleting || answers.size < questions.length}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isCompleting ? 'جاري...' : 'إنهاء'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNextQuestion}
+                  disabled={!showExplanation}
+                  className="gap-2"
+                >
+                  <span>التالي</span>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
+
+      {/* Pause Confirmation Dialog */}
+      <AlertDialog open={showPauseDialog} onOpenChange={setShowPauseDialog}>
+        <AlertDialogContent dir="rtl" className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl text-yellow-600">
+              إيقاف التمرين مؤقتاً؟
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              <span className="block p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 mb-3">
+                سيتم حفظ تقدمك. يمكنك استئناف التمرين لاحقاً من لوحة التحكم.
+              </span>
+              <span className="block text-sm text-gray-600">
+                التقدم: {progress.answered} من {questions.length} سؤال ({progress.percentage}%)
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="flex-1 sm:flex-none" disabled={isPausing}>
+              متابعة التمرين
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handlePause}
+              className="flex-1 sm:flex-none bg-yellow-500 hover:bg-yellow-600"
+              disabled={isPausing}
+            >
+              {isPausing ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                'إيقاف مؤقت'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

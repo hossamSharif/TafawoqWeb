@@ -129,6 +129,129 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Landing page animations */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+  background-size: 200% 100%;
+}
+
+/* Animation delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
+
+/* CTA Button Glow Animation */
+@keyframes glowBorder {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes bounceHorizontal {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(30, 86, 49, 0.4), 0 0 40px rgba(30, 86, 49, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(30, 86, 49, 0.6), 0 0 60px rgba(30, 86, 49, 0.3);
+  }
+}
+
+.animate-glow-border {
+  animation: glowBorder 2s ease infinite;
+}
+
+.animate-bounce-horizontal {
+  animation: bounceHorizontal 1.5s ease-in-out infinite;
+}
+
+.glow-button {
+  animation: pulseGlow 2s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(30, 86, 49, 0.4), 0 0 40px rgba(30, 86, 49, 0.2);
+}
+
+/* Glowing border animation for exam/practice share posts */
+@keyframes examShareGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(30, 86, 49, 0);
+    border-color: rgb(229, 231, 235);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(30, 86, 49, 0.1),
+                0 0 20px 2px rgba(30, 86, 49, 0.15);
+    border-color: rgb(30, 86, 49);
+  }
+}
+
+.animate-exam-glow {
+  animation: examShareGlow 3s ease-in-out infinite;
+  border: 2px solid rgb(229, 231, 235);
+  transition: all 0.3s ease;
+}
+
+.animate-exam-glow:hover {
+  animation-play-state: paused;
+  box-shadow: 0 0 0 2px rgba(30, 86, 49, 0.2),
+              0 0 25px 3px rgba(30, 86, 49, 0.2);
+}
+
 /* Custom scrollbar for RTL */
 ::-webkit-scrollbar {
   width: 8px;
@@ -147,4 +270,19 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--foreground));
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll behavior */
+.scroll-smooth {
+  scroll-behavior: smooth;
 }

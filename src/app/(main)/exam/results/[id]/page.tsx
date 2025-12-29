@@ -6,10 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PageLoadingSkeleton } from '@/components/shared'
 import {
-  getScoreColor,
-  getScoreLabel,
-  getScoreBgClass,
-  formatTimeArabic,
+  getScoreTier,
 } from '@/lib/utils/scoring'
 import { TrendChart, type TrendDataPoint } from '@/components/analytics'
 import {
@@ -20,13 +17,16 @@ import {
   TrendingDown,
   BarChart3,
   ArrowRight,
-  ChevronDown,
-  ChevronUp,
   BookOpen,
   Crown,
   Users,
+  Share2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ShareExamModal } from '@/components/forum/ShareExamModal'
+import { QuestionReview } from '@/components/results/QuestionReview'
 
 interface ScoreData {
   score: number
@@ -96,29 +96,56 @@ interface ExamResults {
     section: string
     topic: string
     difficulty: string
+    questionType: string
     stem: string
+    passage?: string
+    diagram?: any
+    choices: [string, string, string, string]
     isAnswered: boolean
     selectedAnswer: number | null
     correctAnswer: number
     isCorrect: boolean
+    timeSpentSeconds: number
+    explanation: string
+    solvingStrategy?: string
+    tip?: string
   }[]
   isPremium?: boolean
   premiumAnalytics?: PremiumAnalytics | null
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
+  // Quantitative categories
   algebra: 'الجبر',
   geometry: 'الهندسة',
   statistics: 'الإحصاء',
+  arithmetic: 'الحساب',
   ratios: 'النسب والتناسب',
   probability: 'الاحتمالات',
   speed_distance_time: 'السرعة والمسافة',
+
+  // Verbal categories (with both underscore and hyphen variants)
   reading_comprehension: 'استيعاب المقروء',
+  'reading-comprehension': 'استيعاب المقروء',
   sentence_completion: 'إكمال الجمل',
+  'sentence-completion': 'إكمال الجمل',
   contextual_error: 'الخطأ السياقي',
+  'context-error': 'الخطأ السياقي',
   verbal_analogy: 'التناظر اللفظي',
+  'verbal-analogy': 'التناظر اللفظي',
+  analogy: 'القياس',
+  analogies: 'القياس',
   association_difference: 'الارتباط والاختلاف',
+  'association-difference': 'الارتباط والاختلاف',
   vocabulary: 'المفردات',
+  critical_reasoning: 'الاستدلال المنطقي',
+  'critical-reasoning': 'الاستدلال المنطقي',
+  text_completion: 'إكمال النص',
+  'text-completion': 'إكمال النص',
+  sentence_equivalence: 'التكافؤ اللفظي',
+  'sentence-equivalence': 'التكافؤ اللفظي',
+  error_detection: 'كشف الخطأ',
+  'error-detection': 'كشف الخطأ',
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -197,7 +224,7 @@ export default function ExamResultsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAllCategories, setShowAllCategories] = useState(false)
-  const [showQuestions, setShowQuestions] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   useEffect(() => {
     async function fetchResults() {
@@ -262,12 +289,33 @@ export default function ExamResultsPage() {
                 {new Date(session.endTime).toLocaleDateString('ar-SA')}
               </p>
             </div>
-            <Link href="/dashboard">
-              <Button variant="outline" className="gap-2">
-                <ArrowRight className="w-4 h-4" />
-                العودة للوحة التحكم
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const reviewSection = document.getElementById('questions-review')
+                  reviewSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}
+                className="gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                مراجعة الأسئلة
               </Button>
-            </Link>
+              <Button
+                variant="default"
+                onClick={() => setShareModalOpen(true)}
+                className="gap-2"
+              >
+                <Share2 className="h-4 w-4" />
+                مشاركة في المنتدى
+              </Button>
+              <Link href="/dashboard">
+                <Button variant="outline" className="gap-2">
+                  <ArrowRight className="w-4 h-4" />
+                  العودة للوحة التحكم
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -579,73 +627,63 @@ export default function ExamResultsPage() {
           </div>
         )}
 
-        {/* Questions Review */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <button
-            onClick={() => setShowQuestions(!showQuestions)}
-            className="w-full flex items-center justify-between"
-          >
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-gray-900">مراجعة الأسئلة</h3>
-            </div>
-            {showQuestions ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-
-          {showQuestions && (
-            <div className="mt-6 space-y-3">
-              {results.questions.map((q) => (
-                <div
-                  key={q.index}
-                  className={cn(
-                    'flex items-center gap-4 p-3 rounded-lg border',
-                    q.isCorrect
-                      ? 'border-green-200 bg-green-50'
-                      : 'border-red-200 bg-red-50'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold',
-                      q.isCorrect
-                        ? 'bg-green-500 text-white'
-                        : 'bg-red-500 text-white'
-                    )}
-                  >
-                    {q.index + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 truncate">{q.stem}</p>
-                    <p className="text-xs text-gray-500">
-                      {q.section === 'quantitative' ? 'كمي' : 'لفظي'} •{' '}
-                      {CATEGORY_LABELS[q.topic] || q.topic}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      'text-xs font-medium',
-                      q.isCorrect ? 'text-green-600' : 'text-red-600'
-                    )}
-                  >
-                    {q.isCorrect ? 'صحيح' : 'خطأ'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Full Questions Review */}
+        <div id="questions-review" className="bg-white rounded-xl shadow-sm mb-8">
+          <QuestionReview
+            questions={results.questions}
+            sessionId={results.session.id}
+            sessionType="exam"
+          />
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center">
           <Link href="/dashboard">
-            <Button size="lg">العودة للوحة التحكم</Button>
+            <Button size="lg" variant="outline">العودة للوحة التحكم</Button>
           </Link>
         </div>
       </main>
+
+      {/* Share Modal */}
+      {results && (
+        <ShareExamModal
+          open={shareModalOpen}
+          onOpenChange={setShareModalOpen}
+          examSession={{
+            id: sessionId,
+            track: results.session.track as 'scientific' | 'literary',
+            total_questions: results.session.totalQuestions,
+            verbal_score: results.scores.verbal.score,
+            quantitative_score: results.scores.quantitative.score,
+            overall_score: results.scores.overall.score,
+            questions: results.questions.map((q) => ({
+              section: q.section,
+              difficulty: q.difficulty,
+              topic: q.topic,
+            })),
+          }}
+          onShare={async (data) => {
+            const response = await fetch('/api/forum/posts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                post_type: 'exam_share',
+                title: data.title,
+                body: data.body,
+                shared_exam_id: sessionId,
+                is_library_visible: true, // Make exam available in library
+              }),
+            })
+
+            if (!response.ok) {
+              const errorData = await response.json()
+              // API returns { error: 'message' } or { error: 'CODE', message: 'Arabic message' }
+              const errorMessage = errorData.message || errorData.error || 'فشل في المشاركة'
+              throw new Error(errorMessage)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

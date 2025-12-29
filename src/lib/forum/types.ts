@@ -5,7 +5,7 @@
 // Enums and Constants
 // ============================================
 
-export type PostType = 'text' | 'exam_share';
+export type PostType = 'text' | 'exam_share' | 'practice_share';
 export type PostStatus = 'active' | 'deleted';
 export type CommentStatus = 'active' | 'deleted';
 export type ReactionType = 'like' | 'love';
@@ -166,6 +166,14 @@ export interface SharedExamInfo {
   question_count: number;
 }
 
+export interface SharedPracticeInfo {
+  id: string;
+  section: 'quantitative' | 'verbal';
+  difficulty: 'easy' | 'medium' | 'hard';
+  categories: string[];
+  question_count: number;
+}
+
 export interface UserReaction {
   like: boolean;
   love: boolean;
@@ -178,6 +186,7 @@ export interface ForumPost {
   body: string | null;
   author: PostAuthor;
   shared_exam?: SharedExamInfo | null;
+  shared_practice?: SharedPracticeInfo | null;
   like_count: number;
   love_count: number;
   comment_count: number;

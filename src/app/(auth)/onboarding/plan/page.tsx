@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { Check, Crown, Loader2 } from 'lucide-react'
+import { Check, Crown, Loader2, X } from 'lucide-react'
 
 type SubscriptionPlan = 'free' | 'premium'
 
@@ -52,21 +52,26 @@ export default function PlanSelectionPage() {
     }
   }
 
-  const freeFeatures = [
-    '3 اختبارات تجريبية أسبوعياً',
-    'تمارين مخصصة (5 أسئلة، فئتين)',
-    'نتائج الاختبار الأساسية',
-    'الشروحات بعد 24 ساعة',
-  ]
-
-  const premiumFeatures = [
-    'اختبارات تجريبية غير محدودة',
-    'تمارين مخصصة (100 سؤال، جميع الفئات)',
-    'شروحات فورية بعد كل سؤال',
-    'تحليل الأداء المتقدم',
-    'تتبع التقدم والإحصائيات',
-    '3 أيام تجربة مجانية',
-  ]
+  const features = {
+    free: [
+      { text: '3 اختبارات تجريبية أسبوعياً', included: true },
+      { text: 'تمارين مخصصة (5 أسئلة، فئتين)', included: true },
+      { text: 'نتائج الاختبار الأساسية', included: true },
+      { text: 'الشروحات بعد 24 ساعة', included: true },
+      { text: 'اختبارات غير محدودة', included: false },
+      { text: 'شروحات فورية', included: false },
+      { text: 'تحليل الأداء المتقدم', included: false },
+    ],
+    premium: [
+      { text: 'اختبارات تجريبية غير محدودة', included: true },
+      { text: 'تمارين مخصصة (100 سؤال، جميع الفئات)', included: true },
+      { text: 'شروحات فورية بعد كل سؤال', included: true },
+      { text: 'تحليل الأداء المتقدم', included: true },
+      { text: 'تتبع التقدم والإحصائيات', included: true },
+      { text: 'دعم فني أولوية', included: true },
+      { text: '3 أيام تجربة مجانية', included: true },
+    ],
+  }
 
   return (
     <Card className="w-full max-w-3xl mx-auto">
@@ -92,9 +97,16 @@ export default function PlanSelectionPage() {
             <h3 className="text-xl font-bold mb-2">الخطة المجانية</h3>
             <p className="text-3xl font-bold mb-4">مجاني</p>
             <ul className="space-y-3">
-              {freeFeatures.map((feature, i) => (
+              {features.free.map((feature, i) => (
                 <li key={i} className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />{feature}
+                  {feature.included ? (
+                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <X className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  )}
+                  <span className={!feature.included ? 'text-muted-foreground' : ''}>
+                    {feature.text}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -115,9 +127,10 @@ export default function PlanSelectionPage() {
             <p className="text-3xl font-bold mb-1">49 ر.س<span className="text-sm font-normal text-muted-foreground">/شهر</span></p>
             <p className="text-xs text-green-600 mb-4">3 أيام تجربة مجانية</p>
             <ul className="space-y-3">
-              {premiumFeatures.map((feature, i) => (
+              {features.premium.map((feature, i) => (
                 <li key={i} className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />{feature}
+                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <span>{feature.text}</span>
                 </li>
               ))}
             </ul>

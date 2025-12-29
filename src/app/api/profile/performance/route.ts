@@ -27,7 +27,7 @@ export async function GET() {
     // Fetch completed exam sessions for history
     const { data: examSessions, error: examError } = await supabase
       .from('exam_sessions')
-      .select('id, verbal_score, quantitative_score, overall_score, end_time, created_at')
+      .select('id, verbal_score, quantitative_score, overall_score, end_time, created_at, time_spent_seconds')
       .eq('user_id', user.id)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
@@ -37,6 +37,26 @@ export async function GET() {
       console.error('Error fetching exam sessions:', examError)
     }
 
+    // Fetch all completed sessions for practice hours calculation
+    const { data: allExamSessions } = await supabase
+      .from('exam_sessions')
+      .select('time_spent_seconds')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .not('time_spent_seconds', 'is', null)
+
+    const { data: practiceSessions } = await supabase
+      .from('practice_sessions')
+      .select('time_spent_seconds')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .not('time_spent_seconds', 'is', null)
+
+    // Calculate total practice hours
+    const totalExamSeconds = (allExamSessions || []).reduce((sum, session) => sum + (session.time_spent_seconds || 0), 0)
+    const totalPracticeSeconds = (practiceSessions || []).reduce((sum, session) => sum + (session.time_spent_seconds || 0), 0)
+    const totalPracticeHours = Math.round((totalExamSeconds + totalPracticeSeconds) / 3600)
+
     // Build exam history for trend chart
     interface ExamSessionRow {
       id: string
@@ -45,16 +65,24 @@ export async function GET() {
       overall_score: number | null
       end_time: string | null
       created_at: string
+      time_spent_seconds?: number | null
     }
     const examHistory = (examSessions as ExamSessionRow[] || [])
       .filter((session: ExamSessionRow) => session.overall_score !== null)
       .reverse() // Oldest first for chart
       .map((session: ExamSessionRow) => ({
+        id: session.id,
         date: session.end_time || session.created_at,
         verbal: session.verbal_score || 0,
         quantitative: session.quantitative_score || 0,
         overall: session.overall_score || 0,
+        timeSpentMinutes: session.time_spent_seconds ? Math.round(session.time_spent_seconds / 60) : undefined,
       }))
+
+    // Get last result (most recent exam)
+    const lastResult = examSessions && examSessions.length > 0 && examSessions[0].overall_score !== null
+      ? examSessions[0].overall_score
+      : null
 
     // Calculate strengths and weaknesses from category scores
     const categoryScores = performanceRecord?.category_scores || {}
@@ -87,6 +115,8 @@ export async function GET() {
       weeklyExamCount: performanceRecord?.weekly_exam_count || 0,
       strengths,
       weaknesses,
+      totalPracticeHours,
+      lastResult,
     })
   } catch (error) {
     console.error('Profile performance error:', error)

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import {
   Upload,
   FileJson,
@@ -13,13 +14,19 @@ import {
   CheckCircle2,
   Loader2,
   X,
+  FileText,
+  BookOpen,
 } from 'lucide-react'
 import type { Question } from '@/types/question'
+
+export type ContentType = 'exam' | 'practice'
 
 export interface AdminContentUploadData {
   title: string
   description: string
+  contentType: ContentType
   section: 'quantitative' | 'verbal'
+  difficulty?: 'easy' | 'medium' | 'hard'
   questions: Question[]
 }
 
@@ -36,7 +43,9 @@ export function AdminContentUploader({
 }: AdminContentUploaderProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [contentType, setContentType] = useState<ContentType>('exam')
   const [section, setSection] = useState<'quantitative' | 'verbal'>('quantitative')
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [jsonContent, setJsonContent] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
   const [errors, setErrors] = useState<string[]>([])
@@ -137,7 +146,9 @@ export function AdminContentUploader({
     const data: AdminContentUploadData = {
       title: title.trim(),
       description: description.trim(),
+      contentType,
       section,
+      difficulty: contentType === 'practice' ? difficulty : undefined,
       questions,
     }
 
@@ -159,6 +170,53 @@ export function AdminContentUploader({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Content Type Selector */}
+        <div className="space-y-3">
+          <Label>نوع المحتوى *</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setContentType('exam')}
+              className={`
+                relative flex flex-col items-center gap-3 p-4 rounded-lg border-2 transition-all
+                ${contentType === 'exam'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                }
+              `}
+            >
+              <FileText className={`h-8 w-8 ${contentType === 'exam' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <div className="text-center">
+                <p className={`font-semibold ${contentType === 'exam' ? 'text-primary' : ''}`}>اختبار</p>
+                <p className="text-xs text-muted-foreground mt-1">اختبار شامل مع وقت محدد</p>
+              </div>
+              {contentType === 'exam' && (
+                <Badge className="absolute -top-2 -right-2 bg-primary">محدد</Badge>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setContentType('practice')}
+              className={`
+                relative flex flex-col items-center gap-3 p-4 rounded-lg border-2 transition-all
+                ${contentType === 'practice'
+                  ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20'
+                  : 'border-border hover:border-emerald-500/50 hover:bg-muted/50'
+                }
+              `}
+            >
+              <BookOpen className={`h-8 w-8 ${contentType === 'practice' ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+              <div className="text-center">
+                <p className={`font-semibold ${contentType === 'practice' ? 'text-emerald-600' : ''}`}>تمرين</p>
+                <p className="text-xs text-muted-foreground mt-1">تدريب على مهارات محددة</p>
+              </div>
+              {contentType === 'practice' && (
+                <Badge className="absolute -top-2 -right-2 bg-emerald-500">محدد</Badge>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* Title Input */}
         <div className="space-y-2">
           <Label htmlFor="title">عنوان المحتوى *</Label>
@@ -166,7 +224,7 @@ export function AdminContentUploader({
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="مثال: اختبار الجبر المتقدم"
+            placeholder={contentType === 'exam' ? 'مثال: اختبار الجبر المتقدم' : 'مثال: تمرين على التناسب'}
             dir="rtl"
           />
         </div>
@@ -197,6 +255,23 @@ export function AdminContentUploader({
             <option value="verbal">القسم اللفظي</option>
           </select>
         </div>
+
+        {/* Difficulty Select (Practice Only) */}
+        {contentType === 'practice' && (
+          <div className="space-y-2">
+            <Label htmlFor="difficulty">مستوى الصعوبة *</Label>
+            <select
+              id="difficulty"
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
+              className="w-full h-10 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="easy">سهل</option>
+              <option value="medium">متوسط</option>
+              <option value="hard">صعب</option>
+            </select>
+          </div>
+        )}
 
         {/* File Upload Area */}
         <div className="space-y-2">

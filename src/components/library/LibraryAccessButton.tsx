@@ -83,8 +83,27 @@ export function LibraryAccessButton({
     }
   }
 
-  const handleStartExam = () => {
-    router.push(`/library/${postId}/start`)
+  const handleStartExam = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/library/${postId}/start`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'فشل في بدء الاختبار')
+      }
+
+      // Redirect to the exam page with the session ID
+      router.push(`/exam/${data.sessionId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ')
+      setIsLoading(false)
+    }
   }
 
   // Already completed
@@ -105,10 +124,29 @@ export function LibraryAccessButton({
   // Has access but not completed
   if (userHasAccess) {
     return (
-      <Button onClick={handleStartExam} className="w-full gap-2" size="lg">
-        <Play className="w-4 h-4" />
-        بدء الاختبار
-      </Button>
+      <div className="space-y-2">
+        <Button
+          onClick={handleStartExam}
+          disabled={isLoading}
+          className="w-full gap-2"
+          size="lg"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              جاري تحميل الاختبار...
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4" />
+              بدء الاختبار
+            </>
+          )}
+        </Button>
+        {error && (
+          <p className="text-xs text-destructive text-center">{error}</p>
+        )}
+      </div>
     )
   }
 

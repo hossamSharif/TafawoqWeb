@@ -208,6 +208,7 @@ export async function POST(request: NextRequest) {
       stem: q.stem,
       choices: q.choices,
       passage: q.passage,
+      diagram: q.diagram, // Include diagram data for rendering geometric shapes and charts
       // answerIndex, explanation hidden until answered
     }))
 
@@ -222,6 +223,7 @@ export async function POST(request: NextRequest) {
         generatedBatches: 1,
       },
       questions: questionsWithoutAnswers,
+      invalidateLimitsCache: true, // Signal frontend to invalidate subscription limits cache
     })
   } catch (error) {
     console.error('Exam creation error:', error)

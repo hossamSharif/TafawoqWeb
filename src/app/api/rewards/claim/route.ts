@@ -27,70 +27,31 @@ export async function POST(_request: NextRequest) {
 
     const userId = user.id
 
-    // Find completions that haven't been credited yet
-    // This handles cases where the trigger might have failed
-    const { data: unclaimedCompletions, error: completionsError } = await supabase
-      .from('shared_exam_completions')
-      .select(`
-        id,
-        post_id,
-        forum_posts!inner (
-          id,
-          user_id,
-          type
-        )
-      `)
-      .eq('claimed', false)
-      .neq('forum_posts.user_id', userId) // User completed someone else's content
-      .or(`forum_posts.user_id.eq.${userId}`) // User's content was completed by others
-      .eq('completed_at', 'completed_at')
-
-    // Also check for unclaimed practice completions if that table exists
-    const totalExamCredits = 0
-    const totalPracticeCredits = 0
-
-    // Process unclaimed completions and credit the content owners
-    // Note: In practice, the trigger should handle this automatically
+    // This endpoint is a fallback for manual reward claiming
+    // In practice, the database trigger grant_reward_on_completion() handles this automatically
     // This is primarily for reconciliation/recovery scenarios
 
-    // Get current balance
+    // Since the trigger handles reward granting automatically on INSERT,
+    // this endpoint now just returns the current balance
+    // If you need to manually trigger reward calculation, use the checkAndAwardMilestone function
+
+    // Get current balance using the rewards calculator which handles creation if needed
     const { data: credits, error: creditsError } = await supabase
       .from('user_credits')
-      .select('exam_credits, practice_credits')
+      .select('exam_credits, practice_credits, total_completions')
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()
 
-    if (creditsError && creditsError.code !== 'PGRST116') {
-      throw creditsError
-    }
-
-    const newBalance: RewardBalance = {
-      examCredits: (credits?.exam_credits || 0) + totalExamCredits,
-      practiceCredits: (credits?.practice_credits || 0) + totalPracticeCredits,
-    }
-
-    // If there were credits to claim, update the balance
-    if (totalExamCredits > 0 || totalPracticeCredits > 0) {
-      const { error: updateError } = await supabase
-        .from('user_credits')
-        .upsert({
-          user_id: userId,
-          exam_credits: newBalance.examCredits,
-          practice_credits: newBalance.practiceCredits,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        })
-
-      if (updateError) {
-        throw updateError
-      }
+    // If no record exists, the trigger will create it on first completion
+    const currentBalance: RewardBalance = {
+      examCredits: credits?.exam_credits || 0,
+      practiceCredits: credits?.practice_credits || 0,
     }
 
     const response: ClaimRewardResponse = {
       success: true,
-      creditsClaimed: totalExamCredits + totalPracticeCredits,
-      newBalance,
+      creditsClaimed: 0, // Automatic via trigger
+      newBalance: currentBalance,
     }
 
     return NextResponse.json(response)

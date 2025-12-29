@@ -1,0 +1,1398 @@
+{
+    "examType": "full",
+    "track": "scientific",
+    "totalQuestions": 96,
+    "quantitativeQuestions": 57,
+    "verbalQuestions": 39,
+    "difficultyDistribution": {
+      "easy": "30%",
+      "medium": "50%",
+      "hard": "20%"
+    },
+    "questions": [
+      {
+        "id": "exam_scientific_quant_01",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "إذا كان 3س + 5 = 20، فما قيمة س؟",
+        "choices": ["5", "6", "7", "8"],
+        "answerIndex": 0,
+        "explanation": "3س + 5 = 20\n3س = 20 - 5\n3س = 15\nس = 15 ÷ 3 = 5",
+        "tags": ["algebra", "linear-equations", "easy"]
+      },
+      {
+        "id": "exam_scientific_quant_02",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "medium",
+        "questionType": "diagram",
+        "stem": "في الشكل الموضح، ما مساحة الدائرة؟ (استخدم π ≈ 22/7)",
+        "choices": ["154 سم²", "49 سم²", "308 سم²", "44 سم²"],
+        "answerIndex": 0,
+        "explanation": "مساحة الدائرة = π × نق²\nالمساحة = 22/7 × 7 × 7 = 22 × 7 = 154 سم²",
+        "diagram": {
+          "type": "circle",
+          "data": {
+            "radius": 7,
+            "center": [150, 150],
+            "label": "نق = 7 سم",
+            "showRadius": true
+          },
+          "renderHint": "SVG",
+          "caption": "دائرة نصف قطرها 7 سم"
+        },
+        "tags": ["geometry", "circle", "area"]
+      },
+      {
+        "id": "exam_scientific_quant_03",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "إذا كانت النسبة بين عدد الطلاب والطالبات في مدرسة 3:2 وكان عدد الطلاب 180، فما عدد الطالبات؟",
+        "choices": ["120", "270", "90", "150"],
+        "answerIndex": 0,
+        "explanation": "النسبة 3:2 تعني أن كل 3 طلاب يقابلهم 2 طالبات\n180 ÷ 3 = 60 (وحدة النسبة)\nعدد الطالبات = 60 × 2 = 120",
+        "tags": ["ratio-proportion", "word-problems"]
+      },
+      {
+        "id": "exam_scientific_quant_04",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "medium",
+        "questionType": "chart",
+        "stem": "الرسم البياني يوضح عدد الكتب المباعة في أربعة أشهر. ما المتوسط الحسابي لعدد الكتب المباعة؟",
+        "choices": ["250", "275", "300", "225"],
+        "answerIndex": 0,
+        "explanation": "المجموع = 200 + 300 + 250 + 250 = 1000\nالمتوسط = 1000 ÷ 4 = 250 كتاب",
+        "diagram": {
+          "type": "bar-chart",
+          "data": {
+            "labels": ["يناير", "فبراير", "مارس", "أبريل"],
+            "values": [200, 300, 250, 250],
+            "xAxisLabel": "الشهر",
+            "yAxisLabel": "عدد الكتب",
+            "title": "مبيعات الكتب الشهرية"
+          },
+          "renderHint": "Chart.js",
+          "caption": "رسم أعمدة يوضح مبيعات الكتب"
+        },
+        "tags": ["statistics", "bar-chart", "average"]
+      },
+      {
+        "id": "exam_scientific_quant_05",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "إذا كان س² - 9 = 0، فما قيمة س؟",
+        "choices": ["3 أو -3", "3 فقط", "9", "-9"],
+        "answerIndex": 0,
+        "explanation": "س² - 9 = 0\nس² = 9\nس = ±√9 = ±3\nأي س = 3 أو س = -3",
+        "tags": ["algebra", "quadratic-equations"]
+      },
+      {
+        "id": "exam_scientific_quant_06",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "medium",
+        "questionType": "diagram",
+        "stem": "في المثلث القائم الزاوية الموضح، ما قيمة الضلع المجهول ب؟",
+        "choices": ["5 سم", "13 سم", "7 سم", "10 سم"],
+        "answerIndex": 1,
+        "explanation": "باستخدام نظرية فيثاغورس: ب² = أ² + ج²\nب² = 5² + 12²\nب² = 25 + 144 = 169\nب = √169 = 13 سم",
+        "diagram": {
+          "type": "triangle",
+          "data": {
+            "vertices": [[50, 150], [50, 50], [200, 150]],
+            "labels": ["أ = 12 سم", "ب = ؟", "ج = 5 سم"],
+            "sides": [12, "?", 5],
+            "angles": [90],
+            "showRightAngle": true
+          },
+          "renderHint": "SVG",
+          "caption": "مثلث قائم الزاوية"
+        },
+        "tags": ["geometry", "pythagorean-theorem", "right-triangle"]
+      },
+      {
+        "id": "exam_scientific_quant_07",
+        "section": "quantitative",
+        "topic": "probability",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "كيس يحتوي على 4 كرات حمراء و6 كرات زرقاء. ما احتمال سحب كرة حمراء؟",
+        "choices": ["2/5", "3/5", "4/10", "1/2"],
+        "answerIndex": 0,
+        "explanation": "عدد الكرات الحمراء = 4\nإجمالي عدد الكرات = 4 + 6 = 10\nالاحتمال = 4/10 = 2/5",
+        "tags": ["probability", "basic-probability"]
+      },
+      {
+        "id": "exam_scientific_quant_08",
+        "section": "quantitative",
+        "topic": "speed-time-distance",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "قطع سيارة مسافة 240 كم في 3 ساعات. ما متوسط سرعة السيارة؟",
+        "choices": ["80 كم/ساعة", "70 كم/ساعة", "90 كم/ساعة", "60 كم/ساعة"],
+        "answerIndex": 0,
+        "explanation": "السرعة = المسافة ÷ الزمن\nالسرعة = 240 ÷ 3 = 80 كم/ساعة",
+        "tags": ["speed-time-distance", "average-speed"]
+      },
+      {
+        "id": "exam_scientific_quant_09",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "إذا كان (س + 3)² = 49، فما قيمة س؟",
+        "choices": ["4 أو -10", "7 أو -7", "4 فقط", "10 أو -4"],
+        "answerIndex": 0,
+        "explanation": "(س + 3)² = 49\nس + 3 = ±√49 = ±7\nعندما س + 3 = 7، فإن س = 4\nعندما س + 3 = -7، فإن س = -10\nإذاً س = 4 أو س = -10",
+        "tags": ["algebra", "quadratic-equations", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_10",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "easy",
+        "questionType": "diagram",
+        "stem": "في الشكل الموضح، ما محيط المستطيل؟",
+        "choices": ["30 سم", "50 سم", "40 سم", "35 سم"],
+        "answerIndex": 1,
+        "explanation": "محيط المستطيل = 2 × (الطول + العرض)\nالمحيط = 2 × (15 + 10) = 2 × 25 = 50 سم",
+        "diagram": {
+          "type": "rectangle",
+          "data": {
+            "width": 15,
+            "height": 10,
+            "labels": ["15 سم", "10 سم"],
+            "showDimensions": true
+          },
+          "renderHint": "SVG",
+          "caption": "مستطيل أبعاده 15 سم × 10 سم"
+        },
+        "tags": ["geometry", "rectangle", "perimeter"]
+      },
+      {
+        "id": "exam_scientific_quant_11",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "إذا كان 20% من عدد يساوي 40، فما هو العدد؟",
+        "choices": ["200", "100", "80", "160"],
+        "answerIndex": 0,
+        "explanation": "20% من العدد = 40\n0.20 × العدد = 40\nالعدد = 40 ÷ 0.20 = 40 × 5 = 200",
+        "tags": ["ratio-proportion", "percentage"]
+      },
+      {
+        "id": "exam_scientific_quant_12",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "درجات خمسة طلاب في اختبار هي: 80، 85، 90، 95، 100. ما الوسيط؟",
+        "choices": ["90", "85", "92", "95"],
+        "answerIndex": 0,
+        "explanation": "الوسيط هو القيمة الوسطى عندما نرتب البيانات\nالبيانات مرتبة: 80، 85، 90، 95، 100\nالوسيط = القيمة الوسطى = 90",
+        "tags": ["statistics", "median"]
+      },
+      {
+        "id": "exam_scientific_quant_13",
+        "section": "quantitative",
+        "topic": "probability",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما احتمال الحصول على عدد زوجي عند رمي حجر نرد عادي مرة واحدة؟",
+        "choices": ["1/2", "1/3", "2/3", "1/6"],
+        "answerIndex": 0,
+        "explanation": "الأعداد الزوجية على حجر النرد: 2، 4، 6 (ثلاثة أعداد)\nإجمالي النواتج الممكنة = 6\nالاحتمال = 3/6 = 1/2",
+        "tags": ["probability", "dice"]
+      },
+      {
+        "id": "exam_scientific_quant_14",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "hard",
+        "questionType": "diagram",
+        "stem": "في الشكل، دائرتان متماستان خارجياً. ما المسافة بين مركزيهما؟",
+        "choices": ["12 سم", "10 سم", "14 سم", "8 سم"],
+        "answerIndex": 0,
+        "explanation": "عند تماس دائرتين خارجياً، المسافة بين المركزين = مجموع نصفي القطرين\nالمسافة = 5 + 7 = 12 سم",
+        "diagram": {
+          "type": "composite-shape",
+          "data": {
+            "shapes": [
+              {"type": "circle", "center": [80, 100], "radius": 5, "label": "نق = 5 سم"},
+              {"type": "circle", "center": [172, 100], "radius": 7, "label": "نق = 7 سم"}
+            ],
+            "labels": ["دائرة أ", "دائرة ب"]
+          },
+          "renderHint": "SVG",
+          "caption": "دائرتان متماستان خارجياً"
+        },
+        "tags": ["geometry", "circles", "tangent-circles"]
+      },
+      {
+        "id": "exam_scientific_quant_15",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما قيمة 2س عندما س = 7؟",
+        "choices": ["14", "9", "12", "16"],
+        "answerIndex": 0,
+        "explanation": "نعوض بقيمة س = 7\n2س = 2 × 7 = 14",
+        "tags": ["algebra", "substitution"]
+      },
+      {
+        "id": "exam_scientific_quant_16",
+        "section": "quantitative",
+        "topic": "speed-time-distance",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "خرج شخصان من نقطتين متقابلتين على طريق طوله 180 كم، سرعة الأول 60 كم/ساعة والثاني 30 كم/ساعة. بعد كم ساعة يلتقيان؟",
+        "choices": ["2 ساعة", "3 ساعات", "1.5 ساعة", "4 ساعات"],
+        "answerIndex": 0,
+        "explanation": "السرعة النسبية = 60 + 30 = 90 كم/ساعة\nالزمن = المسافة ÷ السرعة النسبية = 180 ÷ 90 = 2 ساعة",
+        "tags": ["speed-time-distance", "relative-speed", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_17",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "medium",
+        "questionType": "chart",
+        "stem": "يوضح الرسم البياني توزيع الطلاب حسب الهوايات. ما عدد الطلاب الذين يفضلون القراءة؟",
+        "choices": ["80", "60", "100", "70"],
+        "answerIndex": 0,
+        "explanation": "من الرسم البياني الدائري، نسبة محبي القراءة = 40%\nإجمالي الطلاب = 200\nعدد محبي القراءة = 40% × 200 = 0.40 × 200 = 80 طالب",
+        "diagram": {
+          "type": "pie-chart",
+          "data": {
+            "labels": ["قراءة", "رياضة", "فنون", "موسيقى"],
+            "values": [40, 30, 20, 10],
+            "title": "توزيع الطلاب حسب الهوايات (إجمالي: 200 طالب)"
+          },
+          "renderHint": "Chart.js",
+          "caption": "رسم دائري يوضح نسب الهوايات"
+        },
+        "tags": ["statistics", "pie-chart", "percentage"]
+      },
+      {
+        "id": "exam_scientific_quant_18",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "medium",
+        "questionType": "diagram",
+        "stem": "في المثلث الموضح، إذا كانت قياس الزاويتين المعلومتين كما في الشكل، فما قياس الزاوية الثالثة؟",
+        "choices": ["80°", "70°", "90°", "100°"],
+        "answerIndex": 0,
+        "explanation": "مجموع زوايا المثلث = 180°\nالزاوية الثالثة = 180° - 60° - 40° = 80°",
+        "diagram": {
+          "type": "triangle",
+          "data": {
+            "vertices": [[50, 150], [125, 30], [200, 150]],
+            "labels": ["60°", "40°", "؟"],
+            "sides": [],
+            "angles": [60, 40, "?"],
+            "showRightAngle": false
+          },
+          "renderHint": "SVG",
+          "caption": "مثلث بزاويتين معلومتين"
+        },
+        "tags": ["geometry", "triangle", "angles"]
+      },
+      {
+        "id": "exam_scientific_quant_19",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "إذا زاد طول مستطيل بنسبة 50% ونقص عرضه بنسبة 20%، فما النسبة المئوية للتغير في مساحته؟",
+        "choices": ["زيادة 20%", "زيادة 30%", "نقصان 10%", "زيادة 50%"],
+        "answerIndex": 0,
+        "explanation": "لنفترض الطول الأصلي = 10 والعرض الأصلي = 10\nالمساحة الأصلية = 10 × 10 = 100\nالطول الجديد = 10 + 50% = 15\nالعرض الجديد = 10 - 20% = 8\nالمساحة الجديدة = 15 × 8 = 120\nالتغير = (120 - 100) ÷ 100 × 100% = 20% زيادة",
+        "tags": ["ratio-proportion", "percentage-change", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_20",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "إذا كان 5(س - 2) = 25، فما قيمة س؟",
+        "choices": ["7", "5", "9", "3"],
+        "answerIndex": 0,
+        "explanation": "5(س - 2) = 25\nس - 2 = 25 ÷ 5 = 5\nس = 5 + 2 = 7",
+        "tags": ["algebra", "linear-equations"]
+      },
+      {
+        "id": "exam_scientific_quant_21",
+        "section": "quantitative",
+        "topic": "probability",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "كم عدد الطرق المختلفة لترتيب 5 طلاب في صف واحد؟",
+        "choices": ["120", "24", "60", "720"],
+        "answerIndex": 0,
+        "explanation": "عدد الطرق = 5! (مضروب 5)\n5! = 5 × 4 × 3 × 2 × 1 = 120 طريقة",
+        "tags": ["probability", "permutations"]
+      },
+      {
+        "id": "exam_scientific_quant_22",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "easy",
+        "questionType": "diagram",
+        "stem": "ما حجم المكعب الموضح في الشكل؟",
+        "choices": ["125 سم³", "25 سم³", "75 سم³", "150 سم³"],
+        "answerIndex": 0,
+        "explanation": "حجم المكعب = (طول الحرف)³\nالحجم = 5³ = 5 × 5 × 5 = 125 سم³",
+        "diagram": {
+          "type": "composite-shape",
+          "data": {
+            "shapes": [
+              {"type": "rectangle", "vertices": [[50, 100], [150, 100], [150, 200], [50, 200]], "label": "5 سم"}
+            ],
+            "labels": ["مكعب طول حرفه 5 سم"]
+          },
+          "renderHint": "SVG",
+          "caption": "مكعب طول حرفه 5 سم"
+        },
+        "tags": ["geometry", "volume", "cube"]
+      },
+      {
+        "id": "exam_scientific_quant_23",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "medium",
+        "questionType": "chart",
+        "stem": "يوضح الرسم درجات الحرارة خلال أسبوع. في أي يوم كانت أعلى درجة حرارة؟",
+        "choices": ["الأربعاء", "السبت", "الخميس", "الثلاثاء"],
+        "answerIndex": 0,
+        "explanation": "من الرسم البياني الخطي، أعلى نقطة تقع عند يوم الأربعاء بدرجة 38°",
+        "diagram": {
+          "type": "line-graph",
+          "data": {
+            "labels": ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"],
+            "values": [30, 32, 34, 35, 38, 36, 33],
+            "xAxisLabel": "اليوم",
+            "yAxisLabel": "درجة الحرارة (°م)",
+            "title": "درجات الحرارة الأسبوعية"
+          },
+          "renderHint": "Chart.js",
+          "caption": "رسم خطي يوضح درجات الحرارة"
+        },
+        "tags": ["statistics", "line-graph", "reading-data"]
+      },
+      {
+        "id": "exam_scientific_quant_24",
+        "section": "quantitative",
+        "topic": "speed-time-distance",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "إذا سارت سيارة بسرعة 100 كم/ساعة لمدة ساعتين، فما المسافة التي قطعتها؟",
+        "choices": ["200 كم", "100 كم", "150 كم", "250 كم"],
+        "answerIndex": 0,
+        "explanation": "المسافة = السرعة × الزمن\nالمسافة = 100 × 2 = 200 كم",
+        "tags": ["speed-time-distance", "basic"]
+      },
+      {
+        "id": "exam_scientific_quant_25",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "hard",
+        "questionType": "diagram",
+        "stem": "في الشكل، مربع محاط بدائرة. إذا كان طول ضلع المربع 10 سم، فما نصف قطر الدائرة تقريباً؟",
+        "choices": ["7 سم", "5 سم", "10 سم", "14 سم"],
+        "answerIndex": 0,
+        "explanation": "قطر الدائرة = قطر المربع (القطر)\nقطر المربع = ضلع × √2 = 10√2 ≈ 14.14 سم\nنصف قطر الدائرة = 14.14 ÷ 2 ≈ 7 سم",
+        "diagram": {
+          "type": "composite-shape",
+          "data": {
+            "shapes": [
+              {"type": "circle", "center": [125, 125], "radius": 70, "label": ""},
+              {"type": "rectangle", "vertices": [[75, 75], [175, 75], [175, 175], [75, 175]], "label": "10 سم"}
+            ],
+            "labels": ["مربع داخل دائرة"]
+          },
+          "renderHint": "SVG",
+          "caption": "مربع طول ضلعه 10 سم محاط بدائرة"
+        },
+        "tags": ["geometry", "circle", "square", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_26",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما ناتج (س + 3)(س - 3)؟",
+        "choices": ["س² - 9", "س² + 9", "س² - 6", "س² + 6"],
+        "answerIndex": 0,
+        "explanation": "باستخدام قاعدة الفرق بين مربعين:\n(أ + ب)(أ - ب) = أ² - ب²\n(س + 3)(س - 3) = س² - 9",
+        "tags": ["algebra", "factorization"]
+      },
+      {
+        "id": "exam_scientific_quant_27",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "إذا كان سعر كتاب 40 ريالاً وحصل على خصم 25%، فما السعر بعد الخصم؟",
+        "choices": ["30 ريالاً", "35 ريالاً", "20 ريالاً", "25 ريالاً"],
+        "answerIndex": 0,
+        "explanation": "قيمة الخصم = 25% من 40 = 0.25 × 40 = 10 ريال\nالسعر بعد الخصم = 40 - 10 = 30 ريال",
+        "tags": ["ratio-proportion", "discount"]
+      },
+      {
+        "id": "exam_scientific_quant_28",
+        "section": "quantitative",
+        "topic": "probability",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "كم عدد الطرق المختلفة لاختيار 3 طلاب من مجموعة مكونة من 5 طلاب؟",
+        "choices": ["10", "15", "20", "6"],
+        "answerIndex": 0,
+        "explanation": "عدد التوافيق = 5C3 = 5!/(3!×2!)\n= (5 × 4)/(2 × 1) = 20/2 = 10 طرق",
+        "tags": ["probability", "combinations"]
+      },
+      {
+        "id": "exam_scientific_quant_29",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "إذا كانت درجات 5 طلاب هي: 70، 80، 90، 100، 85، فما المتوسط الحسابي؟",
+        "choices": ["85", "80", "90", "82"],
+        "answerIndex": 0,
+        "explanation": "المتوسط = مجموع القيم ÷ عددها\nالمتوسط = (70 + 80 + 90 + 100 + 85) ÷ 5 = 425 ÷ 5 = 85",
+        "tags": ["statistics", "mean"]
+      },
+      {
+        "id": "exam_scientific_quant_30",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "medium",
+        "questionType": "diagram",
+        "stem": "في الشكل، ما مساحة المثلث؟",
+        "choices": ["60 سم²", "120 سم²", "80 سم²", "100 سم²"],
+        "answerIndex": 0,
+        "explanation": "مساحة المثلث = ½ × القاعدة × الارتفاع\nالمساحة = ½ × 12 × 10 = 60 سم²",
+        "diagram": {
+          "type": "triangle",
+          "data": {
+            "vertices": [[50, 150], [50, 50], [200, 150]],
+            "labels": ["القاعدة = 12 سم", "", "الارتفاع = 10 سم"],
+            "sides": [12, "", ""],
+            "angles": [],
+            "showRightAngle": false
+          },
+          "renderHint": "SVG",
+          "caption": "مثلث قاعدته 12 سم وارتفاعه 10 سم"
+        },
+        "tags": ["geometry", "triangle", "area"]
+      },
+      {
+        "id": "exam_scientific_quant_31",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "إذا كان س + ص = 10 و س × ص = 21، فما قيمة س² + ص²؟",
+        "choices": ["58", "79", "100", "42"],
+        "answerIndex": 0,
+        "explanation": "(س + ص)² = س² + 2سص + ص²\n10² = س² + ص² + 2(21)\n100 = س² + ص² + 42\nس² + ص² = 100 - 42 = 58",
+        "tags": ["algebra", "identities", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_32",
+        "section": "quantitative",
+        "topic": "speed-time-distance",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "قطع عداء 400 متر في دقيقة واحدة. ما سرعته بالكيلومتر في الساعة؟",
+        "choices": ["24 كم/ساعة", "20 كم/ساعة", "30 كم/ساعة", "18 كم/ساعة"],
+        "answerIndex": 0,
+        "explanation": "المسافة في ساعة = 400 × 60 = 24000 متر = 24 كم\nالسرعة = 24 كم/ساعة",
+        "tags": ["speed-time-distance", "unit-conversion"]
+      },
+      {
+        "id": "exam_scientific_quant_33",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "medium",
+        "questionType": "chart",
+        "stem": "الرسم البياني يوضح مبيعات ثلاث شركات. ما الفرق بين أعلى وأقل مبيعات؟",
+        "choices": ["200 ألف", "150 ألف", "250 ألف", "100 ألف"],
+        "answerIndex": 0,
+        "explanation": "أعلى مبيعات (الشركة ب) = 400 ألف\nأقل مبيعات (الشركة أ) = 200 ألف\nالفرق = 400 - 200 = 200 ألف",
+        "diagram": {
+          "type": "bar-chart",
+          "data": {
+            "labels": ["الشركة أ", "الشركة ب", "الشركة ج"],
+            "values": [200, 400, 300],
+            "xAxisLabel": "الشركة",
+            "yAxisLabel": "المبيعات (بالألف ريال)",
+            "title": "مبيعات الشركات الثلاث"
+          },
+          "renderHint": "Chart.js",
+          "caption": "رسم أعمدة يقارن المبيعات"
+        },
+        "tags": ["statistics", "bar-chart", "comparison"]
+      },
+      {
+        "id": "exam_scientific_quant_34",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "إذا كانت النسبة بين عمري أحمد وسعيد 4:5، وكان عمر أحمد 20 سنة، فما عمر سعيد؟",
+        "choices": ["25 سنة", "30 سنة", "16 سنة", "24 سنة"],
+        "answerIndex": 0,
+        "explanation": "النسبة 4:5 تعني أن كل 4 سنوات لأحمد تقابل 5 سنوات لسعيد\n20 ÷ 4 = 5 (وحدة النسبة)\nعمر سعيد = 5 × 5 = 25 سنة",
+        "tags": ["ratio-proportion", "ages"]
+      },
+      {
+        "id": "exam_scientific_quant_35",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "easy",
+        "questionType": "diagram",
+        "stem": "ما مساحة المستطيل الموضح في الشكل؟",
+        "choices": ["72 سم²", "26 سم", "36 سم²", "52 سم"],
+        "answerIndex": 0,
+        "explanation": "مساحة المستطيل = الطول × العرض\nالمساحة = 9 × 8 = 72 سم²",
+        "diagram": {
+          "type": "rectangle",
+          "data": {
+            "width": 9,
+            "height": 8,
+            "labels": ["9 سم", "8 سم"],
+            "showDimensions": true
+          },
+          "renderHint": "SVG",
+          "caption": "مستطيل أبعاده 9 سم × 8 سم"
+        },
+        "tags": ["geometry", "rectangle", "area"]
+      },
+      {
+        "id": "exam_scientific_quant_36",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "إذا كان 4س - 7 = 17، فما قيمة س؟",
+        "choices": ["6", "5", "4", "7"],
+        "answerIndex": 0,
+        "explanation": "4س - 7 = 17\n4س = 17 + 7 = 24\nس = 24 ÷ 4 = 6",
+        "tags": ["algebra", "linear-equations"]
+      },
+      {
+        "id": "exam_scientific_quant_37",
+        "section": "quantitative",
+        "topic": "probability",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما احتمال الحصول على رقم 3 عند رمي حجر نرد عادي؟",
+        "choices": ["1/6", "1/3", "1/2", "1/4"],
+        "answerIndex": 0,
+        "explanation": "احتمال الحصول على رقم معين من حجر النرد\n= عدد النتائج الملائمة ÷ إجمالي النتائج = 1/6",
+        "tags": ["probability", "dice", "basic"]
+      },
+      {
+        "id": "exam_scientific_quant_38",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "medium",
+        "questionType": "diagram",
+        "stem": "في الشكل، ما طول محيط المثلث متساوي الأضلاع؟",
+        "choices": ["36 سم", "12 سم", "24 سم", "48 سم"],
+        "answerIndex": 0,
+        "explanation": "المثلث متساوي الأضلاع، أي جميع أضلاعه متساوية\nالمحيط = 3 × طول الضلع = 3 × 12 = 36 سم",
+        "diagram": {
+          "type": "triangle",
+          "data": {
+            "vertices": [[125, 50], [50, 150], [200, 150]],
+            "labels": ["12 سم", "12 سم", "12 سم"],
+            "sides": [12, 12, 12],
+            "angles": [],
+            "showRightAngle": false
+          },
+          "renderHint": "SVG",
+          "caption": "مثلث متساوي الأضلاع طول ضلعه 12 سم"
+        },
+        "tags": ["geometry", "triangle", "equilateral", "perimeter"]
+      },
+      {
+        "id": "exam_scientific_quant_39",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "hard",
+        "questionType": "chart",
+        "stem": "الرسم يوضح أعداد الزوار في متحف خلال 6 أشهر. ما الشهران اللذان كان عدد الزوار فيهما متساوياً؟",
+        "choices": ["فبراير ومايو", "يناير وأبريل", "مارس ويونيو", "يناير ومارس"],
+        "answerIndex": 0,
+        "explanation": "من الرسم، عدد الزوار في فبراير = 250 وفي مايو = 250\nهما الشهران الوحيدان بنفس العدد",
+        "diagram": {
+          "type": "line-graph",
+          "data": {
+            "labels": ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو"],
+            "values": [200, 250, 300, 280, 250, 320],
+            "xAxisLabel": "الشهر",
+            "yAxisLabel": "عدد الزوار",
+            "title": "عدد زوار المتحف خلال 6 أشهر"
+          },
+          "renderHint": "Chart.js",
+          "caption": "رسم خطي يوضح أعداد الزوار"
+        },
+        "tags": ["statistics", "line-graph", "comparison", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_40",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "مزج تاجر نوعين من القهوة: الأول سعره 30 ريالاً للكيلو والثاني 40 ريالاً. إذا مزج كميات متساوية، فما سعر الكيلو من المزيج؟",
+        "choices": ["35 ريالاً", "37 ريالاً", "33 ريالاً", "38 ريالاً"],
+        "answerIndex": 0,
+        "explanation": "عند مزج كميات متساوية، السعر الجديد = (30 + 40) ÷ 2 = 70 ÷ 2 = 35 ريال",
+        "tags": ["ratio-proportion", "mixture", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_41",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما قيمة س² عندما س = 6؟",
+        "choices": ["36", "12", "18", "24"],
+        "answerIndex": 0,
+        "explanation": "نعوض بقيمة س = 6\nس² = 6² = 6 × 6 = 36",
+        "tags": ["algebra", "powers"]
+      },
+      {
+        "id": "exam_scientific_quant_42",
+        "section": "quantitative",
+        "topic": "speed-time-distance",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "كم يستغرق قطار من الوقت لقطع 300 كم إذا كانت سرعته 150 كم/ساعة؟",
+        "choices": ["2 ساعة", "3 ساعات", "1 ساعة", "4 ساعات"],
+        "answerIndex": 0,
+        "explanation": "الزمن = المسافة ÷ السرعة\nالزمن = 300 ÷ 150 = 2 ساعة",
+        "tags": ["speed-time-distance"]
+      },
+      {
+        "id": "exam_scientific_quant_43",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "hard",
+        "questionType": "diagram",
+        "stem": "في الشكل، مربع داخل مثلث قائم. إذا كان ضلع المربع 4 سم وأضلاع المثلث كما موضح، فما مساحة المنطقة المظللة (المثلث فقط بدون المربع)؟",
+        "choices": ["14 سم²", "30 سم²", "16 سم²", "46 سم²"],
+        "answerIndex": 0,
+        "explanation": "مساحة المثلث = ½ × 6 × 10 = 30 سم²\nمساحة المربع = 4 × 4 = 16 سم²\nمساحة المنطقة المظللة = 30 - 16 = 14 سم²",
+        "diagram": {
+          "type": "composite-shape",
+          "data": {
+            "shapes": [
+              {"type": "triangle", "vertices": [[50, 150], [50, 50], [200, 150]], "label": "قاعدة 10، ارتفاع 6"},
+              {"type": "rectangle", "vertices": [[70, 110], [110, 110], [110, 150], [70, 150]], "label": "4 سم"}
+            ],
+            "labels": ["مثلث ومربع"]
+          },
+          "renderHint": "SVG",
+          "caption": "مربع داخل مثلث قائم"
+        },
+        "tags": ["geometry", "composite-shapes", "area", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_44",
+        "section": "quantitative",
+        "topic": "probability",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما احتمال سحب كرة بيضاء من كيس يحتوي على 3 كرات بيضاء و5 كرات سوداء و2 كرات حمراء؟",
+        "choices": ["3/10", "1/3", "3/5", "1/2"],
+        "answerIndex": 0,
+        "explanation": "عدد الكرات البيضاء = 3\nإجمالي الكرات = 3 + 5 + 2 = 10\nالاحتمال = 3/10",
+        "tags": ["probability", "basic-probability"]
+      },
+      {
+        "id": "exam_scientific_quant_45",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما المنوال للأعداد التالية: 5، 8، 5، 9، 5، 7، 8؟",
+        "choices": ["5", "8", "7", "9"],
+        "answerIndex": 0,
+        "explanation": "المنوال هو القيمة الأكثر تكراراً\nالعدد 5 يتكرر 3 مرات، وهو الأكثر تكراراً",
+        "tags": ["statistics", "mode"]
+      },
+      {
+        "id": "exam_scientific_quant_46",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "إذا كان ٢س + ٣ص = ١٨ و س = ٣، فما قيمة ص؟",
+        "choices": ["4", "3", "5", "6"],
+        "answerIndex": 0,
+        "explanation": "نعوض س = 3 في المعادلة:\n2(3) + 3ص = 18\n6 + 3ص = 18\n3ص = 12\nص = 4",
+        "tags": ["algebra", "system-of-equations"]
+      },
+      {
+        "id": "exam_scientific_quant_47",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "زاد راتب موظف من 6000 ريال إلى 7200 ريال. ما النسبة المئوية للزيادة؟",
+        "choices": ["20%", "25%", "15%", "30%"],
+        "answerIndex": 0,
+        "explanation": "الزيادة = 7200 - 6000 = 1200 ريال\nنسبة الزيادة = (1200 ÷ 6000) × 100% = 20%",
+        "tags": ["ratio-proportion", "percentage-increase"]
+      },
+      {
+        "id": "exam_scientific_quant_48",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "medium",
+        "questionType": "diagram",
+        "stem": "في الشكل، ما محيط الدائرة؟ (استخدم π ≈ 22/7)",
+        "choices": ["44 سم", "154 سم", "22 سم", "88 سم"],
+        "answerIndex": 0,
+        "explanation": "محيط الدائرة = 2 × π × نق\nالمحيط = 2 × 22/7 × 7 = 2 × 22 = 44 سم",
+        "diagram": {
+          "type": "circle",
+          "data": {
+            "radius": 7,
+            "center": [150, 150],
+            "label": "نق = 7 سم",
+            "showRadius": true
+          },
+          "renderHint": "SVG",
+          "caption": "دائرة نصف قطرها 7 سم"
+        },
+        "tags": ["geometry", "circle", "circumference"]
+      },
+      {
+        "id": "exam_scientific_quant_49",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "medium",
+        "questionType": "chart",
+        "stem": "الرسم يوضح توزيع الطلاب حسب الفئات العمرية. كم عدد الطلاب في الفئة 16-18 سنة؟",
+        "choices": ["150", "100", "200", "120"],
+        "answerIndex": 0,
+        "explanation": "من الرسم البياني، عمود الفئة 16-18 يظهر 150 طالب",
+        "diagram": {
+          "type": "bar-chart",
+          "data": {
+            "labels": ["13-15", "16-18", "19-21", "22-24"],
+            "values": [100, 150, 120, 80],
+            "xAxisLabel": "الفئة العمرية",
+            "yAxisLabel": "عدد الطلاب",
+            "title": "توزيع الطلاب حسب الفئات العمرية"
+          },
+          "renderHint": "Chart.js",
+          "caption": "رسم أعمدة للفئات العمرية"
+        },
+        "tags": ["statistics", "bar-chart"]
+      },
+      {
+        "id": "exam_scientific_quant_50",
+        "section": "quantitative",
+        "topic": "speed-time-distance",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "قطع دراج مسافة 45 كم في 3 ساعات. كم تبقى من المسافة ليقطع 75 كم؟",
+        "choices": ["30 كم", "20 كم", "25 كم", "35 كم"],
+        "answerIndex": 0,
+        "explanation": "المسافة المقطوعة = 45 كم\nالمسافة المطلوبة = 75 كم\nالمسافة المتبقية = 75 - 45 = 30 كم",
+        "tags": ["speed-time-distance"]
+      },
+      {
+        "id": "exam_scientific_quant_51",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "إذا كان س³ = 64، فما قيمة س؟",
+        "choices": ["4", "8", "2", "16"],
+        "answerIndex": 0,
+        "explanation": "س³ = 64\nس = ∛64 = 4\n(لأن 4 × 4 × 4 = 64)",
+        "tags": ["algebra", "cubic-equations", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_52",
+        "section": "quantitative",
+        "topic": "probability",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "ما احتمال الحصول على مجموع 7 عند رمي حجري نرد معاً؟",
+        "choices": ["1/6", "1/12", "1/9", "1/4"],
+        "answerIndex": 0,
+        "explanation": "النتائج التي مجموعها 7: (1,6)، (2,5)، (3,4)، (4,3)، (5,2)، (6,1) = 6 نتائج\nإجمالي النتائج = 6 × 6 = 36\nالاحتمال = 6/36 = 1/6",
+        "tags": ["probability", "compound-events", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_53",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "easy",
+        "questionType": "diagram",
+        "stem": "ما مساحة الشكل المستطيل في الرسم؟",
+        "choices": ["42 سم²", "26 سم", "21 سم²", "84 سم²"],
+        "answerIndex": 0,
+        "explanation": "مساحة المستطيل = الطول × العرض\nالمساحة = 7 × 6 = 42 سم²",
+        "diagram": {
+          "type": "rectangle",
+          "data": {
+            "width": 7,
+            "height": 6,
+            "labels": ["7 سم", "6 سم"],
+            "showDimensions": true
+          },
+          "renderHint": "SVG",
+          "caption": "مستطيل 7 × 6 سم"
+        },
+        "tags": ["geometry", "rectangle", "area"]
+      },
+      {
+        "id": "exam_scientific_quant_54",
+        "section": "quantitative",
+        "topic": "ratio-proportion",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما 30% من 200؟",
+        "choices": ["60", "70", "50", "80"],
+        "answerIndex": 0,
+        "explanation": "30% من 200 = 0.30 × 200 = 60",
+        "tags": ["ratio-proportion", "percentage", "basic"]
+      },
+      {
+        "id": "exam_scientific_quant_55",
+        "section": "quantitative",
+        "topic": "statistics",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "إذا كان متوسط 4 أعداد هو 25، فما مجموع هذه الأعداد؟",
+        "choices": ["100", "75", "125", "90"],
+        "answerIndex": 0,
+        "explanation": "المتوسط = المجموع ÷ العدد\n25 = المجموع ÷ 4\nالمجموع = 25 × 4 = 100",
+        "tags": ["statistics", "mean", "hard"]
+      },
+      {
+        "id": "exam_scientific_quant_56",
+        "section": "quantitative",
+        "topic": "algebra",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما قيمة س في المعادلة: س/4 = 12؟",
+        "choices": ["48", "3", "16", "8"],
+        "answerIndex": 0,
+        "explanation": "س/4 = 12\nس = 12 × 4 = 48",
+        "tags": ["algebra", "linear-equations"]
+      },
+      {
+        "id": "exam_scientific_quant_57",
+        "section": "quantitative",
+        "topic": "geometry",
+        "difficulty": "medium",
+        "questionType": "diagram",
+        "stem": "في الشكل المثلث متساوي الساقين، قاعدته 10 سم وارتفاعه 12 سم. ما مساحته؟",
+        "choices": ["60 سم²", "120 سم²", "72 سم²", "50 سم²"],
+        "answerIndex": 0,
+        "explanation": "مساحة المثلث = ½ × القاعدة × الارتفاع\nالمساحة = ½ × 10 × 12 = 60 سم²",
+        "diagram": {
+          "type": "triangle",
+          "data": {
+            "vertices": [[125, 30], [50, 150], [200, 150]],
+            "labels": ["ارتفاع = 12 سم", "قاعدة = 10 سم", ""],
+            "sides": ["", 10, ""],
+            "angles": [],
+            "showRightAngle": false
+          },
+          "renderHint": "SVG",
+          "caption": "مثلث متساوي الساقين"
+        },
+        "tags": ["geometry", "triangle", "area", "isosceles"]
+      },
+      {
+        "id": "exam_scientific_verbal_01",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما معنى كلمة \"متأنٍ\"؟",
+        "choices": ["المتروي والحذر", "السريع والمتهور", "الكسول والبطيء", "الغاضب والعصبي"],
+        "answerIndex": 0,
+        "explanation": "المتأني هو الشخص الذي يتروى في أموره ولا يتسرع في قراراته. وهي صفة محمودة تدل على الحكمة والتفكير قبل العمل.",
+        "tags": ["vocabulary", "word-meaning"]
+      },
+      {
+        "id": "exam_scientific_verbal_02",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "طبيب : مستشفى :: ...",
+        "choices": ["معلم : مدرسة", "طالب : كتاب", "مريض : دواء", "مهندس : خريطة"],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي علاقة مكان العمل. الطبيب يعمل في المستشفى، والمعلم يعمل في المدرسة. كلاهما يمارس مهنته في مكان محدد مخصص لعمله.",
+        "tags": ["analogy", "workplace"]
+      },
+      {
+        "id": "exam_scientific_verbal_03",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "يعتبر الصدق من أهم الصفات التي يجب أن يتحلى بها المرء، فهو يبني ______ بين الناس.",
+        "choices": ["الثقة", "الخوف", "الشك", "البغض"],
+        "answerIndex": 0,
+        "explanation": "الصدق يبني الثقة بين الناس. هذه علاقة منطقية، حيث أن الشخص الصادق يكتسب ثقة الآخرين.",
+        "tags": ["sentence-completion", "context"]
+      },
+      {
+        "id": "exam_scientific_verbal_04",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية غير مناسبة في الجملة: \"حضر الطلاب الحفل بكل حماس وجدية\"؟",
+        "choices": ["جدية", "حماس", "حضر", "الحفل"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"جدية\" غير مناسبة في سياق الحفل، لأن الحفل عادة يكون مناسبة للفرح والسرور وليس للجدية. الأنسب أن نقول \"بكل حماس وبهجة\" مثلاً.",
+        "tags": ["context-error", "word-choice"]
+      },
+      {
+        "id": "exam_scientific_verbal_05",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "أي كلمة من الكلمات التالية مختلفة عن البقية؟",
+        "choices": ["قطار", "سيارة", "طائرة", "حافلة"],
+        "answerIndex": 2,
+        "explanation": "الطائرة هي الوسيلة الوحيدة التي تطير في السماء، بينما الباقي (قطار، سيارة، حافلة) جميعها وسائل نقل برية تسير على الأرض.",
+        "tags": ["association-difference", "categories"]
+      },
+      {
+        "id": "exam_scientific_verbal_06",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "stem": "اقرأ النص التالي ثم أجب عن السؤال:\n\n\"الماء هو أساس الحياة على كوكب الأرض. يغطي الماء حوالي 71% من سطح الأرض، لكن الماء العذب الصالح للشرب لا يشكل سوى 3% من إجمالي المياه على الكوكب. ومع تزايد عدد السكان وتغير المناخ، أصبحت ندرة المياه تحدياً عالمياً يتطلب حلولاً مبتكرة للحفاظ على هذا المورد الثمين.\"\n\nما الفكرة الرئيسية للنص؟",
+        "choices": ["أهمية المياه وضرورة الحفاظ عليها", "نسبة المياه على الأرض", "مشكلة تزايد السكان", "تأثير تغير المناخ"],
+        "answerIndex": 0,
+        "explanation": "الفكرة الرئيسية تدور حول أهمية الماء كأساس للحياة والحاجة الملحة للحفاظ عليه في ظل التحديات المختلفة. النص يبدأ بأهمية الماء ثم يناقش التحديات والحاجة للحلول.",
+        "tags": ["reading-comprehension", "main-idea"]
+      },
+      {
+        "id": "exam_scientific_verbal_07",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما مرادف كلمة \"رصين\"؟",
+        "choices": ["وقور ومتزن", "سريع ومتهور", "ضعيف وجبان", "لين ومتساهل"],
+        "answerIndex": 0,
+        "explanation": "الرصين يعني الوقور والمتزن في تصرفاته وأقواله. هي صفة تدل على النضج والحكمة والاتزان في السلوك.",
+        "tags": ["vocabulary", "synonyms"]
+      },
+      {
+        "id": "exam_scientific_verbal_08",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "عين : رؤية :: ...",
+        "choices": ["أذن : سمع", "يد : قوة", "قدم : سرعة", "فم : كلام"],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي علاقة وظيفية: العين وظيفتها الرؤية، والأذن وظيفتها السمع. كلاهما عضو حسي مع وظيفته الأساسية.",
+        "tags": ["analogy", "function", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_09",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "على الرغم من ______ الظروف، إلا أن الفريق واصل العمل بكل إصرار.",
+        "choices": ["صعوبة", "سهولة", "وضوح", "بساطة"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"صعوبة\" هي الأنسب، لأن عبارة \"على الرغم من\" تشير إلى تناقض، والإصرار يكون أمام التحديات والصعوبات وليس أمام السهولة.",
+        "tags": ["sentence-completion", "contrast"]
+      },
+      {
+        "id": "exam_scientific_verbal_10",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية غير مناسبة في الجملة: \"العالم يتطور بسرعة مذهلة في مجال التكنولوجيا القديمة\"؟",
+        "choices": ["القديمة", "مذهلة", "يتطور", "التكنولوجيا"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"القديمة\" تتناقض مع \"يتطور\" و\"بسرعة مذهلة\". التطور السريع يكون في التكنولوجيا الحديثة أو المتقدمة، وليس القديمة.",
+        "tags": ["context-error", "contradiction", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_11",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "أي كلمة من الكلمات التالية مختلفة عن البقية؟",
+        "choices": ["التردد", "الحزم", "الشجاعة", "الإقدام"],
+        "answerIndex": 0,
+        "explanation": "التردد هو الكلمة المختلفة لأنها تعني التذبذب وعدم الحسم، بينما الحزم والشجاعة والإقدام كلها صفات إيجابية تدل على القوة والجرأة.",
+        "tags": ["association-difference", "opposites"]
+      },
+      {
+        "id": "exam_scientific_verbal_12",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "easy",
+        "questionType": "reading-passage",
+        "stem": "اقرأ النص التالي ثم أجب عن السؤال:\n\n\"النحل من أهم الحشرات النافعة للبيئة. فهو يساعد في تلقيح الأزهار والنباتات، مما يساهم في إنتاج الفواكه والخضروات. كما ينتج النحل العسل الذي يُعد غذاءً مفيداً للإنسان. لذلك، من المهم حماية النحل والحفاظ على بيئته.\"\n\nلماذا يعتبر النحل مهماً للبيئة؟",
+        "choices": ["لأنه يساعد في تلقيح النباتات", "لأنه يأكل الحشرات الضارة", "لأنه يبني خلايا جميلة", "لأنه يصدر أصواتاً مفيدة"],
+        "answerIndex": 0,
+        "explanation": "النص يوضح بشكل مباشر أن النحل مهم لأنه يساعد في تلقيح الأزهار والنباتات، وهذا يساهم في إنتاج الثمار.",
+        "tags": ["reading-comprehension", "direct-information"]
+      },
+      {
+        "id": "exam_scientific_verbal_13",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما ضد كلمة \"جميل\"؟",
+        "choices": ["قبيح", "حسن", "بهي", "رائع"],
+        "answerIndex": 0,
+        "explanation": "قبيح هو ضد جميل. وهو يعني الشيء غير الحسن المنظر أو المكروه شكلاً.",
+        "tags": ["vocabulary", "antonyms"]
+      },
+      {
+        "id": "exam_scientific_verbal_14",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "قلم : كتابة :: ...",
+        "choices": ["مطرقة : بناء", "سيارة : وقود", "كتاب : ورق", "شمس : نهار"],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي أداة ووظيفتها: القلم أداة للكتابة، والمطرقة أداة للبناء والطرق. كلاهما أداة يستخدمها الإنسان لإنجاز عمل معين.",
+        "tags": ["analogy", "tool-function"]
+      },
+      {
+        "id": "exam_scientific_verbal_15",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "كان خطابه ______ لدرجة أن الحضور شعروا بالملل والضجر.",
+        "choices": ["مملاً", "مشوقاً", "رائعاً", "مفيداً"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"مملاً\" تتناسب مع نتيجة شعور الحضور بالملل والضجر. الخطاب الممل يسبب هذا الشعور، بينما الخطاب المشوق أو الرائع لا يمكن أن يسبب الملل.",
+        "tags": ["sentence-completion", "cause-effect", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_16",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "hard",
+        "questionType": "reading-passage",
+        "stem": "اقرأ النص التالي ثم أجب عن السؤال:\n\n\"في عصر التقنية الحديثة، أصبح الذكاء الاصطناعي جزءاً لا يتجزأ من حياتنا اليومية. من تطبيقات الهواتف الذكية إلى أنظمة القيادة الذاتية، يلعب الذكاء الاصطناعي دوراً محورياً في تسهيل المهام وتحسين الكفاءة. ومع ذلك، يثير هذا التطور السريع تساؤلات أخلاقية حول الخصوصية وأمن البيانات والتأثير على سوق العمل.\"\n\nما يمكن استنتاجه من النص؟",
+        "choices": ["الذكاء الاصطناعي له فوائد ومخاوف", "الذكاء الاصطناعي ضار بالمجتمع", "يجب منع استخدام الذكاء الاصطناعي", "الذكاء الاصطناعي يحل جميع المشاكل"],
+        "answerIndex": 0,
+        "explanation": "النص يوضح أن للذكاء الاصطناعي جوانب إيجابية (تسهيل المهام وتحسين الكفاءة) وجوانب تثير القلق (التساؤلات الأخلاقية). لذا الاستنتاج المناسب هو وجود فوائد ومخاوف معاً.",
+        "tags": ["reading-comprehension", "inference", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_17",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية غير مناسبة في الجملة: \"استمتع الأطفال باللعب في الحديقة الجميلة تحت ضوء القمر الساطع ظهراً\"؟",
+        "choices": ["ظهراً", "القمر", "الحديقة", "اللعب"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"ظهراً\" غير مناسبة لأن القمر لا يظهر في الظهيرة، بل في الليل. التناقض هنا واضح بين \"ضوء القمر\" و\"ظهراً\".",
+        "tags": ["context-error", "time-contradiction"]
+      },
+      {
+        "id": "exam_scientific_verbal_18",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "أي كلمة من الكلمات التالية مختلفة عن البقية؟",
+        "choices": ["برتقال", "تفاح", "موز", "طماطم"],
+        "answerIndex": 3,
+        "explanation": "الطماطم هي الكلمة المختلفة لأنها خضار (رغم أنها تصنف نباتياً كفاكهة)، بينما البرتقال والتفاح والموز فواكه معروفة.",
+        "tags": ["association-difference", "food-categories"]
+      },
+      {
+        "id": "exam_scientific_verbal_19",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما معنى كلمة \"ثابر\"؟",
+        "choices": ["واصل بإصرار", "استسلم بسرعة", "تردد كثيراً", "نام طويلاً"],
+        "answerIndex": 0,
+        "explanation": "ثابر تعني واصل العمل بجد وإصرار دون توقف أو استسلام. وهي من صفات النجاح والإنجاز.",
+        "tags": ["vocabulary", "verbs"]
+      },
+      {
+        "id": "exam_scientific_verbal_20",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "كتاب : مكتبة :: ...",
+        "choices": ["سمك : بحر", "طائر : قفص", "زهرة : إناء", "سيارة : طريق"],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي جزء من كل طبيعي أو مكان الاحتواء: الكتاب موجود في المكتبة، والسمك يعيش في البحر. كلاهما يمثل الكائن أو الشيء في بيئته الطبيعية.",
+        "tags": ["analogy", "part-whole"]
+      },
+      {
+        "id": "exam_scientific_verbal_21",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "رغم ______ الاختبار، نجح الطالب بتفوق بفضل مذاكرته الجيدة.",
+        "choices": ["صعوبة", "سهولة", "بساطة", "وضوح"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"رغم\" تفيد التناقض، فالنجاح بتفوق يكون أكثر قيمة عندما يكون رغم صعوبة الاختبار، وليس رغم سهولته.",
+        "tags": ["sentence-completion", "contrast"]
+      },
+      {
+        "id": "exam_scientific_verbal_22",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "stem": "اقرأ النص التالي ثم أجب عن السؤال:\n\n\"الرياضة ليست مجرد نشاط بدني، بل هي أسلوب حياة صحي. تساعد ممارسة الرياضة على تقوية العضلات وتحسين الصحة القلبية والوقاية من الأمراض المزمنة. كما أنها تساهم في تحسين الحالة النفسية وتقليل التوتر والقلق. لذلك، ينصح الأطباء بممارسة الرياضة بانتظام لمدة 30 دقيقة يومياً على الأقل.\"\n\nما الفوائد النفسية للرياضة المذكورة في النص؟",
+        "choices": ["تحسين الحالة النفسية وتقليل التوتر", "زيادة التركيز والذكاء", "تحسين الذاكرة والانتباه", "تعزيز الثقة بالنفس فقط"],
+        "answerIndex": 0,
+        "explanation": "النص يذكر بوضوح أن الرياضة \"تساهم في تحسين الحالة النفسية وتقليل التوتر والقلق\"، وهذه هي الفوائد النفسية المذكورة صراحة.",
+        "tags": ["reading-comprehension", "specific-details"]
+      },
+      {
+        "id": "exam_scientific_verbal_23",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية غير مناسبة في الجملة: \"سافر الطلاب للمشاركة في مسابقة علمية دولية في قاع المحيط\"؟",
+        "choices": ["قاع المحيط", "سافر", "مسابقة", "علمية"],
+        "answerIndex": 0,
+        "explanation": "عبارة \"في قاع المحيط\" غير منطقية كمكان لمسابقة علمية للطلاب. المسابقات عادة تُعقد في أماكن يسهل الوصول إليها مثل الجامعات أو المراكز العلمية.",
+        "tags": ["context-error", "logic"]
+      },
+      {
+        "id": "exam_scientific_verbal_24",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "ما مرادف كلمة \"وجيز\"؟",
+        "choices": ["مختصر", "مطول", "مفصل", "ممل"],
+        "answerIndex": 0,
+        "explanation": "وجيز تعني مختصر وموجز، أي غير مطول. تستخدم للإشارة إلى شيء قصير ومباشر دون تفاصيل كثيرة.",
+        "tags": ["vocabulary", "synonyms", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_25",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "أي كلمة من الكلمات التالية مختلفة عن البقية؟",
+        "choices": ["الازدهار", "الكرم", "السخاء", "الجود"],
+        "answerIndex": 0,
+        "explanation": "الازدهار يعني النمو والتطور، بينما الكرم والسخاء والجود كلها تعني العطاء والإنفاق على الآخرين. الازدهار مفهوم مختلف تماماً.",
+        "tags": ["association-difference", "semantic-fields", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_26",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "شمس : نهار :: ...",
+        "choices": ["قمر : ليل", "نجم : سماء", "غيم : مطر", "برق : رعد"],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي ارتباط زمني: الشمس ترتبط بالنهار، والقمر يرتبط بالليل. كلاهما جرم سماوي مع الوقت الذي يظهر فيه.",
+        "tags": ["analogy", "time-association"]
+      },
+      {
+        "id": "exam_scientific_verbal_27",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "القراءة عادة ______ تفتح للإنسان آفاقاً واسعة من المعرفة.",
+        "choices": ["مفيدة", "ضارة", "مملة", "صعبة"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"مفيدة\" تتناسب مع فتح آفاق المعرفة. القراءة التي تفتح آفاق المعرفة تكون مفيدة بالضرورة.",
+        "tags": ["sentence-completion", "positive-context"]
+      },
+      {
+        "id": "exam_scientific_verbal_28",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "hard",
+        "questionType": "reading-passage",
+        "stem": "اقرأ النص التالي ثم أجب عن السؤال:\n\n\"على مر التاريخ، كانت اللغة العربية وعاءً للحضارة والثقافة. حملت في طياتها علوماً وفنوناً ومعارف متنوعة. وقد حافظت اللغة العربية على قوتها وجمالها رغم التحديات الكبيرة التي واجهتها عبر العصور. واليوم، في عصر العولمة، تواجه اللغة العربية تحدياً جديداً يتمثل في الحفاظ على مكانتها وسط الزخم الهائل من اللغات الأخرى والتطور التقني السريع.\"\n\nما التحدي الرئيسي الذي تواجهه اللغة العربية في العصر الحالي وفقاً للنص؟",
+        "choices": ["الحفاظ على مكانتها في عصر العولمة", "تعلم قواعدها المعقدة", "قلة عدد المتحدثين بها", "عدم وجود كتب بها"],
+        "answerIndex": 0,
+        "explanation": "النص يذكر بوضوح أن التحدي الحالي هو \"الحفاظ على مكانتها وسط الزخم الهائل من اللغات الأخرى والتطور التقني السريع\" في عصر العولمة.",
+        "tags": ["reading-comprehension", "main-challenge", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_29",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "ما ضد كلمة \"شجاع\"؟",
+        "choices": ["جبان", "قوي", "ماهر", "ذكي"],
+        "answerIndex": 0,
+        "explanation": "جبان هو ضد شجاع. الشجاع هو من يواجه المخاطر دون خوف، بينما الجبان يخاف ويهرب من المواقف الصعبة.",
+        "tags": ["vocabulary", "antonyms"]
+      },
+      {
+        "id": "exam_scientific_verbal_30",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية غير مناسبة في الجملة: \"شارك الطالب في مسابقة الجري وفاز بالمركز الأول في الشعر\"؟",
+        "choices": ["الشعر", "الجري", "مسابقة", "فاز"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"الشعر\" غير مناسبة لأن المسابقة كانت في الجري (رياضة)، وليس في الشعر (أدب). التناقض واضح بين نوع المسابقة والنتيجة المذكورة.",
+        "tags": ["context-error", "category-mismatch"]
+      },
+      {
+        "id": "exam_scientific_verbal_31",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "ماء : عطش :: ...",
+        "choices": ["طعام : جوع", "مال : غنى", "علم : جهل", "نار : دفء"],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي حل المشكلة أو إشباع الحاجة: الماء يروي العطش، والطعام يسد الجوع. كلاهما يمثل الحل للحاجة الأساسية.",
+        "tags": ["analogy", "need-solution", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_32",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "أي كلمة من الكلمات التالية مختلفة عن البقية؟",
+        "choices": ["القلق", "السعادة", "الفرح", "البهجة"],
+        "answerIndex": 0,
+        "explanation": "القلق هو شعور سلبي، بينما السعادة والفرح والبهجة كلها مشاعر إيجابية. القلق هو الكلمة الوحيدة التي تعبر عن حالة نفسية غير مريحة.",
+        "tags": ["association-difference", "emotions"]
+      },
+      {
+        "id": "exam_scientific_verbal_33",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "hard",
+        "questionType": "mcq",
+        "stem": "لم يكن نجاحه ______ بل جاء نتيجة جهد متواصل وعمل دؤوب.",
+        "choices": ["مصادفة", "متوقعاً", "مستحقاً", "طبيعياً"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"مصادفة\" تناسب السياق الذي يشير إلى أن النجاح لم يأت بالحظ، بل بالجهد والعمل. كلمة \"بل\" تشير إلى التناقض بين الحظ والجهد.",
+        "tags": ["sentence-completion", "cause-effort", "hard"]
+      },
+      {
+        "id": "exam_scientific_verbal_34",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما معنى كلمة \"مُبهم\"؟",
+        "choices": ["غير واضح", "شديد الوضوح", "جميل المنظر", "قوي البنية"],
+        "answerIndex": 0,
+        "explanation": "مُبهم تعني غير واضح أو غامض. تُستخدم لوصف شيء يصعب فهمه أو تفسيره بسبب عدم وضوحه.",
+        "tags": ["vocabulary", "adjectives"]
+      },
+      {
+        "id": "exam_scientific_verbal_35",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "stem": "اقرأ النص التالي ثم أجب عن السؤال:\n\n\"الصداقة الحقيقية كنز ثمين لا يُقدر بثمن. الصديق الوفي هو من يقف بجانبك في الأوقات الصعبة قبل السهلة، ويقول لك الحقيقة حتى لو كانت مُرة، ويسعى لمصلحتك دون انتظار مقابل. الصداقة الحقيقية تُبنى على الثقة والاحترام المتبادل والصدق.\"\n\nأي من الخصائص التالية ليست من خصائص الصديق الحقيقي وفق النص؟",
+        "choices": ["ينتظر المقابل على مساعدته", "يقف بجانبك في الصعاب", "يقول الحقيقة", "يسعى لمصلحتك"],
+        "answerIndex": 0,
+        "explanation": "النص يذكر أن الصديق الحقيقي \"يسعى لمصلحتك دون انتظار مقابل\"، فانتظار المقابل ليس من صفات الصديق الحقيقي.",
+        "tags": ["reading-comprehension", "negative-question"]
+      },
+      {
+        "id": "exam_scientific_verbal_36",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "نحلة : عسل :: ...",
+        "choices": ["بقرة : حليب", "دجاجة : لحم", "خروف : صوف", "حصان : سرعة"],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي كائن ومنتجه: النحلة تنتج العسل، والبقرة تنتج الحليب. كلاهما علاقة إنتاج مباشرة.",
+        "tags": ["analogy", "producer-product"]
+      },
+      {
+        "id": "exam_scientific_verbal_37",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية غير مناسبة في الجملة: \"اشترى محمد سيارة جديدة بنوافذ مربعة وعجلات دائرية\"؟",
+        "choices": ["مربعة", "جديدة", "سيارة", "دائرية"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"مربعة\" غير مناسبة لوصف نوافذ السيارة، فالنوافذ عادة تكون مستطيلة أو بيضاوية، وليست مربعة تماماً.",
+        "tags": ["context-error", "description"]
+      },
+      {
+        "id": "exam_scientific_verbal_38",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "التعليم هو المفتاح الذي ______ للإنسان أبواب النجاح والتقدم.",
+        "choices": ["يفتح", "يغلق", "يهدم", "يحطم"],
+        "answerIndex": 0,
+        "explanation": "كلمة \"يفتح\" تتناسب مع استعارة \"المفتاح\" و\"أبواب النجاح\". المفتاح يفتح الأبواب، فالعلاقة منطقية ومباشرة.",
+        "tags": ["sentence-completion", "metaphor"]
+      },
+      {
+        "id": "exam_scientific_verbal_39",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "easy",
+        "questionType": "mcq",
+        "stem": "أي كلمة من الكلمات التالية مختلفة عن البقية؟",
+        "choices": ["كرسي", "قلم", "طاولة", "سرير"],
+        "answerIndex": 1,
+        "explanation": "القلم هو الكلمة المختلفة لأنه أداة كتابة، بينما الكرسي والطاولة والسرير كلها قطع أثاث.",
+        "tags": ["association-difference", "objects"]
+      }
+    ]
+  }

@@ -43,6 +43,12 @@ export async function GET(_request: NextRequest) {
 
     const userId = session.user.id
 
+    // IMPORTANT: Reset monthly share credits if needed before fetching limits
+    // This ensures users who upgraded/downgraded get correct limits and used counts
+    await supabase.rpc('check_and_reset_monthly_credits', {
+      p_user_id: userId
+    })
+
     // Fetch all required data in parallel
     const [
       subscriptionResult,
@@ -57,10 +63,10 @@ export async function GET(_request: NextRequest) {
         .eq('user_id', userId)
         .single(),
 
-      // Get user credits including share credits
+      // Get user credits including share credits and monthly limits
       supabase
         .from('user_credits')
-        .select('exam_credits, practice_credits, share_credits_exam, share_credits_practice, library_access_used')
+        .select('exam_credits, practice_credits, share_credits_exam, share_credits_practice, share_credits_exam_monthly_limit, share_credits_practice_monthly_limit, library_access_used')
         .eq('user_id', userId)
         .single(),
 
@@ -88,15 +94,18 @@ export async function GET(_request: NextRequest) {
 
     // Calculate sharing usage
     // The share_credits columns track remaining credits, not used credits
-    // Default values based on tier if not set
-    const defaultExamShares = limits.examSharesPerMonth
-    const defaultPracticeShares = limits.practiceSharesPerMonth
+    // IMPORTANT: Use the monthly limit that was SET at reset time, not current tier limits
+    // This ensures correct calculation even if user changed tiers mid-month
+    const examSharesRemaining = creditsResult.data?.share_credits_exam ?? 0
+    const practiceSharesRemaining = creditsResult.data?.share_credits_practice ?? 0
 
-    const examSharesRemaining = creditsResult.data?.share_credits_exam ?? defaultExamShares
-    const practiceSharesRemaining = creditsResult.data?.share_credits_practice ?? defaultPracticeShares
+    // Get the monthly limit that was set during the last reset
+    // If not set (old users), fall back to current tier limits
+    const examMonthlyLimit = creditsResult.data?.share_credits_exam_monthly_limit ?? limits.examSharesPerMonth
+    const practiceMonthlyLimit = creditsResult.data?.share_credits_practice_monthly_limit ?? limits.practiceSharesPerMonth
 
-    const examSharesUsed = defaultExamShares - examSharesRemaining
-    const practiceSharesUsed = defaultPracticeShares - practiceSharesRemaining
+    const examSharesUsed = Math.max(0, examMonthlyLimit - examSharesRemaining)
+    const practiceSharesUsed = Math.max(0, practiceMonthlyLimit - practiceSharesRemaining)
 
     // Library access
     const libraryAccessUsed = libraryAccessResult.count || 0
@@ -122,8 +131,10 @@ export async function GET(_request: NextRequest) {
         },
       },
       sharing: {
-        examSharesPerMonth: limits.examSharesPerMonth,
-        practiceSharesPerMonth: limits.practiceSharesPerMonth,
+        // Use the actual monthly limit set at reset, not current tier limit
+        // This ensures display is accurate even if user changed tiers mid-month
+        examSharesPerMonth: examMonthlyLimit,
+        practiceSharesPerMonth: practiceMonthlyLimit,
         examSharesUsed: Math.max(0, examSharesUsed),
         practiceSharesUsed: Math.max(0, practiceSharesUsed),
         canShareExam: examSharesRemaining > 0,

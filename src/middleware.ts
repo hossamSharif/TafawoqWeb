@@ -71,6 +71,23 @@ const AUTH_ROUTES = [
   '/register',
 ]
 
+/**
+ * Main routes that require onboarding to be completed
+ */
+const MAIN_ROUTES = [
+  '/dashboard',
+  '/exam',
+  '/practice',
+  '/results',
+  '/profile',
+  '/subscription',
+  '/settings',
+  '/library',
+  '/forum',
+  '/performance',
+  '/notifications',
+]
+
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({
     request: {
@@ -101,11 +118,18 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
 
+  // Allow OAuth callback route to proceed without authentication checks
+  if (pathname === '/auth/callback') {
+    return response
+  }
+
   // Check if current path matches any protected route
   const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
   const isPremiumRoute = PREMIUM_ROUTES.some(route => pathname.startsWith(route))
   const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route))
   const isMaintenanceBlockedRoute = MAINTENANCE_BLOCKED_ROUTES.some(route => pathname.startsWith(route))
+  const isOnboardingRoute = pathname.startsWith('/onboarding')
+  const isMainRoute = MAIN_ROUTES.some(route => pathname.startsWith(route))
 
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !session) {
@@ -117,6 +141,27 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && session) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Check onboarding status for authenticated users
+  if (session) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('onboarding_completed')
+      .eq('user_id', session.user.id)
+      .single()
+
+    const hasCompletedOnboarding = profile?.onboarding_completed === true
+
+    // If user has completed onboarding but tries to access onboarding pages, redirect to dashboard
+    if (hasCompletedOnboarding && isOnboardingRoute) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // If user hasn't completed onboarding but tries to access main routes, redirect to onboarding
+    if (!hasCompletedOnboarding && isMainRoute) {
+      return NextResponse.redirect(new URL('/onboarding/track', request.url))
+    }
   }
 
   // Check maintenance mode for blocked routes

@@ -28,8 +28,8 @@ export async function getLibraryExams(
   // Get user's subscription tier and library access info
   const userAccess = await getUserLibraryAccess(userId)
 
-  // Call the database function for library exams
-  const { data, error } = await supabase.rpc('get_library_exams', {
+  // Call optimized database function that returns both exams and total count (eliminates separate count query)
+  const { data, error } = await supabase.rpc('get_library_exams_with_count', {
     p_user_id: userId,
     p_limit: limit,
     p_offset: offset,
@@ -42,13 +42,8 @@ export async function getLibraryExams(
     throw new Error('Failed to fetch library exams')
   }
 
-  // Get total count for pagination
-  const { count } = await supabase
-    .from('forum_posts')
-    .select('*', { count: 'exact', head: true })
-    .eq('post_type', 'exam_share')
-    .eq('is_library_visible', true)
-    .neq('status', 'deleted')
+  // Extract total count from first row (same value in all rows)
+  const count = data && data.length > 0 ? data[0].total_count : 0
 
   const exams: LibraryExam[] = (data || []).map((row: Record<string, unknown>) => ({
     postId: row.post_id as string,
@@ -97,7 +92,7 @@ export async function getLibraryExamById(
       shared_exam_id,
       completion_count,
       created_at,
-      user_profiles!forum_posts_author_id_fkey (
+      user_profiles!forum_posts_author_profile_fkey (
         display_name
       ),
       exam_sessions!forum_posts_shared_exam_id_fkey (
@@ -236,7 +231,7 @@ export async function getUserAccessedExams(
         author_id,
         completion_count,
         created_at,
-        user_profiles!forum_posts_author_id_fkey (
+        user_profiles!forum_posts_author_profile_fkey (
           display_name
         ),
         exam_sessions!forum_posts_shared_exam_id_fkey (

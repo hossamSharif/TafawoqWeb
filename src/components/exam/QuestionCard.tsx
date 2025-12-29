@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { ZoomIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QuestionHeader } from './QuestionHeader'
@@ -38,11 +38,30 @@ export function QuestionCard({
   showCategory = false,
   className,
 }: QuestionCardProps) {
-  const [isDiagramLoading, setIsDiagramLoading] = useState(!!diagram)
+  // Event-based loading state for diagrams
+  const isChartType = diagram?.type && ['bar-chart', 'pie-chart', 'line-graph'].includes(diagram.type)
+  const [isDiagramLoading, setIsDiagramLoading] = useState(isChartType)
+  const [diagramError, setDiagramError] = useState<string | null>(null)
 
-  // Handle diagram load completion
-  const handleDiagramLoad = useCallback(() => {
+  // Reset loading state when diagram changes
+  useEffect(() => {
+    if (isChartType) {
+      setIsDiagramLoading(true)
+      setDiagramError(null)
+    } else {
+      setIsDiagramLoading(false)
+    }
+  }, [isChartType, diagram])
+
+  // Callbacks for diagram load events
+  const handleDiagramLoadSuccess = useCallback(() => {
     setIsDiagramLoading(false)
+    setDiagramError(null)
+  }, [])
+
+  const handleDiagramLoadError = useCallback((error: string) => {
+    setIsDiagramLoading(false)
+    setDiagramError(error)
   }, [])
 
   // Determine if we should show the diagram
@@ -82,20 +101,24 @@ export function QuestionCard({
               'min-h-[200px]',
               isDiagramLoading && 'invisible'
             )}
-            onLoad={handleDiagramLoad}
           >
+            {/* Pass load callbacks to DiagramRenderer */}
             <DiagramRenderer
               diagram={diagram}
               enableZoom={true}
               className="max-w-full"
+              onLoadSuccess={isChartType ? handleDiagramLoadSuccess : undefined}
+              onLoadError={isChartType ? handleDiagramLoadError : undefined}
             />
           </div>
 
-          {/* Zoom hint */}
-          <div className="flex items-center justify-center gap-1 mt-2 text-xs text-gray-400">
-            <ZoomIn className="h-3 w-3" />
-            <span>انقر على الرسم للتكبير</span>
-          </div>
+          {/* Zoom hint (only show when loaded successfully) */}
+          {!isDiagramLoading && !diagramError && (
+            <div className="flex items-center justify-center gap-1 mt-2 text-xs text-gray-400">
+              <ZoomIn className="h-3 w-3" />
+              <span>انقر على الرسم للتكبير</span>
+            </div>
+          )}
         </div>
       )}
 

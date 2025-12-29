@@ -58,7 +58,7 @@ export function Logo({
               variant === 'light' ? 'text-white/80' : 'text-muted-foreground'
             )}
           >
-            {brand.tagline.secondaryEnglish}
+            {brand.tagline.secondary}
           </span>
         </div>
       )}

@@ -16,6 +16,8 @@ import type {
 } from '@/lib/forum/types'
 import { FORUM_LIMITS } from '@/lib/forum/types'
 import { TIER_LIMITS } from '@/types/subscription'
+import { checkRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limit'
+import { validatePracticeSessionCompleteness } from '@/lib/forum/validation'
 
 /**
  * GET /api/forum/posts - List forum posts with pagination and filtering
@@ -114,8 +116,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
+    // Parse request body to determine post type for rate limiting
     const body: CreatePostRequest = await request.json()
+
+    // Rate limiting based on post type
+    const rateLimitConfig =
+      body.post_type === 'exam_share'
+        ? RATE_LIMIT_CONFIGS.FORUM_SHARE_CREATE
+        : RATE_LIMIT_CONFIGS.FORUM_POST_CREATE
+
+    const rateLimitResult = checkRateLimit(`forum_post:${user.id}`, rateLimitConfig)
+
+    if (!rateLimitResult.allowed) {
+      const minutesRemaining = Math.ceil(
+        (rateLimitResult.resetAt - Date.now()) / 60000
+      )
+
+      return NextResponse.json(
+        {
+          error: 'RATE_LIMIT_EXCEEDED',
+          message: rateLimitConfig.message,
+          retry_after_minutes: minutesRemaining,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(
+              Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)
+            ),
+            'X-RateLimit-Limit': String(rateLimitConfig.maxRequests),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': String(Math.floor(rateLimitResult.resetAt / 1000)),
+          },
+        }
+      )
+    }
 
     // Validate post_type
     if (!body.post_type || !['text', 'exam_share'].includes(body.post_type)) {
@@ -175,10 +210,18 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Validate exam session if sharing exam
+      // Validate exam session if sharing exam (parallelized)
       if (body.shared_exam_id) {
-        // Check if already shared
-        const alreadyShared = await hasUserSharedExam(user.id, body.shared_exam_id)
+        // Parallel validation: check if already shared + verify exam exists
+        const [alreadyShared, examResult] = await Promise.all([
+          hasUserSharedExam(user.id, body.shared_exam_id),
+          supabase
+            .from('exam_sessions')
+            .select('id, user_id, status, shared_from_post_id, is_library_exam')
+            .eq('id', body.shared_exam_id)
+            .single()
+        ])
+
         if (alreadyShared) {
           return NextResponse.json(
             { error: 'لقد قمت بمشاركة هذا الاختبار من قبل' },
@@ -186,12 +229,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        // Verify the exam exists and belongs to user
-        const { data: examSession, error: examError } = await supabase
-          .from('exam_sessions')
-          .select('id, user_id, status')
-          .eq('id', body.shared_exam_id)
-          .single()
+        const { data: examSession, error: examError } = examResult
 
         if (examError || !examSession) {
           return NextResponse.json(
@@ -213,12 +251,31 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
+
+        // Validate that this is a self-generated exam (not from library or forum)
+        if (examSession.shared_from_post_id !== null) {
+          return NextResponse.json(
+            {
+              error: 'لا يمكنك مشاركة اختبارات المكتبة أو المنتدى. يمكنك فقط مشاركة الاختبارات التي أنشأتها بنفسك',
+              code: 'CANNOT_SHARE_LIBRARY_OR_FORUM_EXAM'
+            },
+            { status: 403 }
+          )
+        }
       }
 
-      // Validate practice session if sharing practice
+      // Validate practice session if sharing practice (parallelized)
       if (body.shared_practice_id) {
-        // Check if already shared
-        const alreadyShared = await hasUserSharedPractice(user.id, body.shared_practice_id)
+        // Parallel validation: check if already shared + verify practice exists
+        const [alreadyShared, practiceResult] = await Promise.all([
+          hasUserSharedPractice(user.id, body.shared_practice_id),
+          supabase
+            .from('practice_sessions')
+            .select('id, user_id, status, questions, shared_from_post_id')
+            .eq('id', body.shared_practice_id)
+            .single()
+        ])
+
         if (alreadyShared) {
           return NextResponse.json(
             { error: 'لقد قمت بمشاركة هذا التدريب من قبل' },
@@ -226,12 +283,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        // Verify the practice exists and belongs to user
-        const { data: practiceSession, error: practiceError } = await supabase
-          .from('practice_sessions')
-          .select('id, user_id, status')
-          .eq('id', body.shared_practice_id)
-          .single()
+        const { data: practiceSession, error: practiceError } = practiceResult
 
         if (practiceError || !practiceSession) {
           return NextResponse.json(
@@ -253,6 +305,45 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
+
+        // Validate that this is a self-generated practice (not from forum)
+        if (practiceSession.shared_from_post_id !== null) {
+          return NextResponse.json(
+            {
+              error: 'لا يمكنك مشاركة تدريبات المنتدى. يمكنك فقط مشاركة التدريبات التي أنشأتها بنفسك',
+              code: 'CANNOT_SHARE_FORUM_PRACTICE'
+            },
+            { status: 403 }
+          )
+        }
+
+        // Validate practice completeness (minimum answered questions)
+        const validationResult = validatePracticeSessionCompleteness(practiceSession)
+        if (!validationResult.isValid) {
+          return NextResponse.json(
+            {
+              error: 'INSUFFICIENT_PRACTICE_COMPLETION',
+              message: 'يجب الإجابة على 3 أسئلة على الأقل قبل المشاركة',
+              details: validationResult.reason,
+              answered_count: validationResult.answeredCount,
+              total_questions: validationResult.totalQuestions,
+            },
+            { status: 400 }
+          )
+        }
+      }
+
+      // Check and reset monthly credits if needed
+      const { data: resetResult } = await supabase.rpc('check_and_reset_monthly_credits', {
+        p_user_id: user.id
+      })
+
+      if (resetResult?.reset_performed) {
+        console.log('Monthly credits reset for user:', user.id, {
+          tier: resetResult.tier,
+          exam_credits: resetResult.exam_credits,
+          practice_credits: resetResult.practice_credits
+        })
       }
 
       // Check share credits based on subscription tier
@@ -312,42 +403,88 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the post
-    const postData: ForumPostInsert = {
-      author_id: user.id,
-      post_type: body.post_type,
-      title: body.title.trim(),
-      body: body.body?.trim() || null,
-      shared_exam_id: body.shared_exam_id || null,
-      shared_practice_id: body.shared_practice_id || null,
+    // For exam/practice shares: Decrement credits BEFORE creating post (transaction safety)
+    let creditResult: any = null
+    if (body.post_type === 'exam_share') {
+      const creditType = body.shared_exam_id ? 'exam' : 'practice'
+
+      // FIRST: Attempt to decrement credit atomically
+      const { data, error: creditError } = await supabase.rpc('decrement_share_credit', {
+        p_user_id: user.id,
+        p_credit_type: creditType,
+      })
+
+      if (creditError) {
+        console.error('Credit deduction error:', creditError)
+        return NextResponse.json(
+          {
+            error: creditError.message.includes('Insufficient')
+              ? 'SHARE_LIMIT_REACHED'
+              : 'CREDIT_DEDUCTION_FAILED',
+            message: creditError.message.includes('Insufficient')
+              ? 'لقد استنفدت رصيد المشاركات الشهري'
+              : 'فشل في خصم الرصيد',
+            code: creditError.code,
+          },
+          { status: creditError.message.includes('Insufficient') ? 403 : 500 }
+        )
+      }
+
+      creditResult = data
     }
 
-    const post = await createPost(postData)
-
-    // Decrement share credits and optionally set library visibility for exam_share posts
-    if (body.post_type === 'exam_share') {
-      // Decrement appropriate share credit
-      if (body.shared_exam_id) {
-        // Decrement exam share credits
-        await supabase.rpc('decrement_share_credit', {
-          p_user_id: user.id,
-          p_credit_type: 'exam',
-        })
-
-        // Set library visibility if requested
-        if (body.is_library_visible) {
-          await supabase
-            .from('forum_posts')
-            .update({ is_library_visible: true })
-            .eq('id', post.id)
-        }
-      } else if (body.shared_practice_id) {
-        // Decrement practice share credits
-        await supabase.rpc('decrement_share_credit', {
-          p_user_id: user.id,
-          p_credit_type: 'practice',
-        })
+    // SECOND: Credits successfully deducted (or not needed for text posts), now create post
+    let post: any
+    try {
+      const postData: ForumPostInsert = {
+        author_id: user.id,
+        post_type: body.post_type,
+        title: body.title.trim(),
+        body: body.body?.trim() || null,
+        shared_exam_id: body.shared_exam_id || null,
+        shared_practice_id: body.shared_practice_id || null,
       }
+
+      post = await createPost(postData)
+    } catch (postError) {
+      console.error('Post creation error after credit deduction:', postError)
+
+      // ROLLBACK: Credit was deducted but post creation failed
+      // Restore the credit (best effort)
+      if (body.post_type === 'exam_share') {
+        const creditType = body.shared_exam_id ? 'exam' : 'practice'
+        await supabase
+          .rpc('increment_share_credit', {
+            p_user_id: user.id,
+            p_credit_type: creditType,
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.error('CRITICAL: Failed to rollback credit', {
+                user_id: user.id,
+                credit_type: creditType,
+                error,
+              })
+            } else {
+              console.log('Credit rollback successful for user:', user.id)
+            }
+          })
+      }
+
+      return NextResponse.json({ error: 'خطأ في إنشاء المنشور' }, { status: 500 })
+    }
+
+    // THIRD: Set library visibility if needed (non-critical, errors logged but don't fail)
+    if (body.shared_exam_id && body.is_library_visible) {
+      await supabase
+        .from('forum_posts')
+        .update({ is_library_visible: true })
+        .eq('id', post.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Library visibility update failed:', error)
+          }
+        })
     }
 
     // Get author info for response
@@ -368,6 +505,9 @@ export async function POST(request: NextRequest) {
           display_name: profile?.display_name || 'مستخدم',
           profile_picture_url: profile?.profile_picture_url || null,
         },
+        shared_exam_id: post.shared_exam_id,
+        shared_practice_id: post.shared_practice_id,
+        is_library_visible: post.is_library_visible,
         like_count: 0,
         love_count: 0,
         comment_count: 0,
@@ -376,6 +516,8 @@ export async function POST(request: NextRequest) {
         is_edited: false,
         created_at: post.created_at,
         updated_at: post.updated_at,
+        // Include remaining credits if this was a share
+        ...(creditResult && { credits_remaining: creditResult.remaining_credits }),
       },
       { status: 201 }
     )

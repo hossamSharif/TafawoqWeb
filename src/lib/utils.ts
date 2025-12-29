@@ -77,3 +77,73 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength - 3) + '...'
 }
+
+/**
+ * Parse post body that might contain JSON metadata and return human-readable text.
+ * Some older posts may have JSON stored in the body field like:
+ * {"description":"","section":"verbal","contentType":"practice","difficulty":"medium"}
+ * This function converts that to a readable description or returns null if no meaningful content.
+ */
+export function parsePostBody(body: string | null | undefined): string | null {
+  if (!body || typeof body !== 'string') return null
+
+  const trimmedBody = body.trim()
+  if (!trimmedBody) return null
+
+  // Check if it looks like JSON
+  if (trimmedBody.startsWith('{') && trimmedBody.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmedBody)
+
+      // If it's a metadata object, generate a human-readable description
+      if (typeof parsed === 'object' && parsed !== null) {
+        // Check for the known metadata structure
+        const { description, section, contentType, difficulty } = parsed
+
+        // If there's an actual description, use it
+        if (description && typeof description === 'string' && description.trim()) {
+          return description.trim()
+        }
+
+        // Generate description from metadata
+        const parts: string[] = []
+
+        // Content type
+        if (contentType === 'practice') {
+          parts.push('تدريب')
+        } else if (contentType === 'exam') {
+          parts.push('اختبار')
+        }
+
+        // Section
+        if (section === 'verbal') {
+          parts.push('على القسم اللفظي')
+        } else if (section === 'quantitative') {
+          parts.push('على القسم الكمي')
+        }
+
+        // Difficulty
+        if (difficulty === 'easy') {
+          parts.push('بمستوى سهل')
+        } else if (difficulty === 'medium') {
+          parts.push('بمستوى متوسط')
+        } else if (difficulty === 'hard') {
+          parts.push('بمستوى صعب')
+        }
+
+        // If we generated any parts, return the combined string
+        if (parts.length > 0) {
+          return parts.join(' ')
+        }
+
+        // If no meaningful metadata, return null
+        return null
+      }
+    } catch {
+      // Not valid JSON, treat as regular text
+    }
+  }
+
+  // Return the original body if it's not JSON
+  return trimmedBody
+}

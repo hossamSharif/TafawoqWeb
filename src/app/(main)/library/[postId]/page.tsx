@@ -21,6 +21,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { ar } from 'date-fns/locale'
 import type { LibraryExamDetail, UserLibraryAccess } from '@/types/library'
+import { parsePostBody } from '@/lib/utils'
 
 interface LibraryExamResponse {
   exam: LibraryExamDetail
@@ -156,8 +157,8 @@ export default function LibraryExamDetailPage() {
 
         <CardContent className="space-y-6">
           {/* Description */}
-          {exam.description && (
-            <p className="text-muted-foreground">{exam.description}</p>
+          {parsePostBody(exam.description) && (
+            <p className="text-muted-foreground">{parsePostBody(exam.description)}</p>
           )}
 
           {/* Stats Grid */}

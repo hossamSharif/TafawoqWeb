@@ -59,23 +59,22 @@ export function FeatureSection() {
         <div className="mt-16 p-8 md:p-12 rounded-3xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
           <div className="max-w-3xl mx-auto text-center">
             <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              شارك محتواك واكسب مكافآت
+              شارك اختبار أو تدريب واكسب مثله هدية
             </h3>
             <p className="text-muted-foreground text-lg mb-6">
-              عندما يستفيد الآخرون من اختباراتك المشاركة، تحصل على نقاط إضافية
-              لإنشاء المزيد من الاختبارات. كلما شاركت أكثر، استفدت أكثر!
+              عند كل مشاركة اختبار مع مجتمعك ستحصل على اختبار هدية، نحفزك على فعل الخير!
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm">
               <div className="px-4 py-2 rounded-full bg-background border">
-                شارك اختبارك
+                شارك اختبارك أو تدريبك
               </div>
               <span className="flex items-center text-muted-foreground">←</span>
               <div className="px-4 py-2 rounded-full bg-background border">
-                آخرون يحلون اختبارك
+                يستفيد منه المجتمع
               </div>
               <span className="flex items-center text-muted-foreground">←</span>
               <div className="px-4 py-2 rounded-full bg-primary text-white">
-                تحصل على مكافأة
+                تحصل على اختبار هدية
               </div>
             </div>
           </div>

@@ -18,7 +18,7 @@ export const brand = {
   tagline: {
     primary: 'اكتشف قدراتك الحقيقية',
     primaryEnglish: 'Discover Your True Abilities',
-    secondary: 'منصة التحضير للقدرات الذكية',
+    secondary: 'حضر لإمتحان القدرات بذكاء',
     secondaryEnglish: 'Smart Qudrat Preparation Platform',
   },
 
@@ -91,6 +91,14 @@ export const brand = {
       icon: 'Library',
     },
     {
+      id: 'rewards',
+      titleAr: 'نظام المكافآت',
+      titleEn: 'Reward System',
+      descriptionAr: 'عند كل مشاركة اختبار مع مجتمعك ستحصل على اختبار هدية، نحفزك على فعل الخير',
+      descriptionEn: 'Share an exam with your community and get a free exam in return',
+      icon: 'Gift',
+    },
+    {
       id: 'forum',
       titleAr: 'منتدى الطلاب',
       titleEn: 'Student Forum',
@@ -105,14 +113,6 @@ export const brand = {
       descriptionAr: 'تمارين في جميع أقسام اختبار القدرات',
       descriptionEn: 'Practice exercises for all Qudrat exam sections',
       icon: 'Target',
-    },
-    {
-      id: 'rewards',
-      titleAr: 'نظام المكافآت',
-      titleEn: 'Reward System',
-      descriptionAr: 'اكسب نقاط إضافية عندما يستفيد الآخرون من محتواك',
-      descriptionEn: 'Earn extra credits when others benefit from your content',
-      icon: 'Gift',
     },
     {
       id: 'analytics',

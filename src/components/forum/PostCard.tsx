@@ -14,6 +14,7 @@ import {
   Edit2,
   Trash2,
   Flag,
+  CheckCircle2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,8 +26,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ReactionButtons } from './ReactionButtons'
+import { TakeExamButton } from './TakeExamButton'
 import type { ForumPost, UserReaction } from '@/lib/forum/types'
-import { cn } from '@/lib/utils'
+import { cn, parsePostBody } from '@/lib/utils'
 
 interface PostCardProps {
   post: ForumPost
@@ -96,7 +98,10 @@ export function PostCard({
   })
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={cn(
+      'hover:shadow-md transition-shadow',
+      (isExamShare || post.post_type === 'practice_share') && 'animate-exam-glow'
+    )}>
       <CardContent className={cn('p-4', isCompact && 'p-3')}>
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -135,10 +140,10 @@ export function PostCard({
 
           {/* Post Type Badge & Menu */}
           <div className="flex items-center gap-2">
-            {isExamShare && (
+            {(isExamShare || post.post_type === 'practice_share') && (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                 <FileText className="w-3.5 h-3.5" />
-                اختبار مشارك
+                {post.post_type === 'exam_share' ? 'اختبار مشارك' : 'تمرين مشارك'}
               </span>
             )}
 
@@ -190,20 +195,23 @@ export function PostCard({
           <h3 className="text-lg font-semibold text-foreground hover:text-primary transition-colors line-clamp-2">
             {post.title}
           </h3>
-          {post.body && !isCompact && (
-            <p className="mt-2 text-muted-foreground line-clamp-3">{post.body}</p>
+          {parsePostBody(post.body) && !isCompact && (
+            <p className="mt-2 text-muted-foreground line-clamp-3">{parsePostBody(post.body)}</p>
           )}
         </Link>
 
-        {/* Exam Share Info */}
-        {isExamShare && post.shared_exam && !isCompact && (
-          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+        {/* Exam/Practice Share Info */}
+        {(isExamShare || post.post_type === 'practice_share') && !isCompact && (
+          <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-3">
+            {/* Stats Row */}
             <div className="flex flex-wrap gap-4 text-sm">
               <span className="flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-muted-foreground" />
-                {post.shared_exam.question_count} سؤال
+                {(post.shared_exam?.question_count || post.shared_practice?.question_count)} سؤال
               </span>
-              {post.shared_exam.section_counts && (
+
+              {/* Exam-specific stats */}
+              {post.shared_exam?.section_counts && (
                 <>
                   <span className="text-blue-600">
                     لفظي: {post.shared_exam.section_counts.verbal}
@@ -212,6 +220,42 @@ export function PostCard({
                     كمي: {post.shared_exam.section_counts.quantitative}
                   </span>
                 </>
+              )}
+
+              {/* Practice-specific stats */}
+              {post.shared_practice && (
+                <>
+                  <span className="text-blue-600">
+                    القسم: {post.shared_practice.section === 'verbal' ? 'لفظي' : 'كمي'}
+                  </span>
+                  {post.shared_practice.difficulty && (
+                    <span className="text-purple-600">
+                      {
+                        { easy: 'سهل', medium: 'متوسط', hard: 'صعب' }[
+                          post.shared_practice.difficulty
+                        ]
+                      }
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Button Row */}
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              <TakeExamButton
+                postId={post.id}
+                postType={post.post_type as 'exam_share' | 'practice_share'}
+                isAuthor={isAuthor}
+                userCompleted={post.user_completed ?? false}
+                isAuthenticated={!!currentUserId}
+              />
+
+              {post.user_completed && (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  مكتمل
+                </span>
               )}
             </div>
           </div>
@@ -238,7 +282,7 @@ export function PostCard({
               <span>{post.comment_count}</span>
             </Link>
 
-            {isExamShare && (
+            {(isExamShare || post.post_type === 'practice_share') && (
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4" />
                 <span>{post.completion_count} إكمال</span>

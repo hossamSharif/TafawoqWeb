@@ -8,6 +8,16 @@ export type AcademicTrack = 'scientific' | 'literary'
 
 export type ExamSessionStatus = 'in_progress' | 'completed' | 'abandoned'
 
+// Stored exam configuration for retake functionality
+export interface ExamConfigStored {
+  track: AcademicTrack
+  totalQuestions: number
+  timeLimit: number // in minutes
+  generatedAt?: string // timestamp when exam was originally generated
+  categoryDistribution?: Record<string, number> // e.g., { "algebra": 10, "geometry": 8 }
+  difficultyDistribution?: Record<string, number> // e.g., { "easy": 30, "medium": 40, "hard": 26 }
+}
+
 export interface ExamSession {
   id: string
   userId: string
@@ -22,6 +32,7 @@ export interface ExamSession {
   overallScore?: number
   strengths?: CategoryScore[]
   weaknesses?: CategoryScore[]
+  examConfig?: ExamConfigStored // Added for retake functionality
   createdAt: string
   updatedAt: string
 }

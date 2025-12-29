@@ -22,6 +22,8 @@ export interface ExamContextValue extends UseExamSessionReturn {
   elapsedTime: number
   /** Update elapsed time */
   setElapsedTime: (time: number) => void
+  /** Remaining time in seconds (for countdown timer) */
+  remainingTime: number
   /** Whether timer is running */
   isTimerRunning: boolean
   /** Start/stop timer */
@@ -47,6 +49,8 @@ export interface ExamContextValue extends UseExamSessionReturn {
   retryPrefetch: () => Promise<void>
   /** Clear batch error */
   clearBatchError: () => void
+  /** Pause the exam (wrapper that uses current remaining time) */
+  pauseExamWithTime: (remainingTimeSeconds: number) => Promise<void>
 }
 
 const ExamContext = createContext<ExamContextValue | null>(null)
@@ -64,6 +68,9 @@ export interface ExamProviderProps {
 /**
  * ExamProvider - Provides exam state throughout the app
  */
+// Total exam duration in seconds (2 hours)
+const EXAM_DURATION = 2 * 60 * 60
+
 export function ExamProvider({
   children,
   sessionId,
@@ -72,23 +79,38 @@ export function ExamProvider({
 }: ExamProviderProps) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isTimerRunning, setTimerRunning] = useState(false)
+  // Store remaining time separately for paused sessions
+  const [remainingTime, setRemainingTime] = useState(EXAM_DURATION)
   const questionStartTimeRef = useRef<number>(Date.now())
 
   // Batch loading state - synced from examSession hook
   const [batchErrorDismissed, setBatchErrorDismissed] = useState(false)
 
+  // Memoize callbacks to prevent infinite re-render loops
+  const handleSessionLoad = useCallback((session: ExamSessionData) => {
+    setElapsedTime(session.timeSpentSeconds || 0)
+    // For paused sessions, use the stored remaining time
+    if (session.remainingTimeSeconds !== undefined && session.remainingTimeSeconds !== null) {
+      setRemainingTime(session.remainingTimeSeconds)
+    } else {
+      // Calculate remaining time from elapsed
+      setRemainingTime(EXAM_DURATION - (session.timeSpentSeconds || 0))
+    }
+    // Only run timer if in_progress (not if paused)
+    setTimerRunning(session.status === 'in_progress')
+    setBatchErrorDismissed(false)
+  }, [])
+
+  const handleSessionComplete = useCallback((session: ExamSessionData) => {
+    setTimerRunning(false)
+    onComplete?.(session)
+  }, [onComplete])
+
   // Core exam session hook
   const examSession = useExamSession({
     sessionId,
-    onSessionLoad: (session) => {
-      setElapsedTime(session.timeSpentSeconds || 0)
-      setTimerRunning(session.status === 'in_progress')
-      setBatchErrorDismissed(false)
-    },
-    onSessionComplete: (session) => {
-      setTimerRunning(false)
-      onComplete?.(session)
-    },
+    onSessionLoad: handleSessionLoad,
+    onSessionComplete: handleSessionComplete,
     onError,
   })
 
@@ -172,6 +194,16 @@ export function ExamProvider({
     setBatchErrorDismissed(true)
   }, [])
 
+  // Pause exam with current time
+  const pauseExamWithTime = useCallback(async (remainingTimeSeconds: number) => {
+    // Stop the timer
+    setTimerRunning(false)
+    // Store remaining time
+    setRemainingTime(remainingTimeSeconds)
+    // Call the hook's pause function
+    await examSession.pauseExam(remainingTimeSeconds, elapsedTime)
+  }, [examSession, elapsedTime])
+
   const value: ExamContextValue = {
     ...examSession,
     goToQuestion,
@@ -180,6 +212,7 @@ export function ExamProvider({
     completeExam,
     elapsedTime,
     setElapsedTime,
+    remainingTime,
     isTimerRunning,
     setTimerRunning,
     autoSaveQueueSize: autoSave.queueSize,
@@ -192,6 +225,7 @@ export function ExamProvider({
     generatedBatches: examSession.generatedBatches,
     retryPrefetch,
     clearBatchError,
+    pauseExamWithTime,
   }
 
   return <ExamContext.Provider value={value}>{children}</ExamContext.Provider>

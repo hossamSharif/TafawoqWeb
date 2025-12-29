@@ -17,6 +17,7 @@ import { ForumErrorBoundary } from '@/components/forum/ForumErrorBoundary'
 import {
   ArrowRight,
   FileText,
+  BookOpen,
   MessageSquare,
   Users,
   Clock,
@@ -45,6 +46,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { ForumPost, UserReaction } from '@/lib/forum/types'
+import { parsePostBody } from '@/lib/utils'
 
 export default function PostDetailPage() {
   const params = useParams()
@@ -282,7 +284,9 @@ export default function PostDetailPage() {
 
   const isAuthor = user?.id === post.author.id
   const isExamShare = post.post_type === 'exam_share'
-  const canTakeExam = isExamShare && !isAuthor && !post.user_completed
+  const isPracticeShare = post.post_type === 'practice_share'
+  const isContentShare = isExamShare || isPracticeShare
+  const canTakeExam = isContentShare && !isAuthor && !post.user_completed
 
   const timeAgo = formatDistanceToNow(new Date(post.created_at), {
     addSuffix: true,
@@ -345,6 +349,12 @@ export default function PostDetailPage() {
                   اختبار مشارك
                 </span>
               )}
+              {isPracticeShare && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium">
+                  <BookOpen className="w-4 h-4" />
+                  تمرين مشارك
+                </span>
+              )}
 
               {(isAuthor || user) && (
                 <DropdownMenu>
@@ -386,9 +396,9 @@ export default function PostDetailPage() {
           <h1 className="text-2xl font-bold mt-4">{post.title}</h1>
 
           {/* Body */}
-          {post.body && (
+          {parsePostBody(post.body) && (
             <p className="mt-4 text-foreground whitespace-pre-wrap leading-relaxed">
-              {post.body}
+              {parsePostBody(post.body)}
             </p>
           )}
 
@@ -459,6 +469,74 @@ export default function PostDetailPage() {
             </div>
           )}
 
+          {/* Practice Share Info */}
+          {isPracticeShare && post.shared_practice && (
+            <div className="mt-6 p-4 bg-emerald-50 rounded-lg space-y-4">
+              <h3 className="font-semibold text-emerald-800">معلومات التمرين</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">عدد الأسئلة</p>
+                  <p className="font-medium">{post.shared_practice.question_count}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">القسم</p>
+                  <p className="font-medium">
+                    {post.shared_practice.section === 'quantitative' ? 'كمي' : 'لفظي'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">مستوى الصعوبة</p>
+                  <p className={`font-medium ${
+                    post.shared_practice.difficulty === 'easy' ? 'text-green-600' :
+                    post.shared_practice.difficulty === 'medium' ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {post.shared_practice.difficulty === 'easy' ? 'سهل' :
+                     post.shared_practice.difficulty === 'medium' ? 'متوسط' : 'صعب'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">عدد الإكمالات</p>
+                  <p className="font-medium">{post.completion_count}</p>
+                </div>
+              </div>
+
+              {/* Take Practice Button */}
+              {canTakeExam && (
+                <Button
+                  onClick={handleStartExam}
+                  disabled={isStartingExam}
+                  className="w-full mt-4 gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  size="lg"
+                >
+                  {isStartingExam ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      جاري البدء...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      بدء التمرين
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {post.user_completed && (
+                <p className="text-center text-sm text-green-600 font-medium">
+                  لقد أكملت هذا التمرين سابقاً
+                </p>
+              )}
+
+              {isAuthor && (
+                <p className="text-center text-sm text-muted-foreground">
+                  لا يمكنك حل تمرينك الخاص
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Footer */}
           <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
             {/* Reactions */}
@@ -477,7 +555,7 @@ export default function PostDetailPage() {
                 {localCommentCount} تعليق
               </span>
 
-              {isExamShare && (
+              {isContentShare && (
                 <span className="flex items-center gap-1.5">
                   <Users className="w-4 h-4" />
                   {post.completion_count} إكمال

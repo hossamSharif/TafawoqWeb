@@ -41,7 +41,8 @@ export async function GET() {
         created_at,
         completion_count,
         shared_exam_id,
-        shared_practice_id
+        shared_practice_id,
+        is_library_visible
       `)
       .eq('is_admin_upload', true)
       .order('created_at', { ascending: false })
@@ -90,30 +91,75 @@ export async function GET() {
       }
     }
 
+    // Get question counts and difficulty from practice_sessions for each post
+    const sharedPracticeIds = posts?.filter(p => p.shared_practice_id).map(p => p.shared_practice_id) || []
+    let practiceInfo: Record<string, { questionCount: number; difficulty: string }> = {}
+
+    if (sharedPracticeIds.length > 0) {
+      const { data: practiceData } = await supabase
+        .from('practice_sessions')
+        .select('id, question_count, difficulty, questions')
+        .in('id', sharedPracticeIds)
+
+      if (practiceData) {
+        practiceInfo = practiceData.reduce((acc: Record<string, { questionCount: number; difficulty: string }>, practice) => {
+          // Get question count from question_count field or from questions array length
+          const questionCount = practice.question_count ||
+            (Array.isArray(practice.questions) ? practice.questions.length : 0)
+          acc[practice.id] = {
+            questionCount,
+            difficulty: practice.difficulty || 'medium'
+          }
+          return acc
+        }, {})
+      }
+    }
+
     // Transform to response format
     const contents = (posts || []).map(post => {
-      // Try to get section from body if it's JSON
+      // Determine content type from post_type
+      const contentType = post.post_type === 'practice_share' ? 'practice' : 'exam'
+
+      // Try to get section and difficulty from body if it's JSON
       let section: 'quantitative' | 'verbal' = 'quantitative'
+      let difficulty: 'easy' | 'medium' | 'hard' | undefined = undefined
       try {
         if (post.body) {
           const bodyData = JSON.parse(post.body)
           if (bodyData.section) {
             section = bodyData.section
           }
+          if (bodyData.difficulty) {
+            difficulty = bodyData.difficulty
+          }
         }
       } catch {
         // Not JSON body, use default
       }
 
+      // Get question count based on content type
+      let questionCount = 0
+      if (contentType === 'practice' && post.shared_practice_id) {
+        questionCount = practiceInfo[post.shared_practice_id]?.questionCount || 0
+        // Also get difficulty from practice session if not in body
+        if (!difficulty && practiceInfo[post.shared_practice_id]?.difficulty) {
+          difficulty = practiceInfo[post.shared_practice_id].difficulty as 'easy' | 'medium' | 'hard'
+        }
+      } else if (contentType === 'exam' && post.shared_exam_id) {
+        questionCount = examQuestionCounts[post.shared_exam_id] || 0
+      }
+
       return {
         id: post.id,
         title: post.title,
+        contentType,
         section,
-        questionCount: post.shared_exam_id ? (examQuestionCounts[post.shared_exam_id] || 0) : 0,
+        difficulty: contentType === 'practice' ? difficulty : undefined,
+        questionCount,
         accessCount: accessCounts[post.id] || 0,
         completionCount: post.completion_count || 0,
         createdAt: post.created_at,
-        isLibraryVisible: true, // Admin uploads are always visible
+        isLibraryVisible: post.is_library_visible ?? true,
       }
     })
 
@@ -127,7 +173,8 @@ export async function GET() {
   }
 }
 
-// POST /api/admin/content - Upload new admin content (alias for /api/admin/content/upload)
+// POST /api/admin/content - Upload new admin content (redirects to /api/admin/content/upload)
+// Note: Main upload logic is in /api/admin/content/upload/route.ts
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient()
@@ -153,10 +200,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, section, questions } = body as {
+    const { title, description, contentType = 'exam', section, difficulty, questions } = body as {
       title: string
       description?: string
+      contentType?: 'exam' | 'practice'
       section: 'quantitative' | 'verbal'
+      difficulty?: 'easy' | 'medium' | 'hard'
       questions: Question[]
     }
 
@@ -168,27 +217,80 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // First, create an exam_session to hold the questions
-    const { data: examSession, error: examError } = await supabase
-      .from('exam_sessions')
-      .insert({
-        user_id: user.id,
-        status: 'completed',
-        track: section === 'verbal' ? 'literary' : 'scientific',
-        total_questions: questions.length,
-        questions: questions,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single()
-
-    if (examError || !examSession) {
-      console.error('Error creating exam session:', examError)
+    // Validate difficulty for practice content
+    if (contentType === 'practice' && !difficulty) {
       return NextResponse.json(
-        { error: { code: 'INTERNAL_ERROR', message: 'Failed to create exam session' } },
-        { status: 500 }
+        { error: { code: 'VALIDATION_ERROR', message: 'Difficulty is required for practice content' } },
+        { status: 400 }
       )
+    }
+
+    let sessionId: string
+    let postType: 'exam_share' | 'practice_share'
+    let sharedExamId: string | null = null
+    let sharedPracticeId: string | null = null
+
+    if (contentType === 'practice') {
+      // Create a practice_session to hold the questions
+      const categories = [...new Set(questions.map(q => q.topic))]
+
+      const { data: practiceSession, error: practiceError } = await supabase
+        .from('practice_sessions')
+        .insert({
+          user_id: user.id,
+          status: 'completed',
+          section: section,
+          categories: categories,
+          difficulty: difficulty,
+          question_count: questions.length,
+          questions: questions,
+          created_at: new Date().toISOString(),
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          time_spent_seconds: 0,
+          generated_batches: 1,
+        })
+        .select('id')
+        .single()
+
+      if (practiceError || !practiceSession) {
+        console.error('Error creating practice session:', practiceError)
+        return NextResponse.json(
+          { error: { code: 'INTERNAL_ERROR', message: 'Failed to create practice session' } },
+          { status: 500 }
+        )
+      }
+
+      sessionId = practiceSession.id
+      postType = 'practice_share'
+      sharedPracticeId = practiceSession.id
+    } else {
+      // Create an exam_session to hold the questions
+      const { data: examSession, error: examError } = await supabase
+        .from('exam_sessions')
+        .insert({
+          user_id: user.id,
+          status: 'completed',
+          track: section === 'verbal' ? 'literary' : 'scientific',
+          total_questions: questions.length,
+          questions: questions,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single()
+
+      if (examError || !examSession) {
+        console.error('Error creating exam session:', examError)
+        return NextResponse.json(
+          { error: { code: 'INTERNAL_ERROR', message: 'Failed to create exam session' } },
+          { status: 500 }
+        )
+      }
+
+      sessionId = examSession.id
+      postType = 'exam_share'
+      sharedExamId = examSession.id
     }
 
     // Create the forum post with is_admin_upload = true
@@ -197,9 +299,10 @@ export async function POST(request: NextRequest) {
       .insert({
         author_id: user.id,
         title,
-        body: JSON.stringify({ description, section }),
-        post_type: 'exam_share',
-        shared_exam_id: examSession.id,
+        body: JSON.stringify({ description, section, contentType, difficulty }),
+        post_type: postType,
+        shared_exam_id: sharedExamId,
+        shared_practice_id: sharedPracticeId,
         is_library_visible: true,
         is_admin_upload: true,
         status: 'active',
@@ -211,8 +314,12 @@ export async function POST(request: NextRequest) {
 
     if (postError || !forumPost) {
       console.error('Error creating forum post:', postError)
-      // Clean up the exam session if post creation fails
-      await supabase.from('exam_sessions').delete().eq('id', examSession.id)
+      // Clean up the session if post creation fails
+      if (contentType === 'practice') {
+        await supabase.from('practice_sessions').delete().eq('id', sessionId)
+      } else {
+        await supabase.from('exam_sessions').delete().eq('id', sessionId)
+      }
       return NextResponse.json(
         { error: { code: 'INTERNAL_ERROR', message: 'Failed to create content' } },
         { status: 500 }
@@ -226,16 +333,19 @@ export async function POST(request: NextRequest) {
       target_id: forumPost.id,
       details: {
         title,
+        contentType,
         section,
+        difficulty: contentType === 'practice' ? difficulty : undefined,
         questionCount: questions.length,
-        examSessionId: examSession.id,
+        sessionId,
       },
     })
 
     return NextResponse.json({
       success: true,
       contentId: forumPost.id,
-      examSessionId: examSession.id,
+      contentType,
+      sessionId,
     })
   } catch (error) {
     console.error('Admin content upload error:', error)

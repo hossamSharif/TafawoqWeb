@@ -3,9 +3,16 @@
 import { cn } from '@/lib/utils'
 
 export interface CircleData {
+  // Standard SVG properties
   cx?: number
   cy?: number
-  r: number
+  r?: number
+  // Alternative properties from Claude AI generation
+  radius?: number
+  center?: [number, number]
+  showRadius?: boolean
+  showDiameter?: boolean
+  // Common properties
   fill?: string
   stroke?: string
   strokeWidth?: number
@@ -33,17 +40,41 @@ export function Circle({
   viewBox = { width: 200, height: 200 },
   className,
 }: CircleProps) {
-  const {
-    cx = viewBox.width / 2,
-    cy = viewBox.height / 2,
-    r,
-    fill = 'none',
-    stroke = '#1E5631',
-    strokeWidth = 2,
-    label,
-    labelPosition = 'center',
-    annotations = [],
-  } = data
+  // Normalize data to handle both standard SVG properties and Claude AI generation format
+  // Claude uses: radius, center (array), showRadius, showDiameter
+  // Standard uses: r, cx, cy, annotations
+
+  // Get the raw radius value
+  const rawRadius = data.r ?? data.radius ?? 50
+
+  // Scale small radii (< 20) to be visible in the viewBox
+  // Claude often generates the actual measurement (e.g., 6 for "6 cm") rather than SVG coordinates
+  // We scale to use ~25% of the viewBox size for better visibility
+  const minVisibleRadius = Math.min(viewBox.width, viewBox.height) * 0.25
+  const r = rawRadius < 20 ? minVisibleRadius : rawRadius
+
+  // Always center the circle in the viewBox for consistent rendering
+  // Claude's center coordinates may not account for the scaled radius
+  const cx = viewBox.width / 2
+  const cy = viewBox.height / 2
+  const fill = data.fill ?? 'none'
+  const stroke = data.stroke ?? '#1E5631'
+  const strokeWidth = data.strokeWidth ?? 2
+  const label = data.label
+  const labelPosition = data.labelPosition ?? 'center'
+
+  // Build annotations array from both formats
+  const annotations = data.annotations ?? []
+
+  // Add radius annotation if showRadius is true (Claude format)
+  if (data.showRadius && !annotations.some(a => a.type === 'radius')) {
+    annotations.push({ type: 'radius', label: label || `نق = ${r}` })
+  }
+
+  // Add diameter annotation if showDiameter is true (Claude format)
+  if (data.showDiameter && !annotations.some(a => a.type === 'diameter')) {
+    annotations.push({ type: 'diameter', label: `ق = ${r * 2}` })
+  }
 
   // Calculate label position
   const getLabelY = () => {

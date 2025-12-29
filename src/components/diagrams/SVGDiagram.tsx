@@ -1,10 +1,14 @@
 'use client'
 
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { Circle, type CircleData } from './shapes/Circle'
 import { Triangle, type TriangleData } from './shapes/Triangle'
 import { Rectangle, type RectangleData } from './shapes/Rectangle'
 import type { DiagramType } from '@/types/question'
+import { validateShapeData } from '@/lib/diagrams/validators'
+import { getFallbackShapeData, shapeDataToTextDescription } from '@/lib/diagrams/fallbacks'
+import { logDiagramError } from '@/lib/diagrams/errorLogging'
 
 // Union type for all shape data
 export type ShapeData = CircleData | TriangleData | RectangleData | CompositeShapeData
@@ -45,96 +49,182 @@ export function SVGDiagram({
 }: SVGDiagramProps) {
   const viewBox = { width: 200, height: 200 }
 
-  const renderShape = () => {
-    switch (type) {
-      case 'circle':
-        return <Circle data={data as unknown as CircleData} viewBox={viewBox} />
+  // Validate and sanitize data using useMemo (no state updates in render phase)
+  const { sanitizedData, validationError } = useMemo(() => {
+    if (type === 'custom') {
+      // Skip validation for custom types
+      return { sanitizedData: data, validationError: null }
+    }
 
-      case 'triangle':
-        return <Triangle data={data as unknown as TriangleData} viewBox={viewBox} />
+    const validationResult = validateShapeData(type, data)
 
-      case 'rectangle':
-        return <Rectangle data={data as unknown as RectangleData} viewBox={viewBox} />
+    if (!validationResult.success) {
+      // Log validation error
+      logDiagramError('data-invalid', type, validationResult.error)
 
-      case 'composite-shape': {
-        const compositeData = data as unknown as CompositeShapeData
-        return (
-          <g>
-            {/* Render all shapes */}
-            {compositeData.shapes?.map((shape, index) => {
-              switch (shape.type) {
-                case 'circle':
-                  return (
-                    <Circle
-                      key={`shape-${index}`}
-                      data={shape.data as CircleData}
-                      viewBox={viewBox}
-                    />
-                  )
-                case 'triangle':
-                  return (
-                    <Triangle
-                      key={`shape-${index}`}
-                      data={shape.data as TriangleData}
-                      viewBox={viewBox}
-                    />
-                  )
-                case 'rectangle':
-                  return (
-                    <Rectangle
-                      key={`shape-${index}`}
-                      data={shape.data as RectangleData}
-                      viewBox={viewBox}
-                    />
-                  )
-                default:
-                  return null
-              }
-            })}
-
-            {/* Render connections between shapes */}
-            {compositeData.connections?.map((connection, index) => (
-              <g key={`connection-${index}`}>
-                <line
-                  x1={connection.from.x}
-                  y1={connection.from.y}
-                  x2={connection.to.x}
-                  y2={connection.to.y}
-                  stroke="#1E5631"
-                  strokeWidth={1}
-                  strokeDasharray={connection.style === 'dashed' ? '4,2' : undefined}
-                />
-                {connection.label && (
-                  <text
-                    x={(connection.from.x + connection.to.x) / 2}
-                    y={(connection.from.y + connection.to.y) / 2 - 5}
-                    textAnchor="middle"
-                    fontSize="11"
-                    fill="#6B7280"
-                    fontFamily="Noto Kufi Arabic, sans-serif"
-                  >
-                    {connection.label}
-                  </text>
-                )}
-              </g>
-            ))}
-          </g>
-        )
+      // Try to use fallback data
+      const fallback = getFallbackShapeData(type as 'circle' | 'triangle' | 'rectangle')
+      return {
+        sanitizedData: fallback as unknown as Record<string, unknown>,
+        validationError: validationResult.error,
       }
+    }
 
-      default:
-        return (
+    return {
+      sanitizedData: validationResult.data as unknown as Record<string, unknown>,
+      validationError: null,
+    }
+  }, [type, JSON.stringify(data)])
+
+  const renderShape = () => {
+    try {
+      switch (type) {
+        case 'circle':
+          return <Circle data={sanitizedData as unknown as CircleData} viewBox={viewBox} />
+
+        case 'triangle':
+          return <Triangle data={sanitizedData as unknown as TriangleData} viewBox={viewBox} />
+
+        case 'rectangle':
+          return <Rectangle data={sanitizedData as unknown as RectangleData} viewBox={viewBox} />
+
+        case 'composite-shape': {
+          const compositeData = sanitizedData as unknown as CompositeShapeData
+
+          // Validate composite data structure
+          if (!compositeData.shapes || !Array.isArray(compositeData.shapes) || compositeData.shapes.length === 0) {
+            throw new Error('Composite shape must have at least one shape')
+          }
+
+          return (
+            <g>
+              {/* Render all shapes with error handling for each */}
+              {compositeData.shapes.map((shape, index) => {
+                try {
+                  // Validate individual shape
+                  const shapeValidation = validateShapeData(shape.type as DiagramType, shape.data)
+                  const shapeData = shapeValidation.success
+                    ? shapeValidation.data
+                    : getFallbackShapeData(shape.type)
+
+                  switch (shape.type) {
+                    case 'circle':
+                      return (
+                        <Circle
+                          key={`shape-${index}`}
+                          data={shapeData as CircleData}
+                          viewBox={viewBox}
+                        />
+                      )
+                    case 'triangle':
+                      return (
+                        <Triangle
+                          key={`shape-${index}`}
+                          data={shapeData as TriangleData}
+                          viewBox={viewBox}
+                        />
+                      )
+                    case 'rectangle':
+                      return (
+                        <Rectangle
+                          key={`shape-${index}`}
+                          data={shapeData as RectangleData}
+                          viewBox={viewBox}
+                        />
+                      )
+                    default:
+                      return null
+                  }
+                } catch (err) {
+                  // Log and skip invalid shape
+                  logDiagramError('render-failed', type, err as Error, { shapeIndex: index })
+                  return null
+                }
+              })}
+
+              {/* Render connections between shapes */}
+              {compositeData.connections?.map((connection, index) => {
+                // Validate connection coordinates
+                if (
+                  typeof connection?.from?.x !== 'number' ||
+                  typeof connection?.from?.y !== 'number' ||
+                  typeof connection?.to?.x !== 'number' ||
+                  typeof connection?.to?.y !== 'number'
+                ) {
+                  return null
+                }
+
+                return (
+                  <g key={`connection-${index}`}>
+                    <line
+                      x1={connection.from.x}
+                      y1={connection.from.y}
+                      x2={connection.to.x}
+                      y2={connection.to.y}
+                      stroke="#1E5631"
+                      strokeWidth={1}
+                      strokeDasharray={connection.style === 'dashed' ? '4,2' : undefined}
+                    />
+                    {connection.label && (
+                      <text
+                        x={(connection.from.x + connection.to.x) / 2}
+                        y={(connection.from.y + connection.to.y) / 2 - 5}
+                        textAnchor="middle"
+                        fontSize="11"
+                        fill="#6B7280"
+                        fontFamily="Noto Kufi Arabic, sans-serif"
+                      >
+                        {connection.label}
+                      </text>
+                    )}
+                  </g>
+                )
+              })}
+            </g>
+          )
+        }
+
+        default:
+          return (
+            <text
+              x={viewBox.width / 2}
+              y={viewBox.height / 2}
+              textAnchor="middle"
+              fill="#9CA3AF"
+              fontSize="12"
+              fontFamily="Noto Kufi Arabic, sans-serif"
+            >
+              شكل غير مدعوم
+            </text>
+          )
+      }
+    } catch (err) {
+      logDiagramError('render-failed', type, err as Error)
+      // Return fallback visual
+      return (
+        <g>
           <text
             x={viewBox.width / 2}
-            y={viewBox.height / 2}
+            y={viewBox.height / 2 - 10}
             textAnchor="middle"
-            fill="#9CA3AF"
+            fill="#DC2626"
             fontSize="12"
             fontFamily="Noto Kufi Arabic, sans-serif"
           >
-            شكل غير مدعوم
+            خطأ في عرض الشكل
           </text>
-        )
+          <text
+            x={viewBox.width / 2}
+            y={viewBox.height / 2 + 10}
+            textAnchor="middle"
+            fill="#9CA3AF"
+            fontSize="10"
+            fontFamily="Noto Kufi Arabic, sans-serif"
+          >
+            {shapeDataToTextDescription(type, data)}
+          </text>
+        </g>
+      )
     }
   }
 
@@ -158,6 +248,15 @@ export function SVGDiagram({
           : undefined
       }
     >
+      {/* Validation warning */}
+      {validationError && (
+        <div className="mb-2 px-3 py-1 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-xs text-yellow-800 text-center" dir="rtl">
+            تحذير: تم استخدام بيانات افتراضية بسبب خطأ في التحقق
+          </p>
+        </div>
+      )}
+
       <svg
         viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
         className="w-full max-w-xs h-auto"

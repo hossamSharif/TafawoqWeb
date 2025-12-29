@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query/keys'
+import { useAuth } from '@/contexts/AuthContext'
 
 export interface SubscriptionData {
   tier: string
@@ -79,18 +82,13 @@ interface UseSubscriptionReturn {
 }
 
 export function useSubscription(): UseSubscriptionReturn {
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
-  const [features, setFeatures] = useState<SubscriptionFeatures | null>(null)
-  const [usage, setUsage] = useState<UsageData | null>(null)
-  const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  const fetchSubscription = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
+  // Parallel queries for subscription, usage, and invoices - fetched simultaneously instead of sequentially
+  const subscriptionQuery = useQuery({
+    queryKey: queryKeys.subscription.current(user?.id ?? 'anonymous'),
+    queryFn: async () => {
       const response = await fetch('/api/subscription')
       const data = await response.json()
 
@@ -98,17 +96,17 @@ export function useSubscription(): UseSubscriptionReturn {
         throw new Error(data.error || 'فشل في جلب بيانات الاشتراك')
       }
 
-      setSubscription(data.subscription)
-      setFeatures(data.features)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+      return { subscription: data.subscription as SubscriptionData, features: data.features as SubscriptionFeatures }
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 15, // 15 minutes cache
+    refetchOnMount: false,
+  })
 
-  const fetchUsage = useCallback(async () => {
-    try {
+  const usageQuery = useQuery({
+    queryKey: queryKeys.subscription.usage(user?.id ?? 'anonymous'),
+    queryFn: async () => {
       const response = await fetch('/api/subscription/usage')
       const data = await response.json()
 
@@ -116,14 +114,17 @@ export function useSubscription(): UseSubscriptionReturn {
         throw new Error(data.error || 'فشل في جلب بيانات الاستخدام')
       }
 
-      setUsage(data.usage)
-    } catch (err) {
-      console.error('Usage fetch error:', err)
-    }
-  }, [])
+      return data.usage as UsageData
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 2, // 2 minutes - usage changes more frequently
+    gcTime: 1000 * 60 * 10, // 10 minutes cache
+    refetchOnMount: false,
+  })
 
-  const fetchInvoices = useCallback(async () => {
-    try {
+  const invoicesQuery = useQuery({
+    queryKey: queryKeys.subscription.invoices(user?.id ?? 'anonymous'),
+    queryFn: async () => {
       const response = await fetch('/api/subscription/invoices')
       const data = await response.json()
 
@@ -131,92 +132,108 @@ export function useSubscription(): UseSubscriptionReturn {
         throw new Error(data.error || 'فشل في جلب الفواتير')
       }
 
-      setInvoices(data.invoices)
-    } catch (err) {
-      console.error('Invoices fetch error:', err)
-    }
-  }, [])
+      return data.invoices as Invoice[]
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 10, // 10 minutes - invoices rarely change
+    gcTime: 1000 * 60 * 30, // 30 minutes cache
+    refetchOnMount: false,
+  })
 
+  // Manual fetch functions for backward compatibility
+  const fetchUsage = useCallback(async () => {
+    if (!user) return
+    await queryClient.invalidateQueries({ queryKey: queryKeys.subscription.usage(user.id) })
+  }, [user, queryClient])
+
+  const fetchInvoices = useCallback(async () => {
+    if (!user) return
+    await queryClient.invalidateQueries({ queryKey: queryKeys.subscription.invoices(user.id) })
+  }, [user, queryClient])
+
+  // Mutations for subscription operations
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/subscription/cancel', { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'فشل في إلغاء الاشتراك')
+      return data
+    },
+    onSuccess: () => {
+      if (!user) return
+      queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(user.id) })
+    },
+  })
+
+  const reactivateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/subscription/reactivate', { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'فشل في إعادة تفعيل الاشتراك')
+      return data
+    },
+    onSuccess: () => {
+      if (!user) return
+      queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(user.id) })
+    },
+  })
+
+  // Wrapper functions to maintain API compatibility
   const createCheckoutSession = useCallback(async (): Promise<string | null> => {
     try {
-      const response = await fetch('/api/subscription/checkout', {
-        method: 'POST',
-      })
+      const response = await fetch('/api/subscription/checkout', { method: 'POST' })
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'فشل في إنشاء جلسة الدفع')
-      }
-
+      if (!response.ok) throw new Error(data.error || 'فشل في إنشاء جلسة الدفع')
       return data.url
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل في إنشاء جلسة الدفع')
+    } catch {
       return null
     }
   }, [])
 
   const createPortalSession = useCallback(async (): Promise<string | null> => {
     try {
-      const response = await fetch('/api/subscription/portal', {
-        method: 'POST',
-      })
+      const response = await fetch('/api/subscription/portal', { method: 'POST' })
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'فشل في إنشاء جلسة إدارة الاشتراك')
-      }
-
+      if (!response.ok) throw new Error(data.error || 'فشل في إنشاء جلسة إدارة الاشتراك')
       return data.url
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل في إنشاء جلسة إدارة الاشتراك')
+    } catch {
       return null
     }
   }, [])
 
   const cancelSubscription = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/subscription/cancel', {
-        method: 'POST',
-      })
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'فشل في إلغاء الاشتراك')
-      }
-
-      // Refetch subscription data
-      await fetchSubscription()
+      await cancelMutation.mutateAsync()
       return true
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل في إلغاء الاشتراك')
+    } catch {
       return false
     }
-  }, [fetchSubscription])
+  }, [cancelMutation])
 
   const reactivateSubscription = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/subscription/reactivate', {
-        method: 'POST',
-      })
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'فشل في إعادة تفعيل الاشتراك')
-      }
-
-      // Refetch subscription data
-      await fetchSubscription()
+      await reactivateMutation.mutateAsync()
       return true
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل في إعادة تفعيل الاشتراك')
+    } catch {
       return false
     }
-  }, [fetchSubscription])
+  }, [reactivateMutation])
 
-  // Initial fetch
-  useEffect(() => {
-    fetchSubscription()
-  }, [fetchSubscription])
+  const refetch = useCallback(async () => {
+    if (!user) return
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(user.id) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.subscription.usage(user.id) }),
+    ])
+  }, [user, queryClient])
+
+  // Compute values from queries
+  const subscription = subscriptionQuery.data?.subscription ?? null
+  const features = subscriptionQuery.data?.features ?? null
+  const usage = usageQuery.data ?? null
+  const invoices = invoicesQuery.data ?? []
+  const isLoading = subscriptionQuery.isLoading || usageQuery.isLoading || invoicesQuery.isLoading
+  const error = subscriptionQuery.error?.message || usageQuery.error?.message || invoicesQuery.error?.message || null
 
   return {
     subscription,
@@ -227,7 +244,7 @@ export function useSubscription(): UseSubscriptionReturn {
     error,
     isPremium: subscription?.isPremium ?? false,
     isTrialing: subscription?.isTrialing ?? false,
-    refetch: fetchSubscription,
+    refetch,
     fetchUsage,
     fetchInvoices,
     createCheckoutSession,

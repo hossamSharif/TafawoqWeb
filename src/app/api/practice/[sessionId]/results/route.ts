@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { CATEGORY_LABELS } from '@/types/question'
+import type { Question } from '@/types/question'
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>
@@ -56,6 +57,38 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single()
 
     if (existingResult) {
+      // Build question review data
+      const questions = (session.questions as unknown as Question[]) || []
+      const { data: practiceAnswers } = await supabase
+        .from('answers')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('session_type', 'practice')
+        .order('question_index')
+
+      const questionReviewData = questions.map((q, index) => {
+        const answer = practiceAnswers?.find(a => a.question_index === index)
+        return {
+          index,
+          questionId: q.id,
+          section: q.section,
+          topic: q.topic,
+          difficulty: q.difficulty,
+          questionType: q.questionType || 'text-only',
+          stem: q.stem,
+          passage: q.passage || undefined,
+          diagram: q.diagram || undefined,
+          choices: q.choices || ['', '', '', ''],
+          selectedAnswer: answer?.selected_answer ?? null,
+          correctAnswer: q.answerIndex,
+          isCorrect: answer?.is_correct ?? false,
+          timeSpentSeconds: answer?.time_spent_seconds ?? 0,
+          explanation: q.explanation || '',
+          solvingStrategy: q.solvingStrategy || undefined,
+          tip: q.tip || undefined,
+        }
+      })
+
       return NextResponse.json({
         results: {
           sessionId,
@@ -70,6 +103,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           categories: session.categories,
           difficulty: session.difficulty,
           completedAt: session.completed_at,
+          questions: questionReviewData, // NEW: Full question review data
         },
       })
     }
@@ -188,6 +222,31 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // Don't fail the request, just log the error
     }
 
+    // Build question review data
+    const questions = (session.questions as unknown as Question[]) || []
+    const questionReviewData = questions.map((q, index) => {
+      const answer = answers?.find(a => a.question_index === index)
+      return {
+        index,
+        questionId: q.id,
+        section: q.section,
+        topic: q.topic,
+        difficulty: q.difficulty,
+        questionType: q.questionType || 'text-only',
+        stem: q.stem,
+        passage: q.passage || undefined,
+        diagram: q.diagram || undefined,
+        choices: q.choices || ['', '', '', ''],
+        selectedAnswer: answer?.selected_answer ?? null,
+        correctAnswer: q.answerIndex,
+        isCorrect: answer?.is_correct ?? false,
+        timeSpentSeconds: answer?.time_spent_seconds ?? 0,
+        explanation: q.explanation || '',
+        solvingStrategy: q.solvingStrategy || undefined,
+        tip: q.tip || undefined,
+      }
+    })
+
     return NextResponse.json({
       results: {
         sessionId,
@@ -213,6 +272,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         difficulty: session.difficulty,
         difficultyLabel: getDifficultyLabel(session.difficulty),
         completedAt: session.completed_at,
+        questions: questionReviewData, // NEW: Full question review data
       },
     })
   } catch (error) {

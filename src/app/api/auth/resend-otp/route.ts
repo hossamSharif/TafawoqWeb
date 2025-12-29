@@ -83,12 +83,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Resend the OTP
+    // Note: No emailRedirectTo - this ensures Supabase sends OTP code instead of magic link
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-      },
     })
 
     if (error) {

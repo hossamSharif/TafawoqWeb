@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -75,8 +77,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create response with session cookies
-    const response = NextResponse.json({
+    // Set session cookies for server-side authentication
+    const cookieStore = await cookies()
+
+    // Create the server client to properly set cookies
+    const supabaseServer = createServerClient(
+      supabaseUrl,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
+    // Set the session using the tokens from the OTP verification
+    await supabaseServer.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    })
+
+    return NextResponse.json({
       success: true,
       message: 'تم التحقق من البريد الإلكتروني بنجاح',
       user: {
@@ -90,8 +118,6 @@ export async function POST(request: NextRequest) {
         expiresAt: data.session.expires_at,
       },
     })
-
-    return response
   } catch (error) {
     console.error('Unexpected OTP verification error:', error)
     return NextResponse.json(

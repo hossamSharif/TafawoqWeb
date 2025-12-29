@@ -1,9 +1,12 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import type { Tables } from '@/lib/supabase/types'
+import { useAuthSession, useUserProfile, useUserSubscription, useRefreshSession, useRefreshProfile, useRefreshSubscription } from '@/hooks/useAuthQuery'
+import { queryKeys } from '@/lib/query/keys'
 
 type UserProfile = Tables<'user_profiles'>
 type UserSubscription = Tables<'user_subscriptions'>
@@ -18,6 +21,7 @@ interface AuthContextType {
   isPremium: boolean
   refreshProfile: () => Promise<void>
   refreshSubscription: () => Promise<void>
+  refreshSession: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -27,107 +31,74 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [subscription, setSubscription] = useState<UserSubscription | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
+  // Use React Query hooks for cached data
+  const { data: session, isLoading: sessionLoading } = useAuthSession()
+  const { data: profile, isLoading: profileLoading } = useUserProfile(session?.user?.id)
+  const { data: subscription, isLoading: subscriptionLoading } = useUserSubscription(session?.user?.id)
 
-    if (error) {
-      console.error('Error fetching profile:', error)
-      return null
+  // Mutations for refresh operations
+  const refreshSessionMutation = useRefreshSession()
+  const refreshProfileMutation = useRefreshProfile()
+  const refreshSubscriptionMutation = useRefreshSubscription()
+
+  // Wrapper functions to maintain API compatibility
+  const refreshProfile = async () => {
+    if (!session?.user?.id) return
+    await refreshProfileMutation.mutateAsync(session.user.id)
+  }
+
+  const refreshSubscription = async () => {
+    if (!session?.user?.id) return
+    await refreshSubscriptionMutation.mutateAsync(session.user.id)
+  }
+
+  const refreshSession = async (): Promise<boolean> => {
+    try {
+      await refreshSessionMutation.mutateAsync()
+      return true
+    } catch (error) {
+      console.error('[AuthContext] Session refresh failed:', error)
+      return false
     }
-    return data
-  }, [])
+  }
 
-  const fetchSubscription = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-
-    if (error) {
-      // No subscription is not necessarily an error - user might be on free tier
-      if (error.code !== 'PGRST116') {
-        console.error('Error fetching subscription:', error)
-      }
-      return null
-    }
-    return data
-  }, [])
-
-  const refreshProfile = useCallback(async () => {
-    if (!user?.id) return
-    const profileData = await fetchProfile(user.id)
-    setProfile(profileData)
-  }, [user?.id, fetchProfile])
-
-  const refreshSubscription = useCallback(async () => {
-    if (!user?.id) return
-    const subscriptionData = await fetchSubscription(user.id)
-    setSubscription(subscriptionData)
-  }, [user?.id, fetchSubscription])
-
+  // Listen for auth state changes and update React Query cache
   useEffect(() => {
-    // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession()
-
-        setSession(initialSession)
-        setUser(initialSession?.user ?? null)
-
-        if (initialSession?.user) {
-          const [profileData, subscriptionData] = await Promise.all([
-            fetchProfile(initialSession.user.id),
-            fetchSubscription(initialSession.user.id),
-          ])
-          setProfile(profileData)
-          setSubscription(subscriptionData)
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    initializeAuth()
-
-    // Listen for auth changes
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, newSession: Session | null) => {
-        setSession(newSession)
-        setUser(newSession?.user ?? null)
+      (event: AuthChangeEvent, newSession: Session | null) => {
+        console.log('[AuthContext] Auth state changed:', event, { hasSession: !!newSession })
+
+        // Update session in cache
+        queryClient.setQueryData(queryKeys.auth.session(), newSession)
 
         if (event === 'SIGNED_IN' && newSession?.user) {
-          const [profileData, subscriptionData] = await Promise.all([
-            fetchProfile(newSession.user.id),
-            fetchSubscription(newSession.user.id),
-          ])
-          setProfile(profileData)
-          setSubscription(subscriptionData)
+          console.log('[AuthContext] User signed in, invalidating queries...')
+          // Invalidate profile and subscription to force refetch
+          queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile(newSession.user.id) })
+          queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(newSession.user.id) })
         } else if (event === 'SIGNED_OUT') {
-          setProfile(null)
-          setSubscription(null)
+          console.log('[AuthContext] User signed out, clearing cache...')
+          // Clear all cached data
+          queryClient.clear()
+        } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
+          console.log('[AuthContext] Token refreshed, revalidating queries...')
+          // Revalidate to ensure data is current
+          queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile(newSession.user.id) })
+          queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(newSession.user.id) })
         }
-
-        setIsLoading(false)
       }
     )
 
     return () => {
       authSubscription.unsubscribe()
     }
-  }, [fetchProfile, fetchSubscription])
+  }, [queryClient])
+
+  // Computed values from React Query data
+  const user = useMemo(() => session?.user ?? null, [session])
+  const isLoading = sessionLoading || profileLoading || subscriptionLoading
 
   const isAuthenticated = useMemo(() => !!user && !!session, [user, session])
 
@@ -143,16 +114,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value = useMemo(
     () => ({
       user,
-      session,
-      profile,
-      subscription,
+      session: session ?? null,
+      profile: profile ?? null,
+      subscription: subscription ?? null,
       isLoading,
       isAuthenticated,
       isPremium,
       refreshProfile,
       refreshSubscription,
+      refreshSession,
     }),
-    [user, session, profile, subscription, isLoading, isAuthenticated, isPremium, refreshProfile, refreshSubscription]
+    [user, session, profile, subscription, isLoading, isAuthenticated, isPremium]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

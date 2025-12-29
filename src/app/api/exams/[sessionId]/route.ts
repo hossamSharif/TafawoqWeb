@@ -1,7 +1,7 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { calculateSectionScores, calculateCategoryBreakdown, identifyStrengthsWeaknesses } from '@/lib/utils/scoring'
+import { calculateSectionScores, calculateCategoryBreakdown, identifyStrengthsWeaknesses, type AcademicTrack } from '@/lib/utils/scoring'
 import { notifyExamCompleted } from '@/lib/notifications/service'
 import type { Question } from '@/types/question'
 
@@ -13,7 +13,7 @@ interface ExamSessionRow {
   id: string
   user_id: string
   track: 'scientific' | 'literary'
-  status: 'in_progress' | 'completed' | 'abandoned'
+  status: 'in_progress' | 'completed' | 'abandoned' | 'paused'
   questions: Question[]
   total_questions: number
   questions_answered: number
@@ -21,6 +21,8 @@ interface ExamSessionRow {
   end_time?: string
   time_spent_seconds?: number
   time_paused_seconds?: number
+  paused_at?: string
+  remaining_time_seconds?: number
   verbal_score?: number
   quantitative_score?: number
   overall_score?: number
@@ -119,6 +121,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         track: session.track,
         timeSpentSeconds: session.time_spent_seconds,
         timePausedSeconds: session.time_paused_seconds,
+        // Include pause info for resumed sessions
+        pausedAt: session.paused_at,
+        remainingTimeSeconds: session.remaining_time_seconds,
         verbalScore: session.verbal_score,
         quantitativeScore: session.quantitative_score,
         overallScore: session.overall_score,
@@ -179,9 +184,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    if (session.status !== 'in_progress') {
+    // Allow completing/abandoning from both 'in_progress' and 'paused' status
+    if (session.status !== 'in_progress' && session.status !== 'paused') {
       return NextResponse.json(
-        { error: 'الاختبار ليس قيد التقدم' },
+        { error: 'الاختبار ليس قيد التقدم أو متوقف' },
         { status: 400 }
       )
     }
@@ -211,7 +217,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           category: questions[a.question_index]?.topic,
         }))
 
-        const sectionScores = calculateSectionScores(answerData, questions)
+        const sectionScores = calculateSectionScores(
+          answerData,
+          questions,
+          session.total_questions,
+          session.track as AcademicTrack
+        )
         const categoryBreakdown = calculateCategoryBreakdown(answerData, questions)
         const { strengths, weaknesses } = identifyStrengthsWeaknesses(categoryBreakdown)
 
@@ -343,7 +354,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           // Get the forum post and author info
           const { data: post } = await supabase
             .from('forum_posts')
-            .select('id, title, author_id')
+            .select('id, title, author_id, completion_count')
             .eq('id', session.shared_from_post_id)
             .single()
 
@@ -356,17 +367,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
               .single()
 
             // Record the completion
-            await supabase
+            // Note: shared_exam_completions table does NOT have a score column
+            // The trigger grant_reward_on_completion() will handle reward crediting
+            // BUG-006 FIX APPLIED: Migration fix_bug006_notification_target_type deployed
+            const { error: completionError } = await supabase
               .from('shared_exam_completions')
               .insert({
                 post_id: post.id,
                 user_id: user.id,
                 exam_session_id: sessionId,
-                score: typedScores.overall_score || 0,
               })
+            if (completionError) {
+              console.error('shared_exam_completions insert error:', completionError.message)
+            }
 
-            // Update completion count on the post
-            await supabase.rpc('increment_completion_count', { post_id: post.id })
+            // Update completion count on the post using direct update
+            // (RPC increment_completion_count may have additional logic)
+            await supabase
+              .from('forum_posts')
+              .update({ completion_count: post.completion_count ? post.completion_count + 1 : 1 })
+              .eq('id', post.id)
 
             // Notify the post author
             await notifyExamCompleted(post.author_id, {

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { PasswordInput } from '@/components/ui/password-input'
+import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton'
 import { Loader2, CheckCircle2 } from 'lucide-react'
 
 export default function RegisterPage() {
@@ -87,6 +88,19 @@ export default function RegisterPage() {
               {error}
             </div>
           )}
+
+          {/* Google OAuth */}
+          <GoogleLoginButton />
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">أو</span>
+            </div>
+          </div>
 
           {/* Email Field */}
           <div className="space-y-2">

@@ -212,6 +212,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       stem: q.stem,
       choices: q.choices,
       passage: q.passage,
+      diagram: q.diagram, // Include diagram data for rendering geometric shapes and charts
     }))
 
     return NextResponse.json({

@@ -106,10 +106,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, section, questions } = body
+    const { title, section, questions, contentType, difficulty } = body
 
     const errors: string[] = []
     const warnings: string[] = []
+
+    // Validate content type
+    const validContentTypes = ['exam', 'practice']
+    if (!contentType || !validContentTypes.includes(contentType)) {
+      errors.push('نوع المحتوى يجب أن يكون "exam" أو "practice"')
+    }
 
     // Validate title
     if (!title || typeof title !== 'string' || title.trim().length < 3) {
@@ -119,6 +125,13 @@ export async function POST(request: NextRequest) {
     // Validate section
     if (!section || !VALID_SECTIONS.includes(section)) {
       errors.push('القسم يجب أن يكون "quantitative" أو "verbal"')
+    }
+
+    // Validate difficulty for practice content
+    if (contentType === 'practice') {
+      if (!difficulty || !VALID_DIFFICULTIES.includes(difficulty)) {
+        errors.push('مستوى الصعوبة يجب أن يكون "easy" أو "medium" أو "hard"')
+      }
     }
 
     // Validate questions array

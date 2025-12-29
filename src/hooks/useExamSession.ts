@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { Question, QuestionCategory } from '@/types/question'
+import type { Question, QuestionCategory, DiagramData, QuestionType } from '@/types/question'
+import { useInvalidateLimits } from './useSubscriptionLimits'
 
 /**
  * Batch generation configuration
@@ -17,10 +18,11 @@ export interface ExamQuestion {
   section: 'verbal' | 'quantitative'
   topic?: QuestionCategory
   difficulty?: 'easy' | 'medium' | 'hard'
-  questionType: string
+  questionType?: QuestionType
   stem: string
   choices: [string, string, string, string]
   passage?: string
+  diagram?: DiagramData
   // Answer info (revealed after answering)
   answerIndex?: number
   selectedAnswer?: number | null
@@ -32,7 +34,7 @@ export interface ExamQuestion {
 
 export interface ExamSessionData {
   id: string
-  status: 'in_progress' | 'completed' | 'abandoned'
+  status: 'in_progress' | 'completed' | 'abandoned' | 'paused'
   track: 'scientific' | 'literary'
   totalQuestions: number
   questionsAnswered: number
@@ -40,11 +42,17 @@ export interface ExamSessionData {
   endTime?: string
   timeSpentSeconds?: number
   timePausedSeconds?: number
+  /** Timestamp when session was paused */
+  pausedAt?: string
+  /** Remaining exam time in seconds when paused */
+  remainingTimeSeconds?: number
   verbalScore?: number
   quantitativeScore?: number
   overallScore?: number
   /** Number of batches generated so far */
   generatedBatches?: number
+  /** Whether more questions need to be generated */
+  needsMoreQuestions?: boolean
 }
 
 export interface AnswerResult {
@@ -93,6 +101,8 @@ export interface UseExamSessionReturn {
   prefetchError: string | null
   /** Number of generated batches */
   generatedBatches: number
+  /** Whether the exam is currently paused */
+  isPaused: boolean
   /** Start a new exam */
   startExam: () => Promise<void>
   /** Load existing session */
@@ -105,6 +115,10 @@ export interface UseExamSessionReturn {
   nextQuestion: () => void
   /** Go to previous question */
   prevQuestion: () => void
+  /** Pause the exam */
+  pauseExam: (remainingTimeSeconds: number, currentTimeSpent: number) => Promise<void>
+  /** Resume a paused exam */
+  resumeExam: (sessionId: string) => Promise<void>
   /** Complete the exam */
   completeExam: (timeSpent?: number) => Promise<void>
   /** Abandon the exam */
@@ -122,6 +136,7 @@ export function useExamSession(
   options: UseExamSessionOptions = {}
 ): UseExamSessionReturn {
   const { sessionId, onSessionLoad, onAnswerSubmit, onSessionComplete, onError } = options
+  const invalidateLimits = useInvalidateLimits()
 
   const [session, setSession] = useState<ExamSessionData | null>(null)
   const [questions, setQuestions] = useState<ExamQuestion[]>([])
@@ -189,21 +204,52 @@ export function useExamSession(
         throw new Error(data.error || 'فشل في تحميل الاختبار')
       }
 
-      setSession(data.session)
-      setQuestions(data.questions)
+      // If exam is paused, automatically resume it
+      let sessionData = data
+      let shouldUseResumedData = false
+
+      if (data.session.status === 'paused') {
+        console.log('[LoadSession] Exam is paused, automatically resuming...')
+        const resumeResponse = await fetch(`/api/exams/${sid}/resume`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+
+        const resumeData = await resumeResponse.json()
+
+        if (!resumeResponse.ok) {
+          // GRACEFUL FALLBACK: If error is "not paused", session might already be in progress
+          // This handles race conditions where resume was called concurrently
+          if (resumeResponse.status === 400 && resumeData.error?.includes('ليست متوقفة')) {
+            console.warn('[LoadSession] Resume failed - session not paused. Falling back to original session data.')
+            // Use original data from GET request
+            sessionData = data
+          } else {
+            throw new Error(resumeData.error || 'فشل في استئناف الاختبار')
+          }
+        } else {
+          // Resume succeeded, use resumed data
+          sessionData = resumeData
+          shouldUseResumedData = true
+        }
+      }
+
+      // Unified load logic - use sessionData (either from resume or original GET)
+      setSession(sessionData.session)
+      setQuestions(sessionData.questions)
 
       // Build answered questions set
       const answered = new Set<number>()
       const results = new Map<number, AnswerResult>()
 
-      if (data.answers) {
-        for (const ans of data.answers) {
+      if (sessionData.answers) {
+        for (const ans of sessionData.answers) {
           answered.add(ans.questionIndex)
           results.set(ans.questionIndex, {
             questionIndex: ans.questionIndex,
             selectedAnswer: ans.selectedAnswer,
             isCorrect: ans.isCorrect,
-            correctAnswer: data.questions[ans.questionIndex]?.answerIndex ?? 0,
+            correctAnswer: sessionData.questions[ans.questionIndex]?.answerIndex ?? 0,
           })
         }
       }
@@ -211,8 +257,8 @@ export function useExamSession(
       setAnsweredQuestions(answered)
       setAnswerResults(results)
 
-      // Set generated batches from session response
-      const loadedBatches = data.session.generatedBatches || Math.ceil(data.questions.length / BATCH_SIZE)
+      // Set generated batches from session
+      const loadedBatches = sessionData.session.generatedBatches || Math.ceil(sessionData.questions.length / BATCH_SIZE)
       setGeneratedBatches(loadedBatches)
       // Mark all loaded batches as already fetched
       prefetchedBatchesRef.current = new Set(
@@ -220,12 +266,12 @@ export function useExamSession(
       )
 
       // Find first unanswered question
-      const firstUnanswered = data.questions.findIndex(
+      const firstUnanswered = sessionData.questions.findIndex(
         (_: unknown, i: number) => !answered.has(i)
       )
       setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0)
 
-      onSessionLoad?.(data.session, data.questions)
+      onSessionLoad?.(sessionData.session, sessionData.questions)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'حدث خطأ'
       setError(message)
@@ -393,6 +439,129 @@ export function useExamSession(
     }
   }, [session, onError])
 
+  // Pause exam
+  const pauseExam = useCallback(async (remainingTimeSeconds: number, currentTimeSpent: number) => {
+    if (!session) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/exams/${session.id}/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          remainingTimeSeconds,
+          currentTimeSpent,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'فشل في إيقاف الاختبار')
+      }
+
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: 'paused',
+              pausedAt: data.session.pausedAt,
+              remainingTimeSeconds: data.session.remainingTimeSeconds,
+              timeSpentSeconds: data.session.timeSpentSeconds,
+            }
+          : null
+      )
+
+      // Invalidate subscription limits cache to update counters immediately
+      if (data.invalidateLimitsCache) {
+        invalidateLimits()
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'حدث خطأ'
+      setError(message)
+      onError?.(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [session, onError])
+
+  // Resume a paused exam
+  const resumeExam = useCallback(async (sid: string) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/exams/${sid}/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'فشل في استئناف الاختبار')
+      }
+
+      setSession(data.session)
+      setQuestions(data.questions)
+
+      // Build answered questions set
+      const answered = new Set<number>()
+      const results = new Map<number, AnswerResult>()
+
+      if (data.answers) {
+        for (const ans of data.answers) {
+          answered.add(ans.questionIndex)
+          results.set(ans.questionIndex, {
+            questionIndex: ans.questionIndex,
+            selectedAnswer: ans.selectedAnswer,
+            isCorrect: ans.isCorrect,
+            correctAnswer: data.questions[ans.questionIndex]?.answerIndex ?? 0,
+          })
+        }
+      }
+
+      setAnsweredQuestions(answered)
+      setAnswerResults(results)
+
+      // Set generated batches from session response
+      const loadedBatches = data.session.generatedBatches || Math.ceil(data.questions.length / BATCH_SIZE)
+      setGeneratedBatches(loadedBatches)
+      // Mark all loaded batches as already fetched
+      prefetchedBatchesRef.current = new Set(
+        Array.from({ length: loadedBatches }, (_, i) => i)
+      )
+
+      // Find first unanswered question
+      const firstUnanswered = data.questions.findIndex(
+        (_: unknown, i: number) => !answered.has(i)
+      )
+      setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0)
+
+      onSessionLoad?.(data.session, data.questions)
+
+      // Invalidate subscription limits cache to update counters immediately
+      if (data.invalidateLimitsCache) {
+        invalidateLimits()
+      }
+
+      // If more questions need to be generated, trigger prefetch
+      if (data.session.needsMoreQuestions) {
+        console.log('[Resume] Session needs more questions, triggering prefetch')
+        // Will be triggered by the effect when session is loaded
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'حدث خطأ'
+      setError(message)
+      onError?.(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [onSessionLoad, onError])
+
+  // Computed: is the exam paused
+  const isPaused = session?.status === 'paused'
+
   // Sync timer
   const syncTimer = useCallback(async (timeSpent: number) => {
     if (!session) return
@@ -533,12 +702,15 @@ export function useExamSession(
     isPrefetching,
     prefetchError,
     generatedBatches,
+    isPaused,
     startExam,
     loadSession,
     submitAnswer,
     goToQuestion,
     nextQuestion,
     prevQuestion,
+    pauseExam,
+    resumeExam,
     completeExam,
     abandonExam,
     syncTimer,

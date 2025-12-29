@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, Target, Clock, BookOpen, Plus, ChevronLeft } from 'lucide-react'
+import { PracticeHistory } from '@/components/profile/PracticeHistory'
 
 interface PracticeSession {
   id: string
@@ -15,6 +16,22 @@ interface PracticeSession {
   correct_answers: number
   status: 'in_progress' | 'completed'
   created_at: string
+}
+
+interface PracticeHistoryItem {
+  id: string
+  date: string
+  section: 'verbal' | 'quantitative'
+  sectionLabel: string
+  categories: string[]
+  categoryLabels: string[]
+  difficulty: string
+  difficultyLabel: string
+  questionCount: number
+  score: number
+  timeSpentSeconds?: number
+  timeSpentFormatted?: string
+  isShared?: boolean
 }
 
 const difficultyLabels = {
@@ -31,27 +48,87 @@ const sectionLabels = {
 export default function PracticePage() {
   const router = useRouter()
   const [sessions, setSessions] = useState<PracticeSession[]>([])
+  const [practiceHistory, setPracticeHistory] = useState<PracticeHistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchSessions() {
-      try {
-        const response = await fetch('/api/practice?limit=10')
-        if (!response.ok) {
-          throw new Error('فشل في جلب الجلسات')
-        }
-        const data = await response.json()
-        setSessions(data.sessions || [])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'خطأ غير متوقع')
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  const fetchSessions = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const [sessionsRes, historyRes] = await Promise.all([
+        fetch('/api/practice?limit=10'),
+        fetch('/api/practice/history?limit=20')
+      ])
 
-    fetchSessions()
+      if (!sessionsRes.ok) {
+        throw new Error('فشل في جلب الجلسات')
+      }
+
+      const sessionsData = await sessionsRes.json()
+      setSessions(sessionsData.sessions || [])
+
+      // Fetch and transform practice history for sharing
+      if (historyRes.ok) {
+        const historyData = await historyRes.json()
+        if (historyData.sessions) {
+          const historyItems: PracticeHistoryItem[] = historyData.sessions
+            .filter((session: any) => session.status === 'completed')
+            .map((session: any) => ({
+              id: session.id,
+              date: session.completedAt || session.startedAt,
+              section: session.section,
+              sectionLabel: session.sectionLabel,
+              categories: session.categories,
+              categoryLabels: session.categoryLabels,
+              difficulty: session.difficulty,
+              difficultyLabel: session.difficultyLabel,
+              questionCount: session.questionCount,
+              score: session.result?.score || 0,
+              timeSpentSeconds: session.timeSpentSeconds,
+              timeSpentFormatted: session.timeSpentFormatted,
+              isShared: session.isShared,
+            }))
+          setPracticeHistory(historyItems)
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطأ غير متوقع')
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    fetchSessions()
+  }, [fetchSessions])
+
+  const handlePracticeShare = async (practiceId: string, data: { title: string; body: string }) => {
+    try {
+      const response = await fetch('/api/forum/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          post_type: 'exam_share',
+          title: data.title,
+          body: data.body,
+          shared_practice_id: practiceId,
+          is_library_visible: true,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData.message || errorData.error || 'فشل في المشاركة'
+        throw new Error(errorMessage)
+      }
+
+      // Refresh practice history to update shared status
+      await fetchSessions()
+    } catch (err) {
+      console.error('Practice share error:', err)
+      throw err // Re-throw to let the ShareExamModal handle the error
+    }
+  }
 
   if (isLoading) {
     return (
@@ -86,7 +163,7 @@ export default function PracticePage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">إجمالي الجلسات</p>
-                <p className="text-2xl font-bold">{sessions.length}</p>
+                <p className="text-2xl font-bold">{practiceHistory.length + sessions.filter(s => s.status === 'in_progress').length}</p>
               </div>
             </div>
           </CardContent>
@@ -100,7 +177,7 @@ export default function PracticePage() {
               <div>
                 <p className="text-sm text-muted-foreground">الجلسات المكتملة</p>
                 <p className="text-2xl font-bold">
-                  {sessions.filter(s => s.status === 'completed').length}
+                  {practiceHistory.length}
                 </p>
               </div>
             </div>
@@ -129,76 +206,72 @@ export default function PracticePage() {
         </div>
       )}
 
-      {/* Recent Sessions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>الجلسات الأخيرة</CardTitle>
-          <CardDescription>آخر 10 جلسات تمرين</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {sessions.length === 0 ? (
-            <div className="text-center py-8">
+      {/* Active Sessions (In Progress) */}
+      {sessions.filter(s => s.status === 'in_progress').length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>جلسات قيد التقدم</CardTitle>
+            <CardDescription>استمر في التمرين من حيث توقفت</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {sessions
+                .filter(s => s.status === 'in_progress')
+                .map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/practice/${session.id}`)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 rounded-full bg-amber-500/10">
+                        <Clock className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium">
+                          {sectionLabels[session.section]} - {difficultyLabels[session.difficulty]}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {session.total_questions} سؤال
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">
+                        قيد التقدم
+                      </span>
+                      <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Practice History with Sharing */}
+      {practiceHistory.length > 0 ? (
+        <PracticeHistory
+          history={practiceHistory}
+          maxItems={20}
+          variant="full"
+          showActions={true}
+          onShare={handlePracticeShare}
+        />
+      ) : (
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center">
               <BookOpen className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground mb-4">لم تبدأ أي جلسات تمرين بعد</p>
+              <p className="text-muted-foreground mb-4">لم تكمل أي جلسات تمرين بعد</p>
               <Button onClick={() => router.push('/practice/new')}>
                 <Plus className="h-4 w-4 ml-2" />
                 ابدأ تمرينك الأول
               </Button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => {
-                    if (session.status === 'completed') {
-                      router.push(`/practice/results/${session.id}`)
-                    } else {
-                      router.push(`/practice/${session.id}`)
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-full ${
-                      session.status === 'completed'
-                        ? 'bg-green-500/10'
-                        : 'bg-amber-500/10'
-                    }`}>
-                      {session.status === 'completed' ? (
-                        <Target className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <Clock className="h-5 w-5 text-amber-600" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium">
-                        {sectionLabels[session.section]} - {difficultyLabels[session.difficulty]}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {session.total_questions} سؤال
-                        {session.status === 'completed' && (
-                          <> - النتيجة: {session.correct_answers}/{session.total_questions}</>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      session.status === 'completed'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {session.status === 'completed' ? 'مكتمل' : 'قيد التقدم'}
-                    </span>
-                    <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Back Button */}
       <div className="text-center">

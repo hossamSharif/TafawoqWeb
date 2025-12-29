@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,104 +23,78 @@ import {
   Loader2,
   Crown,
 } from 'lucide-react'
-import type { LibraryExam, LibraryFilters, UserLibraryAccess } from '@/types/library'
-
-interface LibraryResponse {
-  exams: LibraryExam[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    hasMore: boolean
-  }
-  userAccess: UserLibraryAccess
-}
+import { useLibrary } from '@/hooks/useLibrary'
 
 export default function LibraryPage() {
-  const { user, isLoading: authLoading } = useAuth()
+  const router = useRouter()
+  const { user, session, isLoading: authLoading, isAuthenticated, refreshSession } = useAuth()
+  const [attemptedRecovery, setAttemptedRecovery] = useState(false)
 
-  const [exams, setExams] = useState<LibraryExam[]>([])
-  const [userAccess, setUserAccess] = useState<UserLibraryAccess | null>(null)
-  const [pagination, setPagination] = useState({ page: 1, hasMore: false, total: 0 })
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  // Debug: Log auth state
+  useEffect(() => {
+    console.log('[Library] Auth state:', {
+      user: !!user,
+      userId: user?.id,
+      hasSession: !!session,
+      isAuthenticated,
+      authLoading,
+      attemptedRecovery
+    })
+  }, [user, session, isAuthenticated, authLoading, attemptedRecovery])
+
+  // Attempt session recovery before redirecting to login
+  useEffect(() => {
+    const handleAuth = async () => {
+      if (authLoading) return
+
+      // If not authenticated and haven't attempted recovery yet
+      if (!isAuthenticated && !user && !attemptedRecovery) {
+        console.log('[Library] No session found, attempting recovery...')
+        setAttemptedRecovery(true)
+
+        const recovered = await refreshSession()
+
+        if (!recovered) {
+          console.log('[Library] Session recovery failed, redirecting to login...')
+          router.push('/login')
+        } else {
+          console.log('[Library] Session recovered successfully!')
+        }
+      }
+    }
+
+    handleAuth()
+  }, [authLoading, isAuthenticated, user, attemptedRecovery, refreshSession, router])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'popular' | 'recent'>('popular')
   const [filterSection, setFilterSection] = useState<'all' | 'verbal' | 'quantitative'>('all')
   const [showFilters, setShowFilters] = useState(false)
 
-  const fetchLibrary = useCallback(
-    async (page: number = 1) => {
-      try {
-        const params = new URLSearchParams()
-        params.set('page', String(page))
-        params.set('limit', '12')
-        params.set('sort', sortBy)
-        if (filterSection !== 'all') params.set('section', filterSection)
-        if (searchQuery.trim()) params.set('search', searchQuery.trim())
+  // Use React Query hook for library data
+  // Only fetch when user is authenticated and not loading
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useLibrary({
+    sortBy,
+    filterSection,
+    searchQuery,
+    enabled: !authLoading && !!user // Only fetch when auth is ready and user exists
+  })
 
-        const response = await fetch(`/api/library?${params}`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch library')
-        }
-
-        const data: LibraryResponse = await response.json()
-        return data
-      } catch (error) {
-        console.error('Error fetching library:', error)
-        throw error
-      }
-    },
-    [sortBy, filterSection, searchQuery]
-  )
-
-  const loadInitialExams = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const data = await fetchLibrary(1)
-      setExams(data.exams)
-      setPagination({
-        page: data.pagination.page,
-        hasMore: data.pagination.hasMore,
-        total: data.pagination.total,
-      })
-      setUserAccess(data.userAccess)
-    } catch (error) {
-      console.error('Failed to load library:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [fetchLibrary])
-
-  const loadMoreExams = useCallback(async () => {
-    if (isLoadingMore || !pagination.hasMore) return
-
-    setIsLoadingMore(true)
-    try {
-      const data = await fetchLibrary(pagination.page + 1)
-      setExams((prev) => [...prev, ...data.exams])
-      setPagination({
-        page: data.pagination.page,
-        hasMore: data.pagination.hasMore,
-        total: data.pagination.total,
-      })
-    } catch (error) {
-      console.error('Failed to load more:', error)
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }, [fetchLibrary, pagination, isLoadingMore])
-
-  useEffect(() => {
-    if (!authLoading) {
-      loadInitialExams()
-    }
-  }, [authLoading, loadInitialExams])
+  // Flatten paginated data
+  const exams = data?.pages.flatMap((page: any) => page.exams) ?? []
+  const userAccess = data?.pages[0]?.userAccess ?? null
+  const total = data?.pages[0]?.pagination.total ?? 0
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    loadInitialExams()
+    // Query will automatically refetch when searchQuery changes
   }
 
   if (authLoading) {
@@ -256,9 +231,9 @@ export default function LibraryPage() {
       </div>
 
       {/* Stats */}
-      {!isLoading && pagination.total > 0 && (
+      {!isLoading && total > 0 && (
         <p className="text-sm text-muted-foreground">
-          عرض {exams.length} من {pagination.total} اختبار
+          عرض {exams.length} من {total} اختبار
         </p>
       )}
 
@@ -267,12 +242,16 @@ export default function LibraryPage() {
         <div className="flex items-center justify-center min-h-[300px]">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-destructive">فشل في تحميل المكتبة</p>
+        </div>
       ) : (
         <LibraryExamList
           exams={exams}
-          hasMore={pagination.hasMore}
-          isLoading={isLoadingMore}
-          onLoadMore={loadMoreExams}
+          hasMore={hasNextPage ?? false}
+          isLoading={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
         />
       )}
     </div>

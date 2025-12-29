@@ -51,6 +51,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         startedAt: session.started_at,
         completedAt: session.completed_at,
         timeSpentSeconds: session.time_spent_seconds,
+        // Include pause info for resumed sessions
+        pausedAt: session.paused_at,
       },
     })
   } catch (error) {
@@ -108,8 +110,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Can only update in_progress sessions
-    if (currentSession.status !== 'in_progress') {
+    // Can only update in_progress or paused sessions
+    if (currentSession.status !== 'in_progress' && currentSession.status !== 'paused') {
       return NextResponse.json(
         { error: 'لا يمكن تحديث جلسة منتهية' },
         { status: 400 }
@@ -195,13 +197,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
               .single()
 
             // Record the completion
+            // Note: shared_exam_completions table does NOT have a score column
+            // The trigger grant_reward_on_completion() will handle reward crediting
             await supabase
               .from('shared_exam_completions')
               .insert({
                 post_id: post.id,
                 user_id: user.id,
                 practice_session_id: sessionId,
-                score: 0, // Practice sessions don't have an overall score
               })
 
             // Update completion count on the post

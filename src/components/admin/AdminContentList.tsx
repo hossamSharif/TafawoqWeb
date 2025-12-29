@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   FileText,
+  BookOpen,
   MoreVertical,
   Trash2,
   Eye,
@@ -45,7 +46,9 @@ import { SECTION_LABELS } from '@/types/question'
 export interface AdminContent {
   id: string
   title: string
+  contentType: 'exam' | 'practice'
   section: 'quantitative' | 'verbal'
+  difficulty?: 'easy' | 'medium' | 'hard'
   questionCount: number
   accessCount: number
   completionCount: number
@@ -129,6 +132,7 @@ export function AdminContentList({
             <TableHeader>
               <TableRow>
                 <TableHead className="text-right">العنوان</TableHead>
+                <TableHead className="text-right">النوع</TableHead>
                 <TableHead className="text-right">القسم</TableHead>
                 <TableHead className="text-right">الأسئلة</TableHead>
                 <TableHead className="text-right">الإحصائيات</TableHead>
@@ -149,9 +153,35 @@ export function AdminContentList({
                     </button>
                   </TableCell>
                   <TableCell>
+                    {content.contentType === 'exam' ? (
+                      <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
+                        <FileText className="h-3 w-3 ml-1" />
+                        اختبار
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+                        <BookOpen className="h-3 w-3 ml-1" />
+                        تمرين
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <Badge variant="secondary">
                       {SECTION_LABELS[content.section]}
                     </Badge>
+                    {content.contentType === 'practice' && content.difficulty && (
+                      <Badge
+                        variant="outline"
+                        className={`mr-1 ${
+                          content.difficulty === 'easy' ? 'border-green-500 text-green-600' :
+                          content.difficulty === 'medium' ? 'border-yellow-500 text-yellow-600' :
+                          'border-red-500 text-red-600'
+                        }`}
+                      >
+                        {content.difficulty === 'easy' ? 'سهل' :
+                         content.difficulty === 'medium' ? 'متوسط' : 'صعب'}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     {content.questionCount.toLocaleString('ar-SA')} سؤال

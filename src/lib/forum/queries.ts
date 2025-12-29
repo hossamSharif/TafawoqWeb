@@ -18,6 +18,7 @@ import type {
   PostAuthor,
   UserReaction,
   SharedExamInfo,
+  SharedPracticeInfo,
   SharingStats,
   FORUM_LIMITS,
 } from './types';
@@ -56,7 +57,7 @@ export async function getPosts(options: GetPostsOptions): Promise<PostsResult> {
     .from('forum_posts')
     .select(`
       *,
-      author:user_profiles!forum_posts_author_id_fkey(
+      author:user_profiles!forum_posts_author_profile_fkey(
         user_id,
         display_name,
         profile_picture_url
@@ -184,7 +185,7 @@ export async function getPostById(postId: string, userId?: string): Promise<Foru
     .from('forum_posts')
     .select(`
       *,
-      author:user_profiles!forum_posts_author_id_fkey(
+      author:user_profiles!forum_posts_author_profile_fkey(
         user_id,
         display_name,
         profile_picture_url
@@ -217,8 +218,8 @@ export async function getPostById(postId: string, userId?: string): Promise<Foru
       }
     }
 
-    // Check if user completed this exam
-    if (post.post_type === 'exam_share') {
+    // Check if user completed this exam or practice
+    if (post.post_type === 'exam_share' || post.post_type === 'practice_share') {
       const { data: completion } = await supabase
         .from('shared_exam_completions')
         .select('id')
@@ -263,6 +264,30 @@ export async function getPostById(postId: string, userId?: string): Promise<Foru
     }
   }
 
+  // Get shared practice info if applicable
+  let sharedPractice: SharedPracticeInfo | null = null;
+  if (post.shared_practice_id) {
+    const { data: practiceSession } = await supabase
+      .from('practice_sessions')
+      .select('id, section, difficulty, categories, question_count, questions')
+      .eq('id', post.shared_practice_id)
+      .single();
+
+    if (practiceSession) {
+      // Get question count from questions array if question_count is not set
+      const questionCount = practiceSession.question_count ||
+        (Array.isArray(practiceSession.questions) ? practiceSession.questions.length : 0);
+
+      sharedPractice = {
+        id: practiceSession.id,
+        section: practiceSession.section as 'quantitative' | 'verbal',
+        difficulty: practiceSession.difficulty as 'easy' | 'medium' | 'hard',
+        categories: practiceSession.categories || [],
+        question_count: questionCount,
+      };
+    }
+  }
+
   const authorData = post.author as unknown as { user_id: string; display_name: string; profile_picture_url: string | null };
 
   return {
@@ -276,6 +301,7 @@ export async function getPostById(postId: string, userId?: string): Promise<Foru
       profile_picture_url: authorData?.profile_picture_url || null,
     },
     shared_exam: sharedExam,
+    shared_practice: sharedPractice,
     like_count: post.like_count,
     love_count: post.love_count,
     comment_count: post.comment_count,
@@ -373,7 +399,7 @@ export async function getComments(
     .from('comments')
     .select(`
       *,
-      author:user_profiles!comments_author_id_fkey(
+      author:user_profiles!comments_author_profile_fkey(
         user_id,
         display_name,
         profile_picture_url
@@ -419,7 +445,7 @@ export async function getComments(
       .from('comments')
       .select(`
         *,
-        author:user_profiles!comments_author_id_fkey(
+        author:user_profiles!comments_author_profile_fkey(
           user_id,
           display_name,
           profile_picture_url

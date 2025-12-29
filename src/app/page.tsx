@@ -1,11 +1,52 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { HeroSection } from '@/components/landing/HeroSection'
 import { FeatureSection } from '@/components/landing/FeatureSection'
 import { PricingSection } from '@/components/landing/PricingSection'
+import { TestimonialsSection } from '@/components/landing/TestimonialsSection'
 import { Logo } from '@/components/shared/Logo'
 import { brand } from '@/lib/brand'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, Star } from 'lucide-react'
+
+// Mark this page as dynamic to support client-side auth
+export const dynamic = 'force-dynamic'
 
 export default function LandingPage() {
+  const { isAuthenticated, isPremium, isLoading } = useAuth()
+  const router = useRouter()
+  const [showContent, setShowContent] = useState(false)
+
+  // Redirect authenticated premium users to dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && isPremium) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, isPremium, isLoading, router])
+
+  // Add a timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.log('[LandingPage] Loading timeout reached, showing content')
+      setShowContent(true)
+    }, 3000) // Show content after 3 seconds max
+
+    return () => clearTimeout(timeout)
+  }, [])
+
+  // Show loading while checking auth status (max 3 seconds)
+  if (isLoading && !showContent) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <main className="min-h-screen">
       {/* Navigation */}
@@ -13,18 +54,53 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Logo size="sm" href="/" />
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              تسجيل الدخول
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
-            >
-              إنشاء حساب
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="px-6 py-3 text-base font-semibold h-auto rounded-xl gap-2"
+                >
+                  <Link href="/reviews">
+                    <Star className="h-4 w-4" />
+                    التقييمات
+                  </Link>
+                </Button>
+                <Link
+                  href="/dashboard"
+                  className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold text-white bg-primary rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 glow-button"
+                >
+                  <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary via-green-400 to-primary bg-[length:200%_100%] animate-glow-border opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="absolute inset-[2px] rounded-[10px] bg-primary z-[1]" />
+                  <span className="relative z-[2] flex items-center gap-2">
+                    <ArrowLeft className="h-4 w-4 animate-bounce-horizontal" />
+                    <span>انتقل إلى لوحة التحكم</span>
+                  </span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="px-6 py-3 text-base font-semibold h-auto rounded-xl"
+                >
+                  <Link href="/login">تسجيل الدخول</Link>
+                </Button>
+
+                <Link
+                  href="/register"
+                  className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold text-white bg-primary rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 glow-button"
+                >
+                  <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary via-green-400 to-primary bg-[length:200%_100%] animate-glow-border opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="absolute inset-[2px] rounded-[10px] bg-primary z-[1]" />
+                  <span className="relative z-[2] flex items-center gap-2">
+                    <ArrowLeft className="h-4 w-4 animate-bounce-horizontal" />
+                    <span>إنشاء حساب مجاني</span>
+                  </span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -39,6 +115,9 @@ export default function LandingPage() {
 
       {/* Pricing Section */}
       <PricingSection />
+
+      {/* Testimonials Section */}
+      <TestimonialsSection />
 
       {/* Footer */}
       <footer className="py-12 border-t bg-muted/30">

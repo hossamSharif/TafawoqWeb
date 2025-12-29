@@ -66,11 +66,11 @@ export async function POST(request: NextRequest) {
     })
 
     // Register the user with Supabase Auth
+    // Note: No emailRedirectTo - this ensures Supabase sends OTP code instead of magic link
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
         data: {
           terms_accepted_at: new Date().toISOString(),
           privacy_accepted_at: new Date().toISOString(),

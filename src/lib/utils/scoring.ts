@@ -10,6 +10,18 @@ export const SCORE_TIERS = {
   WARM: { min: 0, color: '#F97316', label: 'يحتاج تحسين', bgClass: 'bg-orange-500' },
 } as const
 
+/**
+ * Expected question distribution per track
+ * Scientific: 57 quantitative + 39 verbal = 96 total
+ * Literary: 29 quantitative + 67 verbal = 96 total
+ */
+export const TRACK_DISTRIBUTION = {
+  scientific: { quantitative: 57, verbal: 39, total: 96 },
+  literary: { quantitative: 29, verbal: 67, total: 96 },
+} as const
+
+export type AcademicTrack = keyof typeof TRACK_DISTRIBUTION
+
 export type ScoreTier = keyof typeof SCORE_TIERS
 
 /**
@@ -70,36 +82,58 @@ export interface SectionScores {
 
 export function calculateSectionScores(
   answers: AnswerData[],
-  questions: Question[]
+  questions: Question[],
+  targetTotalQuestions?: number,
+  track?: AcademicTrack
 ): SectionScores {
-  // Build question section map for faster lookup
-  const questionSectionMap = new Map<string, 'quantitative' | 'verbal'>()
-  questions.forEach(q => {
-    questionSectionMap.set(q.id, q.section)
-  })
-
+  // Count correct answers from answered questions
   let verbalCorrect = 0
-  let verbalTotal = 0
   let quantitativeCorrect = 0
-  let quantitativeTotal = 0
 
+  // Build a set of answered question indices for quick lookup
+  const answeredMap = new Map<number, boolean>()
   for (const answer of answers) {
-    // Try to get section from answer first, then from question map
-    const section = answer.section || questionSectionMap.get(answer.questionId)
+    answeredMap.set(answer.questionIndex, answer.isCorrect)
+  }
 
-    if (section === 'verbal') {
-      verbalTotal++
-      if (answer.isCorrect) verbalCorrect++
-    } else if (section === 'quantitative') {
-      quantitativeTotal++
-      if (answer.isCorrect) quantitativeCorrect++
+  // Count correct answers based on generated questions
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i]
+    const isCorrect = answeredMap.get(i) === true // Only true if answered AND correct
+
+    if (q.section === 'verbal' && isCorrect) {
+      verbalCorrect++
+    } else if (q.section === 'quantitative' && isCorrect) {
+      quantitativeCorrect++
     }
   }
 
+  // Determine totals: use expected distribution if provided, otherwise count from questions
+  let verbalTotal: number
+  let quantitativeTotal: number
+
+  if (targetTotalQuestions && track && TRACK_DISTRIBUTION[track]) {
+    // Use expected distribution for the track (handles partially-generated exams)
+    verbalTotal = TRACK_DISTRIBUTION[track].verbal
+    quantitativeTotal = TRACK_DISTRIBUTION[track].quantitative
+  } else {
+    // Count from actual questions (for library exams or when track not provided)
+    verbalTotal = 0
+    quantitativeTotal = 0
+    for (const q of questions) {
+      if (q.section === 'verbal') {
+        verbalTotal++
+      } else if (q.section === 'quantitative') {
+        quantitativeTotal++
+      }
+    }
+  }
+
+  // Calculate scores based on TOTAL questions in each section (unanswered = wrong)
   const verbalScore = verbalTotal > 0 ? Math.round((verbalCorrect / verbalTotal) * 100) : 0
   const quantitativeScore = quantitativeTotal > 0 ? Math.round((quantitativeCorrect / quantitativeTotal) * 100) : 0
 
-  // Overall score weighted by total questions in each section
+  // Overall score based on total questions in exam
   const totalCorrect = verbalCorrect + quantitativeCorrect
   const totalQuestions = verbalTotal + quantitativeTotal
   const overallScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0

@@ -9,6 +9,7 @@ import {
   getScoreColor,
   getScoreLabel,
   formatTimeArabic,
+  type AcademicTrack,
 } from '@/lib/utils/scoring'
 import type { Question } from '@/types/question'
 
@@ -83,8 +84,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       category: questions[a.question_index]?.topic,
     }))
 
-    // Calculate scores
-    const sectionScores = calculateSectionScores(answerData, questions)
+    // Calculate scores using expected totals for the track
+    const sectionScores = calculateSectionScores(
+      answerData,
+      questions,
+      session.total_questions,
+      session.track as AcademicTrack
+    )
     const categoryBreakdown = calculateCategoryBreakdown(answerData, questions)
     const { strengths, weaknesses } = identifyStrengthsWeaknesses(categoryBreakdown)
 
@@ -97,7 +103,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const quantitativeTier = getScoreTier(sectionScores.quantitativeScore)
     const overallTier = getScoreTier(sectionScores.overallScore)
 
-    // Build detailed question results
+    // Build detailed question results with FULL question data for review
     const questionResults = questions.map((q, index) => {
       const answer = answers.find((a) => a.question_index === index)
       return {
@@ -106,12 +112,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         section: q.section,
         topic: q.topic,
         difficulty: q.difficulty,
-        stem: q.stem.substring(0, 100) + (q.stem.length > 100 ? '...' : ''),
+        questionType: q.questionType || 'text-only',
+        stem: q.stem, // FULL STEM - no truncation for question review
+        passage: q.passage || undefined,
+        diagram: q.diagram || undefined,
+        choices: q.choices || ['', '', '', ''],
         isAnswered: !!answer,
         selectedAnswer: answer?.selected_answer ?? null,
         correctAnswer: q.answerIndex,
         isCorrect: answer?.is_correct ?? false,
         timeSpentSeconds: answer?.time_spent_seconds ?? 0,
+        explanation: q.explanation || '',
+        solvingStrategy: q.solvingStrategy || undefined,
+        tip: q.tip || undefined,
       }
     })
 

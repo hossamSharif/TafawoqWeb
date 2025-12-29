@@ -164,19 +164,19 @@ export async function getUsers(params: UserListParams): Promise<UserListResult> 
     .select(`
       user_id,
       display_name,
+      email,
       academic_track,
       is_admin,
       is_banned,
       is_disabled,
       created_at,
-      updated_at,
-      auth_users:user_id(email)
+      updated_at
     `)
     .order('created_at', { ascending: false });
 
   // Apply search filter
   if (search) {
-    query = query.or(`display_name.ilike.%${search}%`);
+    query = query.or(`display_name.ilike.%${search}%,email.ilike.%${search}%`);
   }
 
   // Apply status filter
@@ -215,11 +215,10 @@ export async function getUsers(params: UserListParams): Promise<UserListResult> 
 
   // Transform to API response format
   const transformedUsers: AdminUserInfo[] = users.map(user => {
-    const authUser = user.auth_users as unknown as { email: string } | null;
     return {
       id: user.user_id,
-      email: authUser?.email || 'Unknown',
-      display_name: user.display_name,
+      email: user.email || 'Unknown',
+      display_name: user.display_name || user.email?.split('@')[0] || 'Unknown',
       academic_track: user.academic_track || 'unknown',
       subscription_tier: 'free', // TODO: Get from subscriptions table
       is_admin: user.is_admin || false,
@@ -358,106 +357,47 @@ export async function getModerationQueue(params: ModerationQueueParams): Promise
   const supabase = await createServerClient();
   const pageSize = Math.min(limit, 50);
 
-  let query = supabase
-    .from('reports')
-    .select(`
-      *,
-      reporter:user_profiles!reports_reporter_id_fkey(
-        user_id,
-        display_name
-      )
-    `)
-    .eq('status', status)
-    .order('created_at', { ascending: false });
-
+  // Calculate offset from cursor if provided
+  let offset = 0;
   if (cursor) {
-    const { data: cursorReport } = await supabase
-      .from('reports')
-      .select('created_at')
-      .eq('id', cursor)
-      .single();
-
-    if (cursorReport) {
-      query = query.lt('created_at', cursorReport.created_at);
-    }
+    // In optimized version, cursor is the offset position
+    offset = parseInt(cursor, 10) || 0;
   }
 
-  query = query.limit(pageSize + 1);
-
-  const { data: reportsData, error } = await query;
+  // Single optimized RPC call replaces 61+ queries (1 report query + 20 reporter profiles + 20 posts/comments + 20 author profiles)
+  const { data, error } = await supabase.rpc('get_moderation_queue_optimized', {
+    p_status: status,
+    p_limit: pageSize + 1, // Fetch one extra to determine hasMore
+    p_offset: offset,
+  });
 
   if (error) {
     throw new Error(`Failed to fetch moderation queue: ${error.message}`);
   }
 
-  const hasMore = reportsData && reportsData.length > pageSize;
-  const reports = reportsData?.slice(0, pageSize) || [];
-  const nextCursor = hasMore && reports.length > 0 ? reports[reports.length - 1].id : null;
+  const hasMore = data && data.length > pageSize;
+  const reports = data?.slice(0, pageSize) || [];
+  const nextCursor = hasMore ? String(offset + pageSize) : null;
 
-  // Get content previews for each report
-  const transformedReports: ReportWithContent[] = await Promise.all(
-    reports.map(async (report) => {
-      let contentPreview = '';
-      let contentAuthor = { id: '', display_name: 'Unknown' };
-
-      if (report.content_type === 'post') {
-        const { data: post } = await supabase
-          .from('forum_posts')
-          .select(`
-            title,
-            body,
-            author:user_profiles!forum_posts_author_id_fkey(
-              user_id,
-              display_name
-            )
-          `)
-          .eq('id', report.content_id)
-          .single();
-
-        if (post) {
-          contentPreview = post.title + (post.body ? `: ${post.body.substring(0, 100)}...` : '');
-          const author = post.author as unknown as { user_id: string; display_name: string };
-          contentAuthor = { id: author?.user_id || '', display_name: author?.display_name || 'Unknown' };
-        }
-      } else if (report.content_type === 'comment') {
-        const { data: comment } = await supabase
-          .from('comments')
-          .select(`
-            content,
-            author:user_profiles!comments_author_id_fkey(
-              user_id,
-              display_name
-            )
-          `)
-          .eq('id', report.content_id)
-          .single();
-
-        if (comment) {
-          contentPreview = comment.content.substring(0, 150) + (comment.content.length > 150 ? '...' : '');
-          const author = comment.author as unknown as { user_id: string; display_name: string };
-          contentAuthor = { id: author?.user_id || '', display_name: author?.display_name || 'Unknown' };
-        }
-      }
-
-      const reporter = report.reporter as unknown as { user_id: string; display_name: string };
-
-      return {
-        id: report.id,
-        content_type: report.content_type,
-        content_id: report.content_id,
-        content_preview: contentPreview,
-        content_author: contentAuthor,
-        reporter: {
-          id: reporter?.user_id || report.reporter_id,
-          display_name: reporter?.display_name || 'Unknown',
-        },
-        reason: report.reason,
-        details: report.details,
-        status: report.status,
-        created_at: report.created_at,
-      };
-    })
-  );
+  // Transform to expected format
+  const transformedReports: ReportWithContent[] = reports.map(row => ({
+    id: row.id,
+    content_type: row.content_type,
+    content_id: row.content_id,
+    content_preview: row.content_preview || '',
+    content_author: {
+      id: row.content_author_id || '',
+      display_name: row.content_author_name || 'Unknown',
+    },
+    reporter: {
+      id: row.reporter_id,
+      display_name: row.reporter_name || 'Unknown',
+    },
+    reason: row.reason,
+    details: row.details,
+    status: row.status,
+    created_at: row.created_at,
+  }));
 
   return {
     reports: transformedReports,

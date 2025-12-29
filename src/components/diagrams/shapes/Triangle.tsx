@@ -3,11 +3,20 @@
 import { cn } from '@/lib/utils'
 
 export interface TriangleData {
-  points: [
+  // Standard format
+  points?: [
     { x: number; y: number; label?: string },
     { x: number; y: number; label?: string },
     { x: number; y: number; label?: string }
   ]
+  // Claude AI generation format
+  vertices?: [number, number][]
+  labels?: string[]
+  sides?: (string | null)[]
+  height?: string
+  showHeight?: boolean
+  isIsosceles?: boolean
+  // Common properties
   fill?: string
   stroke?: string
   strokeWidth?: number
@@ -30,19 +39,57 @@ interface TriangleProps {
  */
 export function Triangle({
   data,
-  viewBox: _viewBox = { width: 200, height: 200 },
+  viewBox = { width: 200, height: 200 },
   className,
 }: TriangleProps) {
-  const {
-    points,
-    fill = 'none',
-    stroke = '#1E5631',
-    strokeWidth = 2,
-    showAngles = false,
-    angles,
-    sideLengths,
-    rightAngleIndex,
-  } = data
+  // Normalize data to handle both standard and Claude AI generation formats
+  // Claude uses: vertices (array of [x,y]), labels (separate array), sides
+  // Standard uses: points (array of {x, y, label}), sideLengths
+
+  // Convert vertices array to points array if needed
+  let points: { x: number; y: number; label?: string }[]
+
+  if (data.points) {
+    points = data.points
+  } else if (data.vertices && data.vertices.length >= 3) {
+    // Scale vertices to fit viewBox if they're outside the range
+    const xs = data.vertices.map(v => v[0])
+    const ys = data.vertices.map(v => v[1])
+    const minX = Math.min(...xs)
+    const maxX = Math.max(...xs)
+    const minY = Math.min(...ys)
+    const maxY = Math.max(...ys)
+
+    const rangeX = maxX - minX || 1
+    const rangeY = maxY - minY || 1
+
+    // Scale to fit within viewBox with padding
+    const padding = 30
+    const scaleX = (viewBox.width - 2 * padding) / rangeX
+    const scaleY = (viewBox.height - 2 * padding) / rangeY
+    const scale = Math.min(scaleX, scaleY)
+
+    points = data.vertices.map((v, i) => ({
+      x: padding + (v[0] - minX) * scale,
+      y: padding + (v[1] - minY) * scale,
+      label: data.labels?.[i]
+    }))
+  } else {
+    // Default triangle if no valid data
+    points = [
+      { x: viewBox.width / 2, y: 30, label: 'أ' },
+      { x: 30, y: viewBox.height - 30, label: 'ب' },
+      { x: viewBox.width - 30, y: viewBox.height - 30, label: 'ج' }
+    ]
+  }
+
+  const fill = data.fill ?? 'none'
+  const stroke = data.stroke ?? '#1E5631'
+  const strokeWidth = data.strokeWidth ?? 2
+  const showAngles = data.showAngles ?? false
+  const angles = data.angles
+  const sideLengths = data.sideLengths ?? data.sides?.map(s => s ?? undefined) as [string?, string?, string?]
+  const rightAngleIndex = data.rightAngleIndex
 
   // Create points string for polygon
   const pointsString = points.map((p) => `${p.x},${p.y}`).join(' ')

@@ -202,9 +202,11 @@ export type Database = {
           generation_in_progress: boolean | null
           id: string
           overall_score: number | null
+          paused_at: string | null
           quantitative_score: number | null
           questions: Json | null
           questions_answered: number | null
+          remaining_time_seconds: number | null
           start_time: string | null
           status: string
           strengths: Json | null
@@ -225,9 +227,11 @@ export type Database = {
           generation_in_progress?: boolean | null
           id?: string
           overall_score?: number | null
+          paused_at?: string | null
           quantitative_score?: number | null
           questions?: Json | null
           questions_answered?: number | null
+          remaining_time_seconds?: number | null
           start_time?: string | null
           status?: string
           strengths?: Json | null
@@ -248,9 +252,11 @@ export type Database = {
           generation_in_progress?: boolean | null
           id?: string
           overall_score?: number | null
+          paused_at?: string | null
           quantitative_score?: number | null
           questions?: Json | null
           questions_answered?: number | null
+          remaining_time_seconds?: number | null
           start_time?: string | null
           status?: string
           strengths?: Json | null
@@ -485,7 +491,9 @@ export type Database = {
           difficulty: string
           generated_batches: number | null
           generation_context: Json | null
+          generation_in_progress: boolean | null
           id: string
+          paused_at: string | null
           question_count: number
           questions: Json | null
           section: string
@@ -501,7 +509,9 @@ export type Database = {
           difficulty: string
           generated_batches?: number | null
           generation_context?: Json | null
+          generation_in_progress?: boolean | null
           id?: string
+          paused_at?: string | null
           question_count: number
           questions?: Json | null
           section: string
@@ -517,7 +527,9 @@ export type Database = {
           difficulty?: string
           generated_batches?: number | null
           generation_context?: Json | null
+          generation_in_progress?: boolean | null
           id?: string
+          paused_at?: string | null
           question_count?: number
           questions?: Json | null
           section?: string
@@ -807,6 +819,7 @@ export type Database = {
       user_profiles: {
         Row: {
           academic_track: string
+          auth_provider: string | null
           created_at: string | null
           display_name: string | null
           id: string
@@ -815,6 +828,9 @@ export type Database = {
           is_disabled: boolean | null
           last_active_at: string | null
           onboarding_completed: boolean | null
+          phone_number: string | null
+          phone_verified: boolean | null
+          profile_completed: boolean | null
           profile_picture_url: string | null
           total_practice_hours: number | null
           updated_at: string | null
@@ -822,6 +838,7 @@ export type Database = {
         }
         Insert: {
           academic_track: string
+          auth_provider?: string | null
           created_at?: string | null
           display_name?: string | null
           id?: string
@@ -830,6 +847,9 @@ export type Database = {
           is_disabled?: boolean | null
           last_active_at?: string | null
           onboarding_completed?: boolean | null
+          phone_number?: string | null
+          phone_verified?: boolean | null
+          profile_completed?: boolean | null
           profile_picture_url?: string | null
           total_practice_hours?: number | null
           updated_at?: string | null
@@ -837,6 +857,7 @@ export type Database = {
         }
         Update: {
           academic_track?: string
+          auth_provider?: string | null
           created_at?: string | null
           display_name?: string | null
           id?: string
@@ -845,6 +866,9 @@ export type Database = {
           is_disabled?: boolean | null
           last_active_at?: string | null
           onboarding_completed?: boolean | null
+          phone_number?: string | null
+          phone_verified?: boolean | null
+          profile_completed?: boolean | null
           profile_picture_url?: string | null
           total_practice_hours?: number | null
           updated_at?: string | null

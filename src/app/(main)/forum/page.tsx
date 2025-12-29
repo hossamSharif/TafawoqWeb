@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -26,92 +26,50 @@ import {
   FileText,
   Loader2,
 } from 'lucide-react'
-import type { ForumPost, SortOption, PostType } from '@/lib/forum/types'
-
-interface PostsResponse {
-  posts: ForumPost[]
-  next_cursor: string | null
-  has_more: boolean
-}
+import type { SortOption, PostType } from '@/lib/forum/types'
+import {
+  useForumPosts,
+  useAddReaction,
+  useRemoveReaction,
+  useDeletePost,
+} from '@/hooks/useForumPosts'
 
 export default function ForumPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-
-  const [posts, setPosts] = useState<ForumPost[]>([])
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(true)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [filterType, setFilterType] = useState<PostType | 'all'>('all')
   const [showFilters, setShowFilters] = useState(false)
 
-  const fetchPosts = useCallback(
-    async (cursor?: string) => {
-      try {
-        const params = new URLSearchParams()
-        if (cursor) params.set('cursor', cursor)
-        params.set('limit', '20')
-        params.set('sort', sortBy)
-        if (filterType !== 'all') params.set('type', filterType)
-        if (searchQuery.trim()) params.set('search', searchQuery.trim())
+  // Use React Query hook for posts
+  // Only fetch when auth is ready (we allow forum posts for both authenticated and unauthenticated users)
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useForumPosts({
+    sortBy,
+    filterType,
+    searchQuery,
+    enabled: !authLoading // Only fetch when auth state is determined
+  })
 
-        const response = await fetch(`/api/forum/posts?${params}`)
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to fetch posts')
-        }
+  // Mutations
+  const addReaction = useAddReaction()
+  const removeReaction = useRemoveReaction()
+  const deletePost = useDeletePost()
 
-        const data: PostsResponse = await response.json()
-        return data
-      } catch (error) {
-        console.error('Error fetching posts:', error)
-        throw error
-      }
-    },
-    [sortBy, filterType, searchQuery]
-  )
-
-  const loadInitialPosts = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const data = await fetchPosts()
-      setPosts(data.posts)
-      setNextCursor(data.next_cursor)
-      setHasMore(data.has_more)
-    } catch (error) {
-      console.error('Failed to load posts:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [fetchPosts])
-
-  const loadMorePosts = useCallback(async () => {
-    if (!nextCursor || isLoadingMore) return
-
-    setIsLoadingMore(true)
-    try {
-      const data = await fetchPosts(nextCursor)
-      setPosts((prev) => [...prev, ...data.posts])
-      setNextCursor(data.next_cursor)
-      setHasMore(data.has_more)
-    } catch (error) {
-      console.error('Failed to load more posts:', error)
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }, [nextCursor, isLoadingMore, fetchPosts])
-
-  useEffect(() => {
-    loadInitialPosts()
-  }, [loadInitialPosts])
+  // Flatten paginated data
+  const posts = data?.pages.flatMap((page: any) => page.posts) ?? []
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    loadInitialPosts()
+    // Query will automatically refetch when searchQuery changes
   }
 
   const handleReaction = async (postId: string, type: 'like' | 'love') => {
@@ -120,27 +78,13 @@ export default function ForumPage() {
       return
     }
 
-    const response = await fetch(`/api/forum/posts/${postId}/reactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reaction_type: type }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to add reaction')
-    }
+    await addReaction.mutateAsync({ postId, type })
   }
 
   const handleRemoveReaction = async (postId: string, type: 'like' | 'love') => {
     if (!user) return
 
-    const response = await fetch(`/api/forum/posts/${postId}/reactions/${type}`, {
-      method: 'DELETE',
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to remove reaction')
-    }
+    await removeReaction.mutateAsync({ postId, type })
   }
 
   const handleEdit = (postId: string) => {
@@ -150,13 +94,7 @@ export default function ForumPage() {
   const handleDelete = async (postId: string) => {
     if (!confirm('هل أنت متأكد من حذف هذا المنشور؟')) return
 
-    const response = await fetch(`/api/forum/posts/${postId}`, {
-      method: 'DELETE',
-    })
-
-    if (response.ok) {
-      setPosts((prev) => prev.filter((p) => p.id !== postId))
-    }
+    await deletePost.mutateAsync(postId)
   }
 
   const handleReport = (postId: string) => {
@@ -287,13 +225,17 @@ export default function ForumPage() {
               <PostCardSkeleton key={i} />
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-destructive">فشل في تحميل المنشورات</p>
+          </div>
         ) : (
           <PostList
             posts={posts}
             currentUserId={user?.id}
-            hasMore={hasMore}
-            isLoading={isLoadingMore}
-            onLoadMore={loadMorePosts}
+            hasMore={hasNextPage ?? false}
+            isLoading={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
             onReaction={handleReaction}
             onRemoveReaction={handleRemoveReaction}
             onEdit={handleEdit}

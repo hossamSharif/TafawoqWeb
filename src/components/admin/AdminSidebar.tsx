@@ -14,6 +14,7 @@ import {
   LogOut,
   Home,
   Library,
+  Star,
 } from 'lucide-react'
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/admin/content', label: 'إدارة المحتوى', icon: Library },
   { href: '/admin/moderation', label: 'الإشراف', icon: Shield },
   { href: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard },
+  { href: '/admin/reviews', label: 'المراجعات', icon: Star },
   { href: '/admin/settings', label: 'الإعدادات', icon: Settings },
   { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3 },
 ]

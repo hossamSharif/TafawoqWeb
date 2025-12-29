@@ -1,6 +1,10 @@
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
  * PATCH /api/profile/onboarding
@@ -10,8 +14,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const cookieStore = await cookies()
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    // Use server client to get the session from cookies
+    const supabaseAuth = createServerClient(
+      supabaseUrl,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
@@ -28,7 +33,7 @@ export async function PATCH(request: NextRequest) {
     )
 
     // Get current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await supabaseAuth.auth.getSession()
 
     if (sessionError || !session) {
       return NextResponse.json(
@@ -45,6 +50,29 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         { error: 'يجب اختيار المسار الأكاديمي (علمي أو أدبي)' },
         { status: 400 }
+      )
+    }
+
+    // Use service role client for database operations (bypasses RLS for initial profile setup)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+
+    // Check if user profile exists
+    const { data: currentProfile, error: checkError } = await supabase
+      .from('user_profiles')
+      .select('onboarding_completed, email')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Profile check error:', checkError)
+      return NextResponse.json(
+        { error: 'فشل التحقق من الملف الشخصي' },
+        { status: 500 }
       )
     }
 
@@ -71,8 +99,17 @@ export async function PATCH(request: NextRequest) {
         .from('user_profiles')
         .insert({
           user_id: session.user.id,
+          email: session.user.email,
+          display_name: session.user.email?.split('@')[0] || 'مستخدم',
           academic_track: academicTrack,
           onboarding_completed: true,
+          total_practice_hours: 0,
+          is_admin: false,
+          is_banned: false,
+          is_disabled: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString(),
         })
         .select()
         .single()

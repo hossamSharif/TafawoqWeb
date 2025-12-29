@@ -18,6 +18,7 @@ import {
   PracticeHoursDisplay,
   AcademicTrackSwitcher,
   ExamHistory,
+  PracticeHistory,
   DeleteAccountModal,
 } from '@/components/profile'
 import { RewardsSection } from '@/components/rewards'
@@ -66,11 +67,28 @@ interface ExamHistoryItem {
   track?: 'scientific' | 'literary'
 }
 
+interface PracticeHistoryItem {
+  id: string
+  date: string
+  section: 'verbal' | 'quantitative'
+  sectionLabel: string
+  categories: string[]
+  categoryLabels: string[]
+  difficulty: string
+  difficultyLabel: string
+  questionCount: number
+  score: number
+  timeSpentSeconds?: number
+  timeSpentFormatted?: string
+  isShared?: boolean
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [performance, setPerformance] = useState<PerformanceData | null>(null)
   const [examHistoryData, setExamHistoryData] = useState<ExamHistoryItem[]>([])
+  const [practiceHistoryData, setPracticeHistoryData] = useState<PracticeHistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -78,10 +96,11 @@ export default function ProfilePage() {
 
   const fetchData = useCallback(async () => {
     try {
-      // Fetch profile and performance data in parallel
-      const [profileRes, performanceRes] = await Promise.all([
+      // Fetch profile, performance, and practice history data in parallel
+      const [profileRes, performanceRes, practiceRes] = await Promise.all([
         fetch('/api/profile'),
         fetch('/api/profile/performance'),
+        fetch('/api/practice/history?limit=5'),
       ])
 
       const profileData = await profileRes.json()
@@ -126,6 +145,31 @@ export default function ProfilePage() {
             })
           )
           setExamHistoryData(historyItems)
+        }
+      }
+
+      // Transform practice history data
+      if (practiceRes.ok) {
+        const practiceData = await practiceRes.json()
+        if (practiceData.sessions) {
+          const practiceItems: PracticeHistoryItem[] = practiceData.sessions.map(
+            (session: any) => ({
+              id: session.id,
+              date: session.completedAt || session.startedAt,
+              section: session.section,
+              sectionLabel: session.sectionLabel,
+              categories: session.categories,
+              categoryLabels: session.categoryLabels,
+              difficulty: session.difficulty,
+              difficultyLabel: session.difficultyLabel,
+              questionCount: session.questionCount,
+              score: session.result?.score || 0,
+              timeSpentSeconds: session.timeSpentSeconds,
+              timeSpentFormatted: session.timeSpentFormatted,
+              isShared: session.isShared,
+            })
+          )
+          setPracticeHistoryData(practiceItems)
         }
       }
     } catch (err) {
@@ -201,6 +245,62 @@ export default function ProfilePage() {
 
     if (!response.ok) {
       throw new Error(data.error || 'فشل جدولة حذف الحساب')
+    }
+  }
+
+  const handleShare = async (examId: string, data: { title: string; body: string }) => {
+    try {
+      const response = await fetch('/api/forum/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          post_type: 'exam_share',
+          title: data.title,
+          body: data.body,
+          shared_exam_id: examId,
+          is_library_visible: true,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData.message || errorData.error || 'فشل في المشاركة'
+        throw new Error(errorMessage)
+      }
+
+      // Refresh data to update shared status
+      await fetchData()
+    } catch (err) {
+      console.error('Share error:', err)
+      throw err // Re-throw to let the ShareExamModal handle the error
+    }
+  }
+
+  const handlePracticeShare = async (practiceId: string, data: { title: string; body: string }) => {
+    try {
+      const response = await fetch('/api/forum/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          post_type: 'exam_share',
+          title: data.title,
+          body: data.body,
+          shared_practice_id: practiceId,
+          is_library_visible: true,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData.message || errorData.error || 'فشل في المشاركة'
+        throw new Error(errorMessage)
+      }
+
+      // Refresh data to update shared status
+      await fetchData()
+    } catch (err) {
+      console.error('Practice share error:', err)
+      throw err // Re-throw to let the ShareExamModal handle the error
     }
   }
 
@@ -338,7 +438,18 @@ export default function ProfilePage() {
           history={examHistoryData}
           maxItems={5}
           className="mb-6"
+          onShare={handleShare}
         />
+
+        {/* Practice History */}
+        {practiceHistoryData.length > 0 && (
+          <PracticeHistory
+            history={practiceHistoryData}
+            maxItems={5}
+            className="mb-6"
+            onShare={handlePracticeShare}
+          />
+        )}
 
         {/* Trend Chart - Premium Only */}
         <SubscriptionGate

@@ -76,8 +76,9 @@ export default function AdminContentPage() {
         setViewMode('list')
         await fetchContents()
       } else {
-        const error = await response.json()
-        alert(error.error || 'فشل في حفظ المحتوى')
+        const errorData = await response.json()
+        const errorMessage = errorData.error?.message || errorData.message || 'فشل في حفظ المحتوى'
+        alert(errorMessage)
       }
     } catch {
       alert('حدث خطأ أثناء حفظ المحتوى')
@@ -94,13 +95,14 @@ export default function AdminContentPage() {
     if (response.ok) {
       setContents(contents.filter(c => c.id !== id))
     } else {
-      const error = await response.json()
-      alert(error.error || 'فشل في حذف المحتوى')
+      const errorData = await response.json()
+      const errorMessage = errorData.error?.message || errorData.message || 'فشل في حذف المحتوى'
+      alert(errorMessage)
     }
   }
 
   const handleView = (id: string) => {
-    router.push(`/forum/${id}`)
+    router.push(`/forum/post/${id}`)
   }
 
   const handleCancel = () => {

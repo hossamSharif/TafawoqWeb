@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useCreatePost } from '@/hooks/useCreatePost'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,10 +22,10 @@ interface CreatePostFormProps {
 export function CreatePostForm({ onSuccess, onCancel }: CreatePostFormProps) {
   const router = useRouter()
   const { user } = useAuth()
+  const createPost = useCreatePost()
 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const titleLength = title.length
@@ -50,7 +51,6 @@ export function CreatePostForm({ onSuccess, onCancel }: CreatePostFormProps) {
       return
     }
 
-    setIsSubmitting(true)
     setError(null)
 
     try {
@@ -60,28 +60,14 @@ export function CreatePostForm({ onSuccess, onCancel }: CreatePostFormProps) {
         body: body.trim(),
       }
 
-      const response = await fetch('/api/forum/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'فشل في إنشاء المنشور')
-      }
-
-      const post: ForumPost = await response.json()
+      const post = await createPost.mutateAsync(requestBody)
 
       if (onSuccess) {
         onSuccess(post)
-      } else {
-        router.push(`/forum/post/${post.id}`)
       }
+      // Router.push('/forum') is handled in the mutation's onSuccess
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -110,7 +96,7 @@ export function CreatePostForm({ onSuccess, onCancel }: CreatePostFormProps) {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="اكتب عنوان المنشور..."
               maxLength={FORUM_LIMITS.TITLE_MAX_LENGTH}
-              disabled={isSubmitting}
+              disabled={createPost.isPending}
               className={!isTitleValid && title.length > 0 ? 'border-destructive' : ''}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -133,7 +119,7 @@ export function CreatePostForm({ onSuccess, onCancel }: CreatePostFormProps) {
               placeholder="اكتب محتوى المنشور..."
               rows={8}
               maxLength={FORUM_LIMITS.BODY_MAX_LENGTH}
-              disabled={isSubmitting}
+              disabled={createPost.isPending}
               className={!isBodyValid && body.length > 0 ? 'border-destructive' : ''}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -151,17 +137,17 @@ export function CreatePostForm({ onSuccess, onCancel }: CreatePostFormProps) {
                 type="button"
                 variant="outline"
                 onClick={onCancel}
-                disabled={isSubmitting}
+                disabled={createPost.isPending}
               >
                 إلغاء
               </Button>
             )}
             <Button
               type="submit"
-              disabled={isSubmitting || !isTitleValid || !isBodyValid}
+              disabled={createPost.isPending || !isTitleValid || !isBodyValid}
               className="gap-2"
             >
-              {isSubmitting ? (
+              {createPost.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   جاري النشر...

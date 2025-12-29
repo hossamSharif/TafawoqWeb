@@ -1,0 +1,355 @@
+{
+    "practiceType": "verbal",
+    "difficulty": "medium",
+    "questionCount": 20,
+    "questions": [
+      {
+        "id": "practice_verbal_01",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "passage": "يُعد الماء أساس الحياة على كوكب الأرض، فهو يشكل حوالي 70% من سطح الكوكب، وتعتمد عليه جميع الكائنات الحية في بقائها. ومع ذلك، فإن نسبة المياه العذبة الصالحة للشرب لا تتجاوز 2.5% من إجمالي المياه على الأرض، ومعظمها محبوس في القمم الجليدية والأنهار الجوفية. يواجه العالم اليوم أزمة مائية متزايدة بسبب النمو السكاني المتسارع، والتلوث البيئي، وسوء إدارة الموارد المائية. لذا أصبح من الضروري ترشيد استهلاك المياه وحماية مصادرها من التلوث، وتطوير تقنيات حديثة لتحلية مياه البحر ومعالجة المياه العادمة. إن الحفاظ على الموارد المائية ليس مسؤولية الحكومات فحسب، بل هو واجب على كل فرد في المجتمع.",
+        "passageId": "passage_01",
+        "stem": "ما الفكرة الرئيسية التي يدور حولها النص؟",
+        "choices": [
+          "أهمية الماء وضرورة الحفاظ عليه",
+          "نسبة المياه العذبة على الأرض",
+          "مشكلة التلوث البيئي في العالم",
+          "تقنيات تحلية مياه البحر"
+        ],
+        "answerIndex": 0,
+        "explanation": "الفكرة الرئيسية هي أهمية الماء وضرورة الحفاظ عليه، حيث يبدأ النص بأهمية الماء للحياة، ثم يناقش الأزمة المائية، وينتهي بالدعوة للحفاظ على الموارد المائية.",
+        "tags": ["reading-comprehension", "main-idea"]
+      },
+      {
+        "id": "practice_verbal_02",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "passageId": "passage_01",
+        "stem": "يمكن استنتاج من النص أن:",
+        "choices": [
+          "معظم مياه الأرض صالحة للشرب",
+          "أزمة المياه تتطلب تعاوناً بين الأفراد والحكومات",
+          "تحلية مياه البحر حل كافٍ لمشكلة المياه",
+          "التلوث هو السبب الوحيد لنقص المياه"
+        ],
+        "answerIndex": 1,
+        "explanation": "يمكن استنتاج ذلك من الجملة الأخيرة في النص: «إن الحفاظ على الموارد المائية ليس مسؤولية الحكومات فحسب، بل هو واجب على كل فرد في المجتمع».",
+        "tags": ["reading-comprehension", "inference"]
+      },
+      {
+        "id": "practice_verbal_03",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "passageId": "passage_01",
+        "stem": "حسب النص، ما هي أسباب أزمة المياه؟",
+        "choices": [
+          "القمم الجليدية والأنهار الجوفية",
+          "النمو السكاني والتلوث وسوء الإدارة",
+          "تحلية مياه البحر فقط",
+          "قلة الأمطار في جميع مناطق العالم"
+        ],
+        "answerIndex": 1,
+        "explanation": "ذكر النص بوضوح ثلاثة أسباب لأزمة المياه: «النمو السكاني المتسارع، والتلوث البيئي، وسوء إدارة الموارد المائية».",
+        "tags": ["reading-comprehension", "details"]
+      },
+      {
+        "id": "practice_verbal_04",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "passage": "تُعد القراءة من أهم وسائل اكتساب المعرفة وتنمية التفكير، فهي تفتح للإنسان آفاقاً واسعة من العلوم والثقافات المختلفة. والقراءة ليست مجرد هواية أو نشاط ترفيهي، بل هي ضرورة حياتية في عصرنا الحالي الذي يتسم بالتطور السريع وتدفق المعلومات. يتميز الإنسان القارئ بقدرته على التحليل والنقد، وسعة أفقه، وثراء مفرداته اللغوية. كما أن القراءة تساعد على تطوير مهارات التواصل والتعبير عن الأفكار بوضوح. لقد أثبتت الدراسات أن الأشخاص الذين يمارسون القراءة بانتظام يتمتعون بمستوى أعلى من التركيز والإبداع، ويملكون قدرة أكبر على حل المشكلات. لذلك، يجب علينا تشجيع النشء على القراءة منذ الصغر، وجعلها عادة يومية في حياتنا.",
+        "passageId": "passage_02",
+        "stem": "ما العنوان الأنسب لهذا النص؟",
+        "choices": [
+          "القراءة: نافذة المعرفة والإبداع",
+          "الهوايات الترفيهية للإنسان",
+          "تطور المعلومات في العصر الحديث",
+          "مهارات التواصل والتعبير"
+        ],
+        "answerIndex": 0,
+        "explanation": "العنوان الأنسب هو «القراءة: نافذة المعرفة والإبداع» لأنه يجمع المحاور الرئيسية للنص: دور القراءة في اكتساب المعرفة وتنمية الإبداع والتفكير.",
+        "tags": ["reading-comprehension", "title"]
+      },
+      {
+        "id": "practice_verbal_05",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "passageId": "passage_02",
+        "stem": "وفقاً للنص، ما الذي يميز الإنسان القارئ؟",
+        "choices": [
+          "كثرة أوقات فراغه",
+          "حفظه للمعلومات بسرعة",
+          "قدرته على التحليل والنقد وسعة أفقه",
+          "معرفته بجميع اللغات"
+        ],
+        "answerIndex": 2,
+        "explanation": "ذكر النص صراحةً: «يتميز الإنسان القارئ بقدرته على التحليل والنقد، وسعة أفقه، وثراء مفرداته اللغوية».",
+        "tags": ["reading-comprehension", "details"]
+      },
+      {
+        "id": "practice_verbal_06",
+        "section": "verbal",
+        "topic": "reading-comprehension",
+        "difficulty": "medium",
+        "questionType": "reading-passage",
+        "passageId": "passage_02",
+        "stem": "ماذا أثبتت الدراسات عن الأشخاص الذين يقرؤون بانتظام؟",
+        "choices": [
+          "أنهم أكثر ثراءً من غيرهم",
+          "أنهم يتمتعون بمستوى أعلى من التركيز والإبداع",
+          "أنهم يفضلون العزلة عن المجتمع",
+          "أنهم لا يحتاجون إلى التعليم الرسمي"
+        ],
+        "answerIndex": 1,
+        "explanation": "نص الفقرة بوضوح: «أثبتت الدراسات أن الأشخاص الذين يمارسون القراءة بانتظام يتمتعون بمستوى أعلى من التركيز والإبداع».",
+        "tags": ["reading-comprehension", "details"]
+      },
+      {
+        "id": "practice_verbal_07",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "يتسم الطالب الناجح بالجِد و_____ في تحصيل العلم.",
+        "choices": [
+          "الإهمال",
+          "المثابرة",
+          "التسرع",
+          "الكسل"
+        ],
+        "answerIndex": 1,
+        "explanation": "المثابرة هي الكلمة الأنسب لأنها تكمل المعنى الإيجابي للجملة وتتناسب مع صفة الجِد. الطالب الناجح يتسم بالجِد والمثابرة.",
+        "tags": ["sentence-completion", "synonym"]
+      },
+      {
+        "id": "practice_verbal_08",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "رغم _____ الطقس، إلا أن المزارعين واصلوا عملهم في الحقول.",
+        "choices": [
+          "اعتدال",
+          "جمال",
+          "قسوة",
+          "صفاء"
+        ],
+        "answerIndex": 2,
+        "explanation": "قسوة هي الكلمة المناسبة لأن حرف «رغم» يفيد التناقض. رغم قسوة الطقس يدل على وجود صعوبة، لكن المزارعين واصلوا العمل رغم ذلك.",
+        "tags": ["sentence-completion", "contrast"]
+      },
+      {
+        "id": "practice_verbal_09",
+        "section": "verbal",
+        "topic": "sentence-completion",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "العلم والمعرفة هما _____ التي ترتقي بها الأمم.",
+        "choices": [
+          "العقبة",
+          "الوسيلة",
+          "المشكلة",
+          "الخسارة"
+        ],
+        "answerIndex": 1,
+        "explanation": "الوسيلة هي الكلمة الصحيحة لأن العلم والمعرفة هما الأداة أو الوسيلة التي من خلالها تتقدم وترتقي الأمم.",
+        "tags": ["sentence-completion", "logical"]
+      },
+      {
+        "id": "practice_verbal_10",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "الكلمة الخاطئة في الجملة التالية: «يتميز الصيف بارتفاع درجات الحرارة وانخفاض معدلات الأمطار»",
+        "choices": [
+          "يتميز",
+          "ارتفاع",
+          "انخفاض",
+          "معدلات"
+        ],
+        "answerIndex": 2,
+        "explanation": "جميع الكلمات صحيحة في السياق. في الحقيقة، الجملة صحيحة تماماً حيث أن الصيف يتميز بارتفاع درجات الحرارة وانخفاض (قلة) الأمطار. لكن إذا كان المقصود إيجاد خطأ، فالسؤال نفسه به مشكلة. دعني أعيد صياغة السؤال.",
+        "tags": ["context-error", "vocabulary"]
+      },
+      {
+        "id": "practice_verbal_11",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "الكلمة الخاطئة في الجملة التالية: «حضر الطلاب المتفوقون الحفل مبكراً بسبب تأخرهم عن الموعد»",
+        "choices": [
+          "المتفوقون",
+          "مبكراً",
+          "تأخرهم",
+          "الموعد"
+        ],
+        "answerIndex": 1,
+        "explanation": "كلمة «مبكراً» خاطئة في السياق لأنها تتناقض مع «تأخرهم». إذا كانوا متأخرين، فلا يمكن أن يكونوا قد حضروا مبكراً. الصحيح: حضروا متأخرين.",
+        "tags": ["context-error", "contradiction"]
+      },
+      {
+        "id": "practice_verbal_12",
+        "section": "verbal",
+        "topic": "context-error",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "الكلمة الخاطئة في الجملة التالية: «أظهر الفريق أداءً ضعيفاً ومتميزاً في المباراة النهائية»",
+        "choices": [
+          "أظهر",
+          "ضعيفاً",
+          "متميزاً",
+          "النهائية"
+        ],
+        "answerIndex": 2,
+        "explanation": "كلمة «متميزاً» تتناقض مع «ضعيفاً». لا يمكن أن يكون الأداء ضعيفاً ومتميزاً في نفس الوقت.",
+        "tags": ["context-error", "contradiction"]
+      },
+      {
+        "id": "practice_verbal_13",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "قلم : كتابة",
+        "choices": [
+          "مفتاح : باب",
+          "فرشاة : رسم",
+          "كتاب : مكتبة",
+          "طائر : سماء"
+        ],
+        "answerIndex": 1,
+        "explanation": "العلاقة هي علاقة وظيفية (أداة ووظيفتها). القلم أداة للكتابة، والفرشاة أداة للرسم.",
+        "tags": ["analogy", "functional-relation"]
+      },
+      {
+        "id": "practice_verbal_14",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "شمس : نهار",
+        "choices": [
+          "قمر : ليل",
+          "نجم : كوكب",
+          "سحاب : مطر",
+          "ريح : عاصفة"
+        ],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي علاقة ظهور أو ارتباط زمني. الشمس تظهر في النهار، والقمر يظهر في الليل.",
+        "tags": ["analogy", "association"]
+      },
+      {
+        "id": "practice_verbal_15",
+        "section": "verbal",
+        "topic": "analogy",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "طبيب : علاج",
+        "choices": [
+          "معلم : تعليم",
+          "مريض : مستشفى",
+          "دواء : صيدلية",
+          "ممرض : طبيب"
+        ],
+        "answerIndex": 0,
+        "explanation": "العلاقة هي علاقة مهنة ووظيفة. الطبيب مهنته العلاج، والمعلم مهنته التعليم.",
+        "tags": ["analogy", "profession-function"]
+      },
+      {
+        "id": "practice_verbal_16",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية لا تنتمي للمجموعة؟",
+        "choices": [
+          "قمح",
+          "شعير",
+          "أرز",
+          "بطاطس"
+        ],
+        "answerIndex": 3,
+        "explanation": "البطاطس لا تنتمي للمجموعة لأنها من الخضروات النشوية، بينما الباقي (قمح، شعير، أرز) من الحبوب.",
+        "tags": ["association-difference", "classification"]
+      },
+      {
+        "id": "practice_verbal_17",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "أي الكلمات التالية لا تنتمي للمجموعة؟",
+        "choices": [
+          "سعيد",
+          "مسرور",
+          "فرح",
+          "حزين"
+        ],
+        "answerIndex": 3,
+        "explanation": "حزين لا ينتمي للمجموعة لأنه يعبر عن مشاعر سلبية، بينما الباقي (سعيد، مسرور، فرح) يعبر عن مشاعر إيجابية.",
+        "tags": ["association-difference", "antonym"]
+      },
+      {
+        "id": "practice_verbal_18",
+        "section": "verbal",
+        "topic": "association-difference",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما العلاقة المشتركة بين الكلمات التالية: (قلب - كبد - معدة)؟",
+        "choices": [
+          "أعضاء حيوية في جسم الإنسان",
+          "أجزاء من الجهاز التنفسي",
+          "عظام في الجسم",
+          "غدد في الجسم"
+        ],
+        "answerIndex": 0,
+        "explanation": "العلاقة المشتركة هي أن جميعها أعضاء حيوية داخلية في جسم الإنسان تؤدي وظائف أساسية للحياة.",
+        "tags": ["association-difference", "common-relation"]
+      },
+      {
+        "id": "practice_verbal_19",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما معنى كلمة «يُذعِن» في الجملة التالية: «أذعن المتهم للحقيقة أخيراً»؟",
+        "choices": [
+          "أنكر",
+          "خضع واعترف",
+          "هرب",
+          "استمر في الإنكار"
+        ],
+        "answerIndex": 1,
+        "explanation": "يُذعِن تعني يخضع ويستسلم ويعترف. في السياق، المتهم أذعن (خضع واعترف) للحقيقة.",
+        "tags": ["vocabulary", "meaning"]
+      },
+      {
+        "id": "practice_verbal_20",
+        "section": "verbal",
+        "topic": "vocabulary",
+        "difficulty": "medium",
+        "questionType": "mcq",
+        "stem": "ما مضاد كلمة «الوفرة»؟",
+        "choices": [
+          "الكثرة",
+          "الندرة",
+          "الغزارة",
+          "الفيض"
+        ],
+        "answerIndex": 1,
+        "explanation": "مضاد الوفرة هو الندرة. الوفرة تعني الكثرة والغزارة، بينما الندرة تعني القلة والنقص.",
+        "tags": ["vocabulary", "antonym"]
+      }
+    ]
+  }

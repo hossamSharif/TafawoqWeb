@@ -88,25 +88,32 @@ export async function grantLibraryAccess(
     throw new Error('Failed to grant library access')
   }
 
-  // Update library access count on the post
-  await supabase.rpc('increment_library_access_count', { p_post_id: postId })
-    .catch(() => {
-      // Ignore if function doesn't exist yet
-    })
+  // Update library access count on the post (ignore errors if function doesn't exist)
+  try {
+    await supabase.rpc('increment_library_access_count', { p_post_id: postId })
+  } catch {
+    // Ignore if function doesn't exist yet
+  }
 
   // Update user's library_access_used in user_credits
-  await supabase
-    .from('user_credits')
-    .update({
-      library_access_used: supabase.rpc('coalesce_add', {
-        current_val: null,
-        add_val: 1,
-      }),
-    })
-    .eq('user_id', userId)
-    .catch(() => {
-      // Ignore if column doesn't exist yet
-    })
+  try {
+    // First get current value, then increment
+    const { data: credits } = await supabase
+      .from('user_credits')
+      .select('library_access_used')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    const currentUsed = credits?.library_access_used || 0
+    await supabase
+      .from('user_credits')
+      .upsert({
+        user_id: userId,
+        library_access_used: currentUsed + 1,
+      }, { onConflict: 'user_id' })
+  } catch {
+    // Ignore if column doesn't exist yet
+  }
 
   revalidatePath('/library')
 
@@ -137,30 +144,34 @@ export async function startLibraryExam(
     throw new Error('No access to this library exam')
   }
 
-  // Get the shared exam data
+  // Get the forum post to find shared_exam_id
   const { data: post, error: postError } = await supabase
     .from('forum_posts')
-    .select(`
-      shared_exam_id,
-      exam_sessions!forum_posts_shared_exam_id_fkey (
-        id,
-        questions,
-        total_questions,
-        track
-      )
-    `)
+    .select('shared_exam_id')
     .eq('id', postId)
     .single()
 
   if (postError || !post?.shared_exam_id) {
+    console.error('Failed to get shared exam data:', postError, 'shared_exam_id:', post?.shared_exam_id)
     throw new Error('Failed to get shared exam data')
   }
 
-  const originalExam = post.exam_sessions as {
-    id: string
-    questions: unknown
-    total_questions: number
-    track: string | null
+  // Get the exam session separately (avoiding foreign key join issues)
+  const { data: originalExam, error: examError } = await supabase
+    .from('exam_sessions')
+    .select('id, questions, total_questions, track')
+    .eq('id', post.shared_exam_id)
+    .single()
+
+  if (examError || !originalExam) {
+    console.error('Failed to get exam session:', examError, 'shared_exam_id:', post.shared_exam_id)
+    throw new Error('Exam data not found - the linked exam may have been deleted')
+  }
+
+  // Verify questions exist
+  if (!originalExam.questions) {
+    console.error('Exam has no questions:', originalExam)
+    throw new Error('Exam has no questions')
   }
 
   // Create a new exam session for this user based on the shared exam
@@ -241,18 +252,22 @@ export async function completeLibraryExam(
   }
 
   // Increment completion count on post
-  await supabase
-    .from('forum_posts')
-    .update({
-      completion_count: supabase.rpc('coalesce_add', {
-        current_val: null,
-        add_val: 1,
-      }),
-    })
-    .eq('id', postId)
-    .catch(() => {
-      // Ignore if function doesn't exist
-    })
+  try {
+    // First get current value, then increment
+    const { data: postData } = await supabase
+      .from('forum_posts')
+      .select('completion_count')
+      .eq('id', postId)
+      .maybeSingle()
+
+    const currentCount = postData?.completion_count || 0
+    await supabase
+      .from('forum_posts')
+      .update({ completion_count: currentCount + 1 })
+      .eq('id', postId)
+  } catch {
+    // Ignore if function doesn't exist
+  }
 
   revalidatePath('/library')
   revalidatePath('/exam/history')

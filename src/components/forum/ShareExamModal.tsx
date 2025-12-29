@@ -60,6 +60,7 @@ export function ShareExamModal({
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const isExam = !!examSession
   const session = examSession || practiceSession
@@ -102,8 +103,12 @@ export function ShareExamModal({
     if (!title.trim() || isSubmitting) return
 
     setIsSubmitting(true)
+    setError(null)
+
     try {
+      console.log('🚀 Attempting to share...', { title: title.trim(), body: body.trim() })
       await onShare({ title: title.trim(), body: body.trim() })
+      console.log('✅ Share successful!')
       setIsSuccess(true)
 
       // Close modal after short delay to show success
@@ -112,9 +117,12 @@ export function ShareExamModal({
         setIsSuccess(false)
         setTitle('')
         setBody('')
+        setError(null)
       }, 1500)
-    } catch (error) {
-      console.error('Failed to share:', error)
+    } catch (err) {
+      console.error('❌ Failed to share:', err)
+      const errorMessage = err instanceof Error ? err.message : 'فشل في المشاركة. حاول مرة أخرى.'
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -274,6 +282,13 @@ export function ShareExamModal({
                 </p>
               </div>
             </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-600 text-center">{error}</p>
+              </div>
+            )}
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button

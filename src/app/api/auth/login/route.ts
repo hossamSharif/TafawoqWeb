@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch user profile to check onboarding status
+    // Fetch user profile to check onboarding and phone completion status
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('academic_track, onboarding_completed')
+      .select('academic_track, onboarding_completed, profile_completed, phone_number')
       .eq('user_id', data.user.id)
       .single()
 
@@ -114,6 +114,9 @@ export async function POST(request: NextRequest) {
       refresh_token: data.session.refresh_token,
     })
 
+    // Check if user needs to complete phone number
+    const requiresPhone = profile ? !profile.profile_completed : false
+
     return NextResponse.json({
       success: true,
       message: 'تم تسجيل الدخول بنجاح',
@@ -128,6 +131,7 @@ export async function POST(request: NextRequest) {
         refreshToken: data.session.refresh_token,
         expiresAt: data.session.expires_at,
       },
+      requiresPhone, // Signal frontend to redirect to phone completion
       requiresOnboarding: !profile?.onboarding_completed,
     })
   } catch (error) {

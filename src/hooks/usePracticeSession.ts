@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
+import { useInvalidateLimits } from './useSubscriptionLimits'
 
 /**
  * T048: Practice batch generation configuration
@@ -21,16 +22,20 @@ export interface PracticeSessionConfig {
 
 export interface PracticeSession {
   id: string
-  status: 'in_progress' | 'completed' | 'abandoned'
+  status: 'in_progress' | 'completed' | 'abandoned' | 'paused'
   section: QuestionSection
   categories: QuestionCategory[]
   difficulty: QuestionDifficulty
   questionCount: number
   startedAt: string
   completedAt?: string
+  /** Timestamp when session was paused */
+  pausedAt?: string
   timeSpentSeconds: number
   /** T048: Number of batches generated */
   generatedBatches?: number
+  /** Whether more questions need to be generated */
+  needsMoreQuestions?: boolean
 }
 
 export interface PracticeAnswer {
@@ -61,6 +66,12 @@ export interface UsePracticeSessionReturn extends PracticeState {
   loadSession: (sessionId: string) => Promise<void>
   abandonSession: () => Promise<void>
   completeSession: () => Promise<void>
+  /** Pause the practice session */
+  pauseSession: () => Promise<void>
+  /** Resume a paused session */
+  resumeSession: (sessionId: string) => Promise<void>
+  /** Whether the session is paused */
+  isPaused: boolean
 
   // Question navigation
   goToQuestion: (index: number) => void
@@ -83,6 +94,8 @@ export interface UsePracticeSessionReturn extends PracticeState {
 }
 
 export function usePracticeSession(): UsePracticeSessionReturn {
+  const invalidateLimits = useInvalidateLimits()
+
   const [state, setState] = useState<PracticeState>({
     session: null,
     questions: [],
@@ -299,6 +312,131 @@ export function usePracticeSession(): UsePracticeSessionReturn {
     }
   }, [state.session, state.elapsedTime, stopTimer])
 
+  // Pause session
+  const pauseSession = useCallback(async () => {
+    if (!state.session) return
+
+    stopTimer()
+
+    try {
+      const response = await fetch(`/api/practice/${state.session.id}/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentTimeSpent: state.elapsedTime,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'فشل في إيقاف التمرين')
+      }
+
+      const data = await response.json()
+
+      setState((prev) => ({
+        ...prev,
+        session: prev.session
+          ? {
+              ...prev.session,
+              status: 'paused',
+              pausedAt: data.session.pausedAt,
+              timeSpentSeconds: data.session.timeSpentSeconds,
+            }
+          : null,
+      }))
+
+      // Invalidate subscription limits cache to update counters immediately
+      if (data.invalidateLimitsCache) {
+        invalidateLimits()
+      }
+    } catch (error) {
+      console.error('Pause session error:', error)
+      throw error
+    }
+  }, [state.session, state.elapsedTime, stopTimer])
+
+  // Resume a paused session
+  const resumeSession = useCallback(async (sessionId: string) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }))
+
+    try {
+      const response = await fetch(`/api/practice/${sessionId}/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'فشل في استئناف التمرين')
+      }
+
+      // Store full questions with answers if available
+      if (data._questionsWithAnswers) {
+        fullQuestionsRef.current = data._questionsWithAnswers
+      }
+
+      // Build answers map
+      const answersMap = new Map<string, PracticeAnswer>()
+      for (const answer of data.answers || []) {
+        answersMap.set(data.questions[answer.questionIndex]?.id, {
+          questionId: data.questions[answer.questionIndex]?.id,
+          questionIndex: answer.questionIndex,
+          selectedAnswer: answer.selectedAnswer,
+          isCorrect: answer.isCorrect,
+          timeSpentSeconds: answer.timeSpentSeconds || 0,
+        })
+      }
+
+      // Initialize prefetch tracking for existing batches
+      const loadedBatches = data.session.generatedBatches || 1
+      prefetchedBatchesRef.current = new Set(
+        Array.from({ length: loadedBatches }, (_, i) => i)
+      )
+
+      setState((prev) => ({
+        ...prev,
+        session: data.session,
+        questions: data.questions,
+        answers: answersMap,
+        isLoading: false,
+        elapsedTime: data.session.timeSpentSeconds || 0,
+        error: null,
+        generatedBatches: loadedBatches,
+        isPrefetching: false,
+        prefetchError: null,
+      }))
+
+      // Find first unanswered question
+      const firstUnanswered = data.questions.findIndex(
+        (_: unknown, i: number) => !answersMap.has(data.questions[i]?.id)
+      )
+      if (firstUnanswered >= 0) {
+        setState((prev) => ({ ...prev, currentQuestionIndex: firstUnanswered }))
+      }
+
+      // Invalidate subscription limits cache to update counters immediately
+      if (data.invalidateLimitsCache) {
+        invalidateLimits()
+      }
+
+      questionStartTimeRef.current = Date.now()
+      startTimer()
+
+      // If more questions need to be generated, prefetch will be triggered by the effect
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'خطأ غير متوقع',
+      }))
+    }
+  }, [startTimer])
+
+  // Computed: is session paused
+  const isPaused = state.session?.status === 'paused'
+
   // Navigate to specific question
   const goToQuestion = useCallback((index: number) => {
     if (index >= 0 && index < state.questions.length) {
@@ -489,6 +627,9 @@ export function usePracticeSession(): UsePracticeSessionReturn {
     loadSession,
     abandonSession,
     completeSession,
+    pauseSession,
+    resumeSession,
+    isPaused,
     goToQuestion,
     goToNextQuestion,
     goToPreviousQuestion,

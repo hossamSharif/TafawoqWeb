@@ -60,10 +60,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Must be an exam share post
-    if (post.post_type !== 'exam_share') {
+    // Must be an exam share or practice share post
+    if (post.post_type !== 'exam_share' && post.post_type !== 'practice_share') {
       return NextResponse.json(
-        { error: 'هذا المنشور ليس اختباراً مشاركاً' },
+        { error: 'هذا المنشور ليس اختباراً أو تمريناً مشاركاً' },
         { status: 400 }
       )
     }
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       // Practice share
       const { data: originalPractice, error: practiceError } = await supabase
         .from('practice_sessions')
-        .select('section, category, difficulty, total_questions, questions')
+        .select('section, categories, difficulty, question_count, questions')
         .eq('id', post.shared_practice_id)
         .single()
 
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
 
       // Strip answers from questions
-      const questionsWithoutAnswers = (originalPractice.questions as Array<{
+      const questionsArray = originalPractice.questions as Array<{
         id: string
         section: string
         topic: string
@@ -205,7 +205,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         passage?: string
         answerIndex?: number
         explanation?: string
-      }>).map((q) => ({
+      }> || []
+
+      const questionsWithoutAnswers = questionsArray.map((q) => ({
         ...q,
         answerIndex: undefined,
         explanation: undefined,
@@ -213,20 +215,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         isCorrect: undefined,
       }))
 
+      const questionCount = originalPractice.question_count || questionsArray.length
+
       // Create new practice session
       const { data: newSession, error: sessionError } = await supabase
         .from('practice_sessions')
         .insert({
           user_id: user.id,
           section: originalPractice.section,
-          category: originalPractice.category,
+          categories: originalPractice.categories || [],
           difficulty: originalPractice.difficulty,
-          total_questions: originalPractice.total_questions,
-          questions_answered: 0,
+          question_count: questionCount,
           questions: questionsWithoutAnswers,
           status: 'in_progress',
-          start_time: new Date().toISOString(),
+          started_at: new Date().toISOString(),
           time_spent_seconds: 0,
+          generated_batches: 1,
           // Mark as shared practice session
           shared_from_post_id: postId,
         })

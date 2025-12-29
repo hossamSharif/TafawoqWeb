@@ -128,7 +128,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // T047: Create practice session first (with generation_in_progress = true to prevent concurrent generation)
+    // T047: Create practice session first
+    // Note: generation_in_progress column removed until migration is applied
     const { data: session, error: sessionError } = await supabase
       .from('practice_sessions')
       .insert({
@@ -144,7 +145,6 @@ export async function POST(request: NextRequest) {
         // T049: New batch generation fields
         generated_batches: 0,
         generation_context: { generatedIds: [], lastBatchIndex: -1 } as GenerationContext,
-        generation_in_progress: true,
       })
       .select()
       .single()
@@ -175,10 +175,10 @@ export async function POST(request: NextRequest) {
     } catch (genError) {
       console.error('Question generation error:', genError)
 
-      // Release lock on failure
+      // Mark session as failed
       await supabase
         .from('practice_sessions')
-        .update({ generation_in_progress: false })
+        .update({ status: 'failed' })
         .eq('id', session.id)
 
       return NextResponse.json(
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
 
     const { questions, updatedContext, usage, meta } = batchResponse
 
-    // Update session with generated questions and release lock
+    // Update session with generated questions
     const { error: updateError } = await supabase
       .from('practice_sessions')
       .update({
@@ -197,7 +197,6 @@ export async function POST(request: NextRequest) {
         question_count: questions.length,
         generated_batches: 1,
         generation_context: updatedContext,
-        generation_in_progress: false,
       })
       .eq('id', session.id)
 
@@ -228,6 +227,7 @@ export async function POST(request: NextRequest) {
       stem: q.stem,
       choices: q.choices,
       passage: q.passage,
+      diagram: q.diagram, // Include diagram data for rendering geometric shapes and charts
       // answerIndex, explanation hidden until answered
     }))
 
@@ -255,6 +255,7 @@ export async function POST(request: NextRequest) {
         practiceLimitApplied,
         userTrack,
       },
+      invalidateLimitsCache: true, // Signal frontend to invalidate subscription limits cache
     })
   } catch (error) {
     console.error('Practice creation error:', error)

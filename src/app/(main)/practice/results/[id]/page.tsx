@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { PageLoadingSkeleton } from '@/components/shared'
+import { Share2, BookOpen } from 'lucide-react'
+import { ShareExamModal } from '@/components/forum/ShareExamModal'
+import { QuestionReview } from '@/components/results/QuestionReview'
 
 interface PracticeResults {
   sessionId: string
@@ -29,6 +32,25 @@ interface PracticeResults {
   difficulty: string
   difficultyLabel: string
   completedAt: string
+  questions?: Array<{
+    index: number
+    questionId: string
+    section: string
+    topic: string
+    difficulty: string
+    questionType: string
+    stem: string
+    passage?: string
+    diagram?: any
+    choices: [string, string, string, string]
+    selectedAnswer: number | null
+    correctAnswer: number
+    isCorrect: boolean
+    timeSpentSeconds: number
+    explanation: string
+    solvingStrategy?: string
+    tip?: string
+  }>
 }
 
 export default function PracticeResultsPage() {
@@ -39,6 +61,7 @@ export default function PracticeResultsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<PracticeResults | null>(null)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   useEffect(() => {
     async function fetchResults() {
@@ -110,9 +133,55 @@ export default function PracticeResultsPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">نتائج التمرين</h1>
-        <p className="text-gray-600">أحسنت! لقد أكملت التمرين بنجاح</p>
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">نتائج التمرين</h1>
+            <p className="text-gray-600">أحسنت! لقد أكملت التمرين بنجاح</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const reviewSection = document.getElementById('questions-review')
+                reviewSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+              className="flex items-center gap-2"
+            >
+              <BookOpen className="h-4 w-4" />
+              مراجعة الأسئلة
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => setShareModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              مشاركة في المنتدى
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              العودة للرئيسية
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main Score Card */}
@@ -279,30 +348,19 @@ export default function PracticeResultsPage() {
         </Card>
       )}
 
+      {/* Questions Review */}
+      {results.questions && results.questions.length > 0 && (
+        <div id="questions-review" className="bg-white rounded-xl shadow-sm mb-6">
+          <QuestionReview
+            questions={results.questions}
+            sessionId={results.sessionId}
+            sessionType="practice"
+          />
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button
-          variant="outline"
-          onClick={() => router.push('/dashboard')}
-          className="flex items-center gap-2"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          العودة للرئيسية
-        </Button>
-
         <Button onClick={() => router.push('/practice/new')} className="flex items-center gap-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -353,6 +411,43 @@ export default function PracticeResultsPage() {
           </Button>
         )}
       </div>
+
+      {/* Share Modal */}
+      {results && (
+        <ShareExamModal
+          open={shareModalOpen}
+          onOpenChange={setShareModalOpen}
+          practiceSession={{
+            id: sessionId,
+            section: results.section as 'verbal' | 'quantitative',
+            difficulty: results.difficulty,
+            total_questions: results.totalQuestions,
+            correct_answers: results.correctAnswers,
+            score: results.score,
+            category: results.categories[0]?.label,
+          }}
+          onShare={async (data) => {
+            const response = await fetch('/api/forum/posts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                post_type: 'exam_share',
+                title: data.title,
+                body: data.body,
+                shared_practice_id: sessionId,
+                is_library_visible: true, // Make practice available in library
+              }),
+            })
+
+            if (!response.ok) {
+              const errorData = await response.json()
+              // API returns { error: 'message' } or { error: 'CODE', message: 'Arabic message' }
+              const errorMessage = errorData.message || errorData.error || 'فشل في المشاركة'
+              throw new Error(errorMessage)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

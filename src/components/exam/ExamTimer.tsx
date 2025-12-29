@@ -10,6 +10,8 @@ export interface ExamTimerProps {
   totalSeconds?: number
   /** Initial elapsed time in seconds */
   initialElapsed?: number
+  /** Initial remaining time in seconds (takes precedence over initialElapsed for resumed sessions) */
+  initialRemaining?: number
   /** Whether timer is paused */
   isPaused?: boolean
   /** Called when timer updates (every second) */
@@ -18,6 +20,8 @@ export interface ExamTimerProps {
   onExpire?: () => void
   /** Called when pause state changes */
   onPauseChange?: (isPaused: boolean) => void
+  /** Called when user clicks pause button (passes remaining seconds) */
+  onPause?: (remainingSeconds: number) => void
   /** Allow pausing (some exams don't allow it) */
   allowPause?: boolean
   /** Show warning when time is low */
@@ -36,17 +40,23 @@ export interface ExamTimerProps {
 export function ExamTimer({
   totalSeconds = 7200, // 120 minutes
   initialElapsed = 0,
+  initialRemaining,
   isPaused: controlledPaused,
   onTick,
   onExpire,
   onPauseChange,
+  onPause,
   allowPause = false,
   warningThreshold = 600, // 10 minutes
   pauseOnDisconnect = true,
   onNetworkStatusChange,
   className,
 }: ExamTimerProps) {
-  const [elapsed, setElapsed] = useState(initialElapsed)
+  // Calculate initial elapsed from initialRemaining if provided (for resumed sessions)
+  const computedInitialElapsed = initialRemaining !== undefined
+    ? totalSeconds - initialRemaining
+    : initialElapsed
+  const [elapsed, setElapsed] = useState(computedInitialElapsed)
   const [internalPaused, setInternalPaused] = useState(false)
   const [networkPaused, setNetworkPaused] = useState(false)
   const lastTickRef = useRef<number>(Date.now())
@@ -86,7 +96,7 @@ export function ExamTimer({
     return `${minutes}:${secs.toString().padStart(2, '0')}`
   }, [])
 
-  // Timer logic
+  // Timer logic - tick elapsed time
   useEffect(() => {
     if (isPaused || isExpired) return
 
@@ -96,26 +106,26 @@ export function ExamTimer({
 
       if (delta >= 1) {
         lastTickRef.current = now
-        setElapsed((prev) => {
-          const newElapsed = prev + 1
-          const newRemaining = Math.max(0, totalSeconds - newElapsed)
-
-          // Call onTick
-          onTick?.(newElapsed, newRemaining)
-
-          // Check expiry
-          if (newRemaining <= 0 && !expiredRef.current) {
-            expiredRef.current = true
-            onExpire?.()
-          }
-
-          return newElapsed
-        })
+        setElapsed((prev) => prev + 1)
       }
     }, 100) // Check more frequently for accuracy
 
     return () => clearInterval(interval)
-  }, [isPaused, isExpired, totalSeconds, onTick, onExpire])
+  }, [isPaused, isExpired])
+
+  // Call onTick and check expiry in separate effect to avoid setState during render
+  useEffect(() => {
+    const newRemaining = Math.max(0, totalSeconds - elapsed)
+
+    // Call onTick callback
+    onTick?.(elapsed, newRemaining)
+
+    // Check expiry
+    if (newRemaining <= 0 && !expiredRef.current) {
+      expiredRef.current = true
+      onExpire?.()
+    }
+  }, [elapsed, totalSeconds, onTick, onExpire])
 
   // Handle pause toggle
   const togglePause = useCallback(() => {
@@ -124,7 +134,12 @@ export function ExamTimer({
     const newPaused = !isPaused
     setInternalPaused(newPaused)
     onPauseChange?.(newPaused)
-  }, [allowPause, isPaused, onPauseChange])
+
+    // If pausing (not resuming), call onPause with remaining seconds
+    if (newPaused && onPause) {
+      onPause(remaining)
+    }
+  }, [allowPause, isPaused, onPauseChange, onPause, remaining])
 
   // Progress percentage
   const progressPercent = Math.max(0, (remaining / totalSeconds) * 100)
