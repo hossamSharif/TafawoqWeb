@@ -1,6 +1,6 @@
 import { Database } from '@/lib/supabase/types'
 
-// Database types
+// Database types - app_reviews table
 export type AppReview = Database['public']['Tables']['app_reviews']['Row']
 export type AppReviewInsert = Database['public']['Tables']['app_reviews']['Insert']
 export type AppReviewUpdate = Database['public']['Tables']['app_reviews']['Update']
