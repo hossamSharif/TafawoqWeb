@@ -42,11 +42,11 @@ export async function PATCH(
     }
 
     // Get current review state
-    const { data: currentReview } = await (supabase
+    const { data: currentReview } = await supabase
       .from('app_reviews')
       .select('is_featured')
       .eq('id', id)
-      .single() as Promise<{ data: Pick<AppReview, 'is_featured'> | null; error: any }>)
+      .single() as any
 
     if (!currentReview) {
       return NextResponse.json(
@@ -56,12 +56,12 @@ export async function PATCH(
     }
 
     // Update featured status
-    const { data: updatedReview, error: updateError } = await (supabase
+    const { data: updatedReview, error: updateError } = await supabase
       .from('app_reviews')
       .update({ is_featured })
       .eq('id', id)
       .select()
-      .single() as Promise<{ data: AppReview | null; error: any }>)
+      .single() as any
 
     if (updateError) {
       throw updateError
@@ -115,11 +115,11 @@ export async function DELETE(
     await verifyAdminAccess(user.id)
 
     // Get review before deletion for logging
-    const { data: review } = await (supabase
+    const { data: review } = await supabase
       .from('app_reviews')
       .select('user_id, rating, review_text')
       .eq('id', id)
-      .single() as Promise<{ data: Pick<AppReview, 'user_id' | 'rating' | 'review_text'> | null; error: any }>)
+      .single() as any
 
     if (!review) {
       return NextResponse.json(
@@ -129,10 +129,10 @@ export async function DELETE(
     }
 
     // Delete review
-    const { error: deleteError } = await (supabase
+    const { error: deleteError } = await supabase
       .from('app_reviews')
       .delete()
-      .eq('id', id) as Promise<{ error: any }>)
+      .eq('id', id) as any
 
     if (deleteError) {
       throw deleteError

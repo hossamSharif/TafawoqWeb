@@ -68,11 +68,11 @@ export async function GET(request: NextRequest) {
 
     // Apply cursor pagination
     if (cursor) {
-      const { data: cursorReview } = await (supabase
+      const { data: cursorReview } = await supabase
         .from('app_reviews')
         .select('created_at')
         .eq('id', cursor)
-        .single() as Promise<{ data: Pick<AppReview, 'created_at'> | null; error: any }>)
+        .single() as any
 
       if (cursorReview) {
         query = query.lt('created_at', cursorReview.created_at)
