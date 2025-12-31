@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get('filter') || 'all'
 
     // Build query
-    let query = supabase
+    let query = (supabase as any)
       .from('app_reviews')
       .select(`
         *,
@@ -68,11 +68,11 @@ export async function GET(request: NextRequest) {
 
     // Apply cursor pagination
     if (cursor) {
-      const { data: cursorReview } = await supabase
+      const { data: cursorReview } = await (supabase as any)
         .from('app_reviews')
         .select('created_at')
         .eq('id', cursor)
-        .single() as any
+        .single()
 
       if (cursorReview) {
         query = query.lt('created_at', cursorReview.created_at)
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     query = query.limit(limit + 1)
 
-    const { data: reviews, error } = await (query as any)
+    const { data: reviews, error } = await query
 
     if (error) {
       throw error

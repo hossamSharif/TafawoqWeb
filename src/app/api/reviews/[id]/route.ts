@@ -27,11 +27,11 @@ export async function DELETE(
     }
 
     // Get review to check ownership
-    const { data: review } = await (supabase
+    const { data: review } = await (supabase as any)
       .from('app_reviews')
       .select('user_id')
       .eq('id', id)
-      .single() as any)
+      .single()
 
     if (!review) {
       return NextResponse.json(
@@ -41,11 +41,11 @@ export async function DELETE(
     }
 
     // Check if user is admin
-    const { data: profile } = await (supabase
+    const { data: profile } = await (supabase as any)
       .from('user_profiles')
       .select('is_admin')
       .eq('user_id', user.id)
-      .single() as any)
+      .single()
 
     const isAdmin = profile?.is_admin || false
 
@@ -58,7 +58,7 @@ export async function DELETE(
     }
 
     // Delete review
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await (supabase as any)
       .from('app_reviews')
       .delete()
       .eq('id', id)

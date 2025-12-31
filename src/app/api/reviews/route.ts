@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     let userReview: AppReviewWithUser | null = null
 
     // Build query
-    let query = supabase
+    let query = (supabase as any)
       .from('app_reviews')
       .select(`
         *,
