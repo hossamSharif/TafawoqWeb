@@ -5,6 +5,7 @@ import './globals.css'
 import { brand } from '@/lib/brand'
 import { QueryProvider } from '@/components/providers/QueryProvider'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { TawkToWidget } from '@/components/chat/TawkToWidget'
 
 const notoKufiArabic = Noto_Kufi_Arabic({
   subsets: ['arabic'],
@@ -38,6 +39,7 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <Toaster position="top-center" richColors dir="rtl" />
+            <TawkToWidget />
           </AuthProvider>
         </QueryProvider>
       </body>
