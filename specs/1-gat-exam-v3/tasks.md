@@ -141,11 +141,11 @@ Repository root structure (from plan.md):
 
 ### Batch Generation & Error Reporting
 
-- [ ] T057 [US2] Update QuduratGenerator.ts to generate batches of 20 questions with consistent quality across all batches (FR-008)
-- [ ] T058 [US2] Implement batch retry logic in QuduratGenerator.ts to preserve successful questions and retry only failed portion with exponential backoff (FR-009b)
-- [ ] T059 [US2] Create Server Action reportQuestionErrorAction in src/app/actions/error-actions.ts to insert into question_errors table (FR-009a)
-- [ ] T060 [US2] Create error reporting UI component in src/components/questions/ErrorReportButton.tsx with error type selection (mathematical/grammatical/diagram/other)
-- [ ] T061 [US2] Create admin review queue page in src/app/admin/review-queue/page.tsx to display flagged questions with approve/reject actions
+- [X] T057 [US2] Update QuduratGenerator.ts to generate batches of 20 questions with consistent quality across all batches (FR-008)
+- [X] T058 [US2] Implement batch retry logic in QuduratGenerator.ts to preserve successful questions and retry only failed portion with exponential backoff (FR-009b)
+- [X] T059 [US2] Create Server Action reportQuestionErrorAction in src/app/actions/error-actions.ts to insert into question_errors table (FR-009a)
+- [X] T060 [US2] Create error reporting UI component in src/components/questions/ErrorReportButton.tsx with error type selection (mathematical/grammatical/diagram/other)
+- [X] T061 [US2] Create admin review queue page in src/app/admin/review-queue/page.tsx to display flagged questions with approve/reject actions
 
 **Checkpoint**: User Story 2 complete - All questions meet quality standards with validation and error reporting
 

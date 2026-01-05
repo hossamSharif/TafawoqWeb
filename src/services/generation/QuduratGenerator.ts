@@ -351,6 +351,140 @@ export class QuduratGenerator {
   }
 
   /**
+   * Generate a batch of 20 questions with consistent quality and retry logic (T057, T058)
+   * This method preserves successfully generated questions and retries only failed ones
+   * @param params - Base generation parameters
+   * @param targetCount - Number of questions to generate (default: 20)
+   * @returns Generation result with all successfully generated questions
+   */
+  async generateBatchWithRetry(
+    params: QuestionGenerationParams,
+    targetCount: number = 20
+  ): Promise<GenerationResult> {
+    const batchId = this.generateBatchId();
+    const allQuestions: QuestionData[] = [];
+    const allFailed: Array<{ data: any; validation: ValidationResult }> = [];
+    let totalRetriesAttempted = 0;
+    let totalCost = 0;
+    let totalTokens = 0;
+    let cacheHitOverall = false;
+
+    // Calculate how many questions to request per batch
+    // Request slightly more to account for validation failures
+    const requestCount = Math.ceil(targetCount * 1.2);
+
+    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
+      const remaining = targetCount - allQuestions.length;
+
+      if (remaining <= 0) {
+        // We have enough valid questions
+        break;
+      }
+
+      if (attempt > 0) {
+        // Wait before retry (exponential backoff)
+        const delay = this.config.retryDelays[attempt - 1] || 4000;
+        console.log(
+          `Batch retry ${attempt}/${this.config.maxRetries} for ${remaining} remaining questions after ${delay}ms...`
+        );
+        await this.sleep(delay);
+        totalRetriesAttempted = attempt;
+      }
+
+      try {
+        // Generate questions for this attempt
+        const paramsArray = Array(remaining).fill(params);
+        const result = await this.generateBatch(paramsArray);
+
+        // Collect valid questions
+        allQuestions.push(...result.questions);
+        allFailed.push(...result.failed);
+
+        // Track metrics
+        totalCost += result.metadata.estimatedCost;
+        totalTokens += result.metadata.totalTokens;
+        cacheHitOverall = cacheHitOverall || result.metadata.cacheHit;
+
+        console.log(
+          `Batch attempt ${attempt + 1}: ${result.questions.length} valid, ${result.failed.length} failed, ${allQuestions.length}/${targetCount} total`
+        );
+
+        // If we have enough questions, stop
+        if (allQuestions.length >= targetCount) {
+          break;
+        }
+      } catch (error) {
+        console.error(`Batch generation attempt ${attempt + 1} failed:`, error);
+
+        // Don't retry on certain errors
+        if (this.isNonRetryableError(error)) {
+          break;
+        }
+      }
+    }
+
+    // Trim to exact target count if we generated more
+    const finalQuestions = allQuestions.slice(0, targetCount);
+
+    return {
+      questions: finalQuestions,
+      failed: allFailed,
+      success: finalQuestions.length >= targetCount,
+      error:
+        finalQuestions.length < targetCount
+          ? `Only generated ${finalQuestions.length}/${targetCount} valid questions after retries`
+          : undefined,
+      metadata: {
+        model: this.config.model,
+        batchId,
+        cacheHit: cacheHitOverall,
+        retriesAttempted: totalRetriesAttempted,
+        generatedAt: new Date().toISOString(),
+        estimatedCost: totalCost,
+        totalTokens,
+      },
+    };
+  }
+
+  /**
+   * Validate batch quality after generation
+   * Checks topic and difficulty distribution against targets
+   */
+  async validateBatchQuality(
+    questions: QuestionData[],
+    targetTopicDistribution: Record<string, number>,
+    targetDifficultyDistribution?: Record<string, number>
+  ): Promise<{
+    topicValid: boolean;
+    difficultyValid: boolean;
+    topicErrors: string[];
+    difficultyErrors: string[];
+  }> {
+    // Validate topic distribution
+    const topicValidation = this.questionValidator.validateTopicDistribution(
+      questions,
+      targetTopicDistribution,
+      0.05 // 5% tolerance
+    );
+
+    // Validate difficulty distribution
+    const difficultyValidation = targetDifficultyDistribution
+      ? this.questionValidator.validateDifficultyDistribution(
+          questions,
+          targetDifficultyDistribution,
+          0.05 // 5% tolerance
+        )
+      : { valid: true, errors: [] };
+
+    return {
+      topicValid: topicValidation.valid,
+      difficultyValid: difficultyValidation.valid,
+      topicErrors: topicValidation.errors,
+      difficultyErrors: difficultyValidation.errors,
+    };
+  }
+
+  /**
    * Get cache metrics
    */
   getCacheMetrics() {
