@@ -33,6 +33,7 @@
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
+    "jsxgraph": "^1.12.2",
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-chartjs-2": "^5.3.1",
