@@ -165,7 +165,7 @@ Repository root structure (from plan.md):
 - [X] T065 [US3] Create ComparisonQuestion.tsx component in src/components/questions/ to display two values with Arabic labels and four standard answer choices (FR-021)
 - [X] T066 [US3] Update QuduratGenerator.ts to support question_type='comparison' with proper answer choice generation
 - [X] T067 [US3] Add comparison questions to topic distribution in src/lib/constants/topics.ts as 15% of quantitative questions
-- [ ] T068 [US3] Test comparison question generation and display with all four answer scenarios (value1 larger, value2 larger, equal, insufficient data)
+- [X] T068 [US3] Test comparison question generation and display with all four answer scenarios (value1 larger, value2 larger, equal, insufficient data)
 
 **Checkpoint**: User Story 3 complete - Students can practice comparison questions with correct format
 
