@@ -33,7 +33,7 @@ export const QUANTITATIVE_TOPICS: Record<string, TopicDefinition> = {
       'ratio-proportion': 'النسبة والتناسب',
       'percentages': 'النسب المئوية',
     },
-    weight: 0.40, // 40% of quantitative questions
+    weight: 0.34, // 34% of quantitative questions (reduced from 40% to accommodate comparisons)
   },
   geometry: {
     label: 'الهندسة',
@@ -47,7 +47,7 @@ export const QUANTITATIVE_TOPICS: Record<string, TopicDefinition> = {
       'coordinate-geometry': 'الهندسة الإحداثية',
       'overlapping-shapes': 'الأشكال المتداخلة', // NEW v3.0
     },
-    weight: 0.24, // 24% of quantitative questions
+    weight: 0.21, // 21% of quantitative questions (reduced from 24% to accommodate comparisons)
   },
   algebra: {
     label: 'الجبر',
@@ -59,7 +59,7 @@ export const QUANTITATIVE_TOPICS: Record<string, TopicDefinition> = {
       sequences: 'المتتاليات',
       functions: 'الدوال',
     },
-    weight: 0.23, // 23% of quantitative questions
+    weight: 0.20, // 20% of quantitative questions (reduced from 23% to accommodate comparisons)
   },
   statistics: {
     label: 'الإحصاء',
@@ -70,7 +70,18 @@ export const QUANTITATIVE_TOPICS: Record<string, TopicDefinition> = {
       probability: 'الاحتمالات',
       permutations: 'التباديل والتوافيق',
     },
-    weight: 0.13, // 13% of quantitative questions
+    weight: 0.10, // 10% of quantitative questions (reduced from 13% to accommodate comparisons)
+  },
+  comparisons: {
+    label: 'المقارنة',
+    subtopics: {
+      algebraic: 'المقارنات الجبرية',
+      fractions: 'مقارنة الكسور',
+      percentages: 'مقارنة النسب المئوية',
+      geometric: 'المقارنات الهندسية',
+      'numerical-expressions': 'مقارنة التعابير العددية',
+    },
+    weight: 0.15, // 15% of quantitative questions (NEW v3.0 - User Story 3)
   },
 };
 
