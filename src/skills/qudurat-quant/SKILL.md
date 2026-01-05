@@ -74,15 +74,42 @@ description: توليد أسئلة القسم الكمي لاختبار القد
 
 ## Comparison Questions
 
+**Format Rules**:
+- `questionType` MUST be `"comparison"`
+- `comparisonValues` MUST contain nested `value1` and `value2` objects
+- Each value object MUST have `expression` and `label` fields
+- `choices` array MUST contain exactly these four options in this exact order
+- Use "المعطيات غير كافية للمقارنة" when the relationship depends on unknown variables or conditions
+
+**When to use "المعطيات غير كافية للمقارنة"**:
+- Comparing س² vs س without constraints on س (depends on whether 0<س<1 or س>1)
+- Comparing expressions with unknown variables where the relationship varies
+- When additional conditions are needed but not provided
+
 ```json
 {
   "questionType": "comparison",
   "stem": "قارن بين:",
-  "value1": "التعبير الأول",
-  "value2": "التعبير الثاني",
-  "choices": ["القيمة الأولى أكبر", "القيمة الثانية أكبر", "القيمتان متساويتان", "المعطيات غير كافية للمقارنة"]
+  "comparisonValues": {
+    "value1": {
+      "expression": "التعبير الرياضي الأول",
+      "label": "القيمة الأولى"
+    },
+    "value2": {
+      "expression": "التعبير الرياضي الثاني",
+      "label": "القيمة الثانية"
+    }
+  },
+  "choices": ["القيمة الأولى أكبر", "القيمة الثانية أكبر", "القيمتان متساويتان", "المعطيات غير كافية للمقارنة"],
+  "answerIndex": 0
 }
 ```
+
+**Examples from references/examples.md**:
+- Equal values: 3² + 4² vs 5² (both equal 25)
+- Value 1 larger: 7/11 vs 5/8
+- Value 2 larger: 25% من 80 vs 40% من 60
+- Insufficient data: س² vs س when س > 0
 
 ## Common Patterns
 

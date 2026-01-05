@@ -57,10 +57,17 @@ const DiagramConfigSchema = z.object({
   maxWidth: z.number().optional(),
 });
 
-/** Comparison values schema */
+/** Comparison values schema (FR-020, FR-021) */
 const ComparisonValuesSchema = z.object({
-  value1: z.union([z.string(), z.number()]),
-  value2: z.union([z.string(), z.number()]),
+  value1: z.object({
+    expression: z.string().min(1, 'value1.expression must not be empty'),
+    label: z.string().min(1, 'value1.label must not be empty'),
+  }),
+  value2: z.object({
+    expression: z.string().min(1, 'value2.expression must not be empty'),
+    label: z.string().min(1, 'value2.label must not be empty'),
+  }),
+});
 });
 
 /** Base question schema */
@@ -220,7 +227,7 @@ export class QuestionValidator {
       }
     }
 
-    // Comparison questions require comparison_values
+    // Comparison questions require comparison_values (FR-020)
     if (question.question_type === 'comparison') {
       if (!question.comparison_values) {
         errors.push({
@@ -228,6 +235,35 @@ export class QuestionValidator {
           message: 'Comparison questions must have comparison_values field',
           code: 'MISSING_COMPARISON_VALUES',
         });
+      }
+
+      // Comparison questions must have exactly the four standard choices (FR-021)
+      const standardChoices = [
+        'القيمة الأولى أكبر',
+        'القيمة الثانية أكبر',
+        'القيمتان متساويتان',
+        'المعطيات غير كافية للمقارنة',
+      ];
+
+      if (!question.choices || question.choices.length !== 4) {
+        errors.push({
+          field: 'choices',
+          message: 'Comparison questions must have exactly 4 answer choices',
+          code: 'INVALID_COMPARISON_CHOICES_COUNT',
+        });
+      } else {
+        // Check that choices match the standard choices exactly
+        const choicesMatch = question.choices.every((choice, index) =>
+          choice === standardChoices[index]
+        );
+
+        if (!choicesMatch) {
+          errors.push({
+            field: 'choices',
+            message: 'Comparison questions must use the exact standard choices in order',
+            code: 'INVALID_COMPARISON_CHOICES',
+          });
+        }
       }
     }
 

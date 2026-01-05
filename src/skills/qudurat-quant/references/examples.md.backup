@@ -98,9 +98,7 @@
 
 ## Comparison Examples
 
-**Note**: Comparison questions MUST use the `comparisonValues` field with nested `value1` and `value2` objects. Each value must have `expression` and `label` fields. The four standard choices are ALWAYS the same for all comparison questions.
-
-### Basic Comparison - Equal Values
+### Basic Comparison
 ```json
 {
   "id": "exam_quant_comparison_01",
@@ -110,24 +108,16 @@
   "difficulty": "medium",
   "questionType": "comparison",
   "stem": "قارن بين القيمتين:",
-  "comparisonValues": {
-    "value1": {
-      "expression": "3² + 4²",
-      "label": "القيمة الأولى"
-    },
-    "value2": {
-      "expression": "5²",
-      "label": "القيمة الثانية"
-    }
-  },
+  "value1": "3² + 4²",
+  "value2": "5²",
   "choices": ["القيمة الأولى أكبر", "القيمة الثانية أكبر", "القيمتان متساويتان", "المعطيات غير كافية للمقارنة"],
   "answerIndex": 2,
-  "explanation": "القيمة الأولى = 9 + 16 = 25، القيمة الثانية = 25، إذن القيمتان متساويتان",
-  "tags": ["comparison", "exponents", "equal-values"]
+  "explanation": "القيمة الأولى = 9 + 16 = 25، القيمة الثانية = 25، إذن متساويتان",
+  "tags": ["comparison", "exponents"]
 }
 ```
 
-### Comparison with Variables - Insufficient Data
+### Comparison with Variables
 ```json
 {
   "id": "exam_quant_comparison_02",
@@ -137,24 +127,16 @@
   "difficulty": "hard",
   "questionType": "comparison",
   "stem": "إذا كان س > 0، قارن بين:",
-  "comparisonValues": {
-    "value1": {
-      "expression": "س²",
-      "label": "القيمة الأولى"
-    },
-    "value2": {
-      "expression": "س",
-      "label": "القيمة الثانية"
-    }
-  },
+  "value1": "س²",
+  "value2": "س",
   "choices": ["القيمة الأولى أكبر", "القيمة الثانية أكبر", "القيمتان متساويتان", "المعطيات غير كافية للمقارنة"],
   "answerIndex": 3,
-  "explanation": "إذا س=2: س²=4 > س=2. إذا س=0.5: س²=0.25 < س=0.5. تعتمد النتيجة على قيمة س، لذا المعطيات غير كافية للمقارنة",
+  "explanation": "إذا س=2: س²=4 > س=2. إذا س=0.5: س²=0.25 < س=0.5. المعطيات غير كافية",
   "tags": ["comparison", "variables", "insufficient-data"]
 }
 ```
 
-### Fraction Comparison - Value 1 Larger
+### Fraction Comparison
 ```json
 {
   "id": "exam_quant_comparison_03",
@@ -164,49 +146,15 @@
   "difficulty": "medium",
   "questionType": "comparison",
   "stem": "قارن بين:",
-  "comparisonValues": {
-    "value1": {
-      "expression": "7/11",
-      "label": "القيمة الأولى"
-    },
-    "value2": {
-      "expression": "5/8",
-      "label": "القيمة الثانية"
-    }
-  },
+  "value1": "7/11",
+  "value2": "5/8",
   "choices": ["القيمة الأولى أكبر", "القيمة الثانية أكبر", "القيمتان متساويتان", "المعطيات غير كافية للمقارنة"],
   "answerIndex": 0,
-  "explanation": "الضرب التبادلي: 7×8=56، 5×11=55. بما أن 56>55، فإن 7/11 > 5/8، لذا القيمة الأولى أكبر",
-  "tags": ["comparison", "fractions", "value1-larger"]
+  "explanation": "الضرب التبادلي: 7×8=56، 5×11=55. بما أن 56>55، فإن 7/11 > 5/8",
+  "tags": ["comparison", "fractions"]
 }
 ```
 
-### Percentage Comparison - Value 2 Larger
-```json
-{
-  "id": "exam_quant_comparison_04",
-  "section": "quantitative",
-  "topic": "comparisons",
-  "subtopic": "percentages",
-  "difficulty": "medium",
-  "questionType": "comparison",
-  "stem": "قارن بين القيمتين:",
-  "comparisonValues": {
-    "value1": {
-      "expression": "25% من 80",
-      "label": "القيمة الأولى"
-    },
-    "value2": {
-      "expression": "40% من 60",
-      "label": "القيمة الثانية"
-    }
-  },
-  "choices": ["القيمة الأولى أكبر", "القيمة الثانية أكبر", "القيمتان متساويتان", "المعطيات غير كافية للمقارنة"],
-  "answerIndex": 1,
-  "explanation": "القيمة الأولى = 0.25 × 80 = 20، القيمة الثانية = 0.40 × 60 = 24، لذا القيمة الثانية أكبر",
-  "tags": ["comparison", "percentages", "value2-larger"]
-}
-```
 ---
 
 ## Diagram Examples
