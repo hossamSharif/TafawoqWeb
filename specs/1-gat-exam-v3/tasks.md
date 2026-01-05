@@ -219,13 +219,13 @@ Repository root structure (from plan.md):
 
 ### Implementation for User Story 6
 
-- [ ] T083 [US6] Update PromptCacheManager.ts to implement cache_control: {type: "ephemeral"} for system prompts with 5-minute TTL
-- [ ] T084 [US6] Modify PromptBuilder.ts to mark concatenated Skills system prompt (~15,000 tokens) with cache control header
-- [ ] T085 [US6] Update QuduratGenerator.ts to generate 6 batches sequentially (not parallel) to maximize cache reuse within 5-minute window
-- [ ] T086 [US6] Add cache hit tracking to generation_metadata field storing {cacheHit: boolean, cost: number, model: string, batch_id: string, generated_at: timestamp}
-- [ ] T087 [US6] Create Server Action generateFullExamAction in src/app/actions/generation-actions.ts that orchestrates 6-batch sequential generation
-- [ ] T088 [US6] Create exam generation progress UI in src/components/admin/ExamGenerationProgress.tsx showing batch progress, cache hits, and cost savings
-- [ ] T089 [US6] Implement exam config creation in src/app/admin/exam-configs/page.tsx allowing selection of track (scientific/literary), total questions, difficulty distribution
+- [X] T083 [US6] Update PromptCacheManager.ts to implement cache_control: {type: "ephemeral"} for system prompts with 5-minute TTL
+- [X] T084 [US6] Modify PromptBuilder.ts to mark concatenated Skills system prompt (~15,000 tokens) with cache control header
+- [X] T085 [US6] Update QuduratGenerator.ts to generate 6 batches sequentially (not parallel) to maximize cache reuse within 5-minute window
+- [X] T086 [US6] Add cache hit tracking to generation_metadata field storing {cacheHit: boolean, cost: number, model: string, batch_id: string, generated_at: timestamp}
+- [X] T087 [US6] Create Server Action generateFullExamAction in src/app/actions/generation-actions.ts that orchestrates 6-batch sequential generation
+- [X] T088 [US6] Create exam generation progress UI in src/components/admin/ExamGenerationProgress.tsx showing batch progress, cache hits, and cost savings
+- [X] T089 [US6] Implement exam config creation in src/app/admin/exam-configs/page.tsx allowing selection of track (scientific/literary), total questions, difficulty distribution
 - [ ] T090 [US6] Test full 120-question exam generation measuring time (<3 minutes target), cost reduction (70%+ target), and quality consistency across all batches (FR-009, SC-006, SC-007)
 
 **Checkpoint**: User Story 6 complete - Efficient batch generation with prompt caching operational

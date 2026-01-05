@@ -611,6 +611,287 @@ export class QuduratGenerator {
   }
 
   /**
+   * Generate a full 120-question exam in 6 sequential batches (T085, User Story 6)
+   * Sequential execution maximizes cache reuse within 5-minute TTL window
+   *
+   * @param examConfig - Exam configuration with topic/difficulty distribution
+   * @param progressCallback - Optional callback for batch progress updates
+   * @returns Complete exam with 120 questions
+   */
+  async generateFullExamSequential(
+    examConfig: {
+      track: 'scientific' | 'literary';
+      sectionSplit: { quantitative: number; verbal: number }; // e.g., {quantitative: 60, verbal: 60}
+      topicDistribution: {
+        quantitative?: Record<string, number>;
+        verbal?: Record<string, number>;
+      };
+      difficultyDistribution: { easy: number; medium: number; hard: number };
+      batchSize?: number; // default: 20
+    },
+    progressCallback?: (progress: {
+      currentBatch: number;
+      totalBatches: number;
+      questionsGenerated: number;
+      targetQuestions: number;
+      cacheHitRate: number;
+      estimatedCostSoFar: number;
+    }) => void
+  ): Promise<GenerationResult> {
+    const batchSize = examConfig.batchSize || 20;
+    const totalQuestions =
+      examConfig.sectionSplit.quantitative + examConfig.sectionSplit.verbal;
+    const totalBatches = Math.ceil(totalQuestions / batchSize);
+
+    console.log(
+      `Starting sequential generation of ${totalQuestions} questions in ${totalBatches} batches...`
+    );
+    console.log(`Batch size: ${batchSize}, Track: ${examConfig.track}`);
+
+    const allQuestions: QuestionData[] = [];
+    const allFailed: Array<{ data: any; validation: ValidationResult }> = [];
+    let totalCost = 0;
+    let totalTokens = 0;
+    let cacheHits = 0;
+    const batchId = this.generateBatchId();
+
+    // Reset cache metrics for this exam generation
+    this.resetCacheMetrics();
+
+    // Generate each batch sequentially (NOT in parallel) to maximize cache reuse
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const batchStartTime = Date.now();
+      console.log(
+        `\n=== Batch ${batchIndex + 1}/${totalBatches} ===`
+      );
+
+      // Calculate how many questions to generate in this batch
+      const questionsGeneratedSoFar = allQuestions.length;
+      const questionsRemaining = totalQuestions - questionsGeneratedSoFar;
+      const questionCountForBatch = Math.min(batchSize, questionsRemaining);
+
+      // Distribute questions across sections for this batch
+      const quantRatio =
+        examConfig.sectionSplit.quantitative /
+        (examConfig.sectionSplit.quantitative + examConfig.sectionSplit.verbal);
+
+      const quantForBatch = Math.round(questionCountForBatch * quantRatio);
+      const verbalForBatch = questionCountForBatch - quantForBatch;
+
+      // Build params for this batch
+      const batchParams: QuestionGenerationParams[] = [];
+
+      // Add quantitative questions
+      if (quantForBatch > 0 && examConfig.topicDistribution.quantitative) {
+        const quantParams = this.distributeQuestionsByTopicAndDifficulty(
+          'quantitative',
+          examConfig.track,
+          quantForBatch,
+          examConfig.topicDistribution.quantitative,
+          examConfig.difficultyDistribution
+        );
+        batchParams.push(...quantParams);
+      }
+
+      // Add verbal questions
+      if (verbalForBatch > 0 && examConfig.topicDistribution.verbal) {
+        const verbalParams = this.distributeQuestionsByTopicAndDifficulty(
+          'verbal',
+          examConfig.track,
+          verbalForBatch,
+          examConfig.topicDistribution.verbal,
+          examConfig.difficultyDistribution
+        );
+        batchParams.push(...verbalParams);
+      }
+
+      // Generate this batch
+      try {
+        const result = await this.generateBatch(batchParams);
+
+        allQuestions.push(...result.questions);
+        allFailed.push(...result.failed);
+        totalCost += result.metadata.estimatedCost;
+        totalTokens += result.metadata.totalTokens;
+
+        if (result.metadata.cacheHit) {
+          cacheHits++;
+        }
+
+        const batchDuration = Date.now() - batchStartTime;
+        const cacheHitRate = cacheHits / (batchIndex + 1);
+
+        console.log(
+          `Batch ${batchIndex + 1} complete: ${result.questions.length} valid questions in ${(batchDuration / 1000).toFixed(1)}s`
+        );
+        console.log(`Cache hit: ${result.metadata.cacheHit ? 'YES' : 'NO'}`);
+        console.log(`Cost for batch: $${result.metadata.estimatedCost.toFixed(4)}`);
+        console.log(`Overall cache hit rate: ${(cacheHitRate * 100).toFixed(1)}%`);
+
+        // Call progress callback
+        if (progressCallback) {
+          progressCallback({
+            currentBatch: batchIndex + 1,
+            totalBatches,
+            questionsGenerated: allQuestions.length,
+            targetQuestions: totalQuestions,
+            cacheHitRate,
+            estimatedCostSoFar: totalCost,
+          });
+        }
+      } catch (error) {
+        console.error(`Batch ${batchIndex + 1} failed:`, error);
+
+        // Decide whether to continue or abort
+        if (this.isNonRetryableError(error)) {
+          console.error('Non-retryable error encountered, aborting exam generation');
+          break;
+        }
+
+        // For retryable errors, continue to next batch
+        console.log('Continuing to next batch despite error...');
+      }
+
+      // Small delay between batches to ensure cache stays warm (within 5min TTL)
+      // But not too long - we want to complete within 3 minutes total
+      if (batchIndex < totalBatches - 1) {
+        await this.sleep(500); // 0.5 second between batches
+      }
+    }
+
+    // Final metrics
+    const finalCacheHitRate = cacheHits / totalBatches;
+    const averageCostPerQuestion = totalCost / allQuestions.length;
+
+    console.log(`\n=== Exam Generation Complete ===`);
+    console.log(`Total questions: ${allQuestions.length}/${totalQuestions}`);
+    console.log(`Total cost: $${totalCost.toFixed(4)}`);
+    console.log(`Average cost per question: $${averageCostPerQuestion.toFixed(4)}`);
+    console.log(`Cache hit rate: ${(finalCacheHitRate * 100).toFixed(1)}%`);
+    console.log(
+      `Cost savings vs no caching: ${((1 - finalCacheHitRate) * 100).toFixed(1)}%`
+    );
+
+    return {
+      questions: allQuestions,
+      failed: allFailed,
+      success: allQuestions.length >= totalQuestions * 0.9, // Allow 10% tolerance
+      error:
+        allQuestions.length < totalQuestions
+          ? `Generated ${allQuestions.length}/${totalQuestions} questions`
+          : undefined,
+      metadata: {
+        model: this.config.model,
+        batchId,
+        cacheHit: cacheHits > 0,
+        retriesAttempted: 0,
+        generatedAt: new Date().toISOString(),
+        estimatedCost: totalCost,
+        totalTokens,
+      },
+    };
+  }
+
+  /**
+   * Helper: Distribute questions by topic and difficulty
+   */
+  private distributeQuestionsByTopicAndDifficulty(
+    section: 'quantitative' | 'verbal',
+    track: 'scientific' | 'literary',
+    count: number,
+    topicDistribution: Record<string, number>,
+    difficultyDistribution: { easy: number; medium: number; hard: number }
+  ): QuestionGenerationParams[] {
+    const params: QuestionGenerationParams[] = [];
+
+    // Calculate questions per topic
+    const topics = Object.entries(topicDistribution);
+    const topicCounts: Record<string, number> = {};
+
+    for (const [topic, weight] of topics) {
+      topicCounts[topic] = Math.round(count * weight);
+    }
+
+    // Adjust for rounding errors
+    const totalAllocated = Object.values(topicCounts).reduce((a, b) => a + b, 0);
+    const diff = count - totalAllocated;
+
+    if (diff !== 0) {
+      // Add/subtract from largest topic
+      const largestTopic = topics.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+      topicCounts[largestTopic] += diff;
+    }
+
+    // Generate params for each topic
+    for (const [topic, topicCount] of Object.entries(topicCounts)) {
+      if (topicCount === 0) continue;
+
+      // Distribute difficulty for this topic
+      const easyCount = Math.round(topicCount * difficultyDistribution.easy);
+      const hardCount = Math.round(topicCount * difficultyDistribution.hard);
+      const mediumCount = topicCount - easyCount - hardCount;
+
+      // Add easy questions
+      for (let i = 0; i < easyCount; i++) {
+        params.push({
+          section,
+          track,
+          questionType: this.getDefaultQuestionType(section, topic),
+          topic,
+          difficulty: 'easy',
+        });
+      }
+
+      // Add medium questions
+      for (let i = 0; i < mediumCount; i++) {
+        params.push({
+          section,
+          track,
+          questionType: this.getDefaultQuestionType(section, topic),
+          topic,
+          difficulty: 'medium',
+        });
+      }
+
+      // Add hard questions
+      for (let i = 0; i < hardCount; i++) {
+        params.push({
+          section,
+          track,
+          questionType: this.getDefaultQuestionType(section, topic),
+          topic,
+          difficulty: 'hard',
+        });
+      }
+    }
+
+    return params;
+  }
+
+  /**
+   * Helper: Get default question type for a topic
+   */
+  private getDefaultQuestionType(
+    section: 'quantitative' | 'verbal',
+    topic: string
+  ): QuestionGenerationParams['questionType'] {
+    if (section === 'quantitative') {
+      // Most quantitative questions are MCQ, some geometry are diagrams
+      return topic === 'geometry' ? 'diagram' : 'mcq';
+    } else {
+      // Verbal question types based on topic
+      const verbalTypeMap: Record<string, QuestionGenerationParams['questionType']> = {
+        reading: 'reading',
+        analogy: 'analogy',
+        completion: 'completion',
+        error: 'error',
+        'odd-word': 'odd-word',
+      };
+      return verbalTypeMap[topic] || 'reading';
+    }
+  }
+
+  /**
    * Shuffle array using Fisher-Yates algorithm
    */
   private shuffleArray<T>(array: T[]): T[] {
