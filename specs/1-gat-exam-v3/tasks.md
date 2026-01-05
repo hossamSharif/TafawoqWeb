@@ -91,19 +91,19 @@ Repository root structure (from plan.md):
 
 ### Skills Content for User Story 1
 
-- [ ] T032 [P] [US1] Create src/skills/qudurat-diagrams/SKILL.md with diagram generation rules, renderHint selection logic, and accessibility requirements (FR-018, FR-019)
-- [ ] T033 [P] [US1] Create src/skills/qudurat-diagrams/references/overlapping-shapes.md with all 8 overlapping patterns, formulas, coordinate calculations, and distractor examples
-- [ ] T034 [P] [US1] Create src/skills/qudurat-diagrams/references/simple-shapes.md with 18 simple shape types and their JSON configurations
-- [ ] T035 [P] [US1] Create src/skills/qudurat-schema/SKILL.md with required/conditional field rules for diagram questions from data-model.md
-- [ ] T036 [P] [US1] Create src/skills/qudurat-schema/references/full-schema.md with complete TypeScript interfaces for DiagramConfig and shape-specific data types
+- [X] T032 [P] [US1] Create src/skills/qudurat-diagrams/SKILL.md with diagram generation rules, renderHint selection logic, and accessibility requirements (FR-018, FR-019)
+- [X] T033 [P] [US1] Create src/skills/qudurat-diagrams/references/overlapping-shapes.md with all 8 overlapping patterns, formulas, coordinate calculations, and distractor examples
+- [X] T034 [P] [US1] Create src/skills/qudurat-diagrams/references/simple-shapes.md with 18 simple shape types and their JSON configurations
+- [X] T035 [P] [US1] Create src/skills/qudurat-schema/SKILL.md with required/conditional field rules for diagram questions from data-model.md
+- [X] T036 [P] [US1] Create src/skills/qudurat-schema/references/full-schema.md with complete TypeScript interfaces for DiagramConfig and shape-specific data types
 
 ### Overlapping Shapes Implementation
 
-- [ ] T037 [US1] Add overlapping shape pattern configurations to src/lib/constants/diagram-patterns.ts with 8 pattern definitions including shading operations and formulas
-- [ ] T038 [US1] Implement pre-calculation logic in src/services/diagrams/shape-calculations.ts for intersection points, shaded regions, and SVG/JSXGraph path generation
-- [ ] T039 [US1] Add overlapping shape rendering support to JSXGraphRenderer.tsx with shading configuration (fillColor: #e74c3c, fillOpacity: 0.3-0.6)
-- [ ] T040 [US1] Implement formula display component in src/components/diagrams/FormulaDisplay.tsx to show mathematical formula after answer submission (FR-013)
-- [ ] T041 [US1] Add Arabic label positioning logic to DiagramContainer.tsx with RTL text direction and vertex/center labeling
+- [X] T037 [US1] Add overlapping shape pattern configurations to src/lib/constants/diagram-patterns.ts with 8 pattern definitions including shading operations and formulas
+- [X] T038 [US1] Implement pre-calculation logic in src/services/diagrams/shape-calculations.ts for intersection points, shaded regions, and SVG/JSXGraph path generation
+- [X] T039 [US1] Add overlapping shape rendering support to JSXGraphRenderer.tsx with shading configuration (fillColor: #e74c3c, fillOpacity: 0.3-0.6)
+- [X] T040 [US1] Implement formula display component in src/components/diagrams/FormulaDisplay.tsx to show mathematical formula after answer submission (FR-013)
+- [X] T041 [US1] Add Arabic label positioning logic to DiagramContainer.tsx with RTL text direction and vertex/center labeling
 
 ### Integration & Testing
 
