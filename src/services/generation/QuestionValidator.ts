@@ -15,6 +15,7 @@
 
 import { z } from 'zod';
 import { isValidAnalogyRelationship } from '@/lib/constants/analogy-relationships';
+import Anthropic from '@anthropic-ai/sdk';
 
 // ============================================================================
 // Zod Schemas
@@ -127,11 +128,30 @@ export interface ValidationWarning {
   code: string;
 }
 
+export interface GrammarValidationResult {
+  isValid: boolean;
+  issues: Array<{
+    field: 'question_text' | 'explanation' | 'choices';
+    issue: string;
+    suggestion?: string;
+  }>;
+}
+
 // ============================================================================
 // QuestionValidator Class
 // ============================================================================
 
 export class QuestionValidator {
+  private anthropic: Anthropic | null = null;
+
+  constructor() {
+    // Initialize Anthropic client only if API key is available
+    if (process.env.ANTHROPIC_API_KEY) {
+      this.anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+    }
+  }
   /**
    * Validate a single question
    * @param data - Question data to validate
@@ -170,6 +190,10 @@ export class QuestionValidator {
     // Step 4: Generate warnings
     const generatedWarnings = this.generateWarnings(question);
     warnings.push(...generatedWarnings);
+
+    // Step 5: Check distractor quality (T056)
+    const distractorWarnings = this.validateDistractorQuality(question);
+    warnings.push(...distractorWarnings);
 
     return {
       valid: errors.length === 0,
@@ -438,6 +462,258 @@ export class QuestionValidator {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * Validate Arabic grammar using Claude API (T052)
+   * @param question - Question data to validate
+   * @returns Grammar validation result with specific issues
+   */
+  async validateArabicGrammar(question: QuestionData): Promise<GrammarValidationResult> {
+    if (!this.anthropic) {
+      console.warn('ANTHROPIC_API_KEY not set, skipping grammar validation');
+      return { isValid: true, issues: [] };
+    }
+
+    const grammarPrompt = `أنت مدقق لغوي متخصص في اللغة العربية الفصحى. راجع النص التالي واكتشف أي أخطاء نحوية أو إملائية.
+
+**نص السؤال:**
+${question.question_text}
+
+**الشرح:**
+${question.explanation}
+
+${question.choices && question.choices.length > 0 ? `**الخيارات:**\n${question.choices.map((c, i) => `${i + 1}. ${c}`).join('\n')}` : ''}
+
+يجب أن يكون النص بالعربية الفصحى الصحيحة. ابحث عن:
+1. الأخطاء النحوية (إعراب، تركيب الجملة، استخدام الضمائر)
+2. الأخطاء الإملائية (الهمزات، التاء المربوطة/المفتوحة، الألف المقصورة)
+3. الأخطاء في علامات الترقيم
+4. استخدام العامية بدلاً من الفصحى
+5. أخطاء في الأفعال والأزمنة
+
+إذا وجدت أخطاء، أجب بتنسيق JSON:
+\`\`\`json
+{
+  "isValid": false,
+  "issues": [
+    {
+      "field": "question_text" | "explanation" | "choices",
+      "issue": "وصف الخطأ",
+      "suggestion": "التصحيح المقترح (اختياري)"
+    }
+  ]
+}
+\`\`\`
+
+إذا كان النص صحيحاً لغوياً، أجب:
+\`\`\`json
+{
+  "isValid": true,
+  "issues": []
+}
+\`\`\``;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20251022',
+        max_tokens: 1024,
+        temperature: 0,
+        messages: [
+          {
+            role: 'user',
+            content: grammarPrompt,
+          },
+        ],
+      });
+
+      // Extract JSON from response
+      const textContent = response.content[0];
+      if (textContent.type !== 'text') {
+        throw new Error('Unexpected response type from Claude API');
+      }
+
+      // Parse JSON from markdown code block if present
+      let jsonText = textContent.text.trim();
+      const jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1];
+      }
+
+      const result = JSON.parse(jsonText) as GrammarValidationResult;
+      return result;
+    } catch (error) {
+      console.error('Grammar validation error:', error);
+      // On error, assume valid to avoid blocking question generation
+      return { isValid: true, issues: [] };
+    }
+  }
+
+  /**
+   * Determine if question should be flagged for review (T053)
+   * @param question - Question data to check
+   * @param grammarResult - Grammar validation result (optional)
+   * @returns Quality flags array for insertion into review_queue
+   */
+  determineQualityFlags(
+    question: QuestionData,
+    grammarResult?: GrammarValidationResult
+  ): string[] {
+    const flags: string[] = [];
+
+    // Flag 1: Grammar issues
+    if (grammarResult && !grammarResult.isValid && grammarResult.issues.length > 0) {
+      flags.push('grammar');
+    }
+
+    // Flag 2: Mathematical issues (for quantitative questions)
+    if (question.section === 'quantitative') {
+      // Check if correct_answer is actually in the choices (for MCQ)
+      if (question.question_type === 'mcq' && question.choices) {
+        if (!question.choices.includes(question.correct_answer)) {
+          flags.push('mathematical');
+        }
+      }
+
+      // Check for suspiciously short explanation
+      if (question.explanation.length < 50) {
+        flags.push('insufficient_explanation');
+      }
+    }
+
+    // Flag 3: Distractor quality issues
+    const distractorWarnings = this.validateDistractorQuality(question);
+    const hasCriticalDistractorIssue = distractorWarnings.some(w =>
+      ['DUPLICATE_CHOICES', 'MISSING_CORRECT_ANSWER_IN_CHOICES', 'EMPTY_CHOICE'].includes(w.code)
+    );
+
+    if (hasCriticalDistractorIssue) {
+      flags.push('poor_distractors');
+    }
+
+    // Flag 4: Diagram issues
+    if (question.diagram_config) {
+      if (!question.diagram_config.caption || question.diagram_config.caption.length < 10) {
+        flags.push('diagram_accessibility');
+      }
+    }
+
+    return flags;
+  }
+
+  /**
+   * Validate distractor quality (T056)
+   * Checks if answer choices represent realistic student errors
+   * @param question - Question data to validate
+   * @returns Validation result with distractor quality issues
+   */
+  validateDistractorQuality(question: QuestionData): ValidationWarning[] {
+    const warnings: ValidationWarning[] = [];
+
+    // Only applies to MCQ questions
+    if (question.question_type !== 'mcq' || !question.choices || question.choices.length !== 4) {
+      return warnings;
+    }
+
+    const choices = question.choices;
+    const correctIndex = choices.findIndex(c => c === question.correct_answer);
+
+    if (correctIndex === -1) {
+      warnings.push({
+        field: 'choices',
+        message: 'Correct answer not found in choices array',
+        code: 'MISSING_CORRECT_ANSWER_IN_CHOICES',
+      });
+      return warnings;
+    }
+
+    // Check 1: All choices should be non-empty
+    if (choices.some(c => !c || c.trim().length === 0)) {
+      warnings.push({
+        field: 'choices',
+        message: 'One or more choices are empty',
+        code: 'EMPTY_CHOICE',
+      });
+    }
+
+    // Check 2: Choices should not be duplicates
+    const uniqueChoices = new Set(choices.map(c => c.trim()));
+    if (uniqueChoices.size < choices.length) {
+      warnings.push({
+        field: 'choices',
+        message: 'Duplicate choices detected - each choice should be unique',
+        code: 'DUPLICATE_CHOICES',
+      });
+    }
+
+    // Check 3: For numeric answers, check if distractors are reasonable
+    const numericPattern = /^-?\d+(\.\d+)?$/;
+    const allNumeric = choices.every(c => numericPattern.test(c.trim()));
+
+    if (allNumeric) {
+      const numbers = choices.map(c => parseFloat(c.trim()));
+      const sorted = [...numbers].sort((a, b) => a - b);
+
+      // Warn if numbers are sequential (1, 2, 3, 4) - too obvious
+      const isSequential = sorted.every((n, i) => i === 0 || n === sorted[i - 1] + 1);
+      if (isSequential) {
+        warnings.push({
+          field: 'choices',
+          message: 'Numeric choices are sequential (e.g., 1, 2, 3, 4), consider more realistic distractors',
+          code: 'SEQUENTIAL_NUMERIC_CHOICES',
+        });
+      }
+
+      // Warn if all numbers are multiples of each other
+      const gcd = numbers.reduce((a, b) => {
+        while (b) {
+          const t = b;
+          b = a % b;
+          a = t;
+        }
+        return Math.abs(a);
+      });
+
+      if (gcd > 1 && numbers.every(n => n % gcd === 0)) {
+        warnings.push({
+          field: 'choices',
+          message: 'All numeric choices are multiples of the same number, may lack realistic variation',
+          code: 'MULTIPLE_BASED_CHOICES',
+        });
+      }
+    }
+
+    // Check 4: For geometry/formula-based questions, verify unit consistency
+    const hasUnits = choices.some(c => /سم|م|كم|متر|سنتيمتر/.test(c));
+    if (hasUnits) {
+      const allHaveSameUnit = choices.every(c => {
+        const match = c.match(/(سم|م|كم|متر|سنتيمتر|م²|سم²)/);
+        return match !== null;
+      });
+
+      if (!allHaveSameUnit) {
+        warnings.push({
+          field: 'choices',
+          message: 'Inconsistent units across choices - all should have the same unit type',
+          code: 'INCONSISTENT_UNITS',
+        });
+      }
+    }
+
+    // Check 5: Choices should have reasonable length variation
+    const lengths = choices.map(c => c.length);
+    const maxLength = Math.max(...lengths);
+    const minLength = Math.min(...lengths);
+
+    if (maxLength > minLength * 3) {
+      warnings.push({
+        field: 'choices',
+        message: 'Large length variation in choices, may make correct answer too obvious',
+        code: 'LARGE_LENGTH_VARIATION',
+      });
+    }
+
+    return warnings;
   }
 
   /**

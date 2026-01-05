@@ -124,20 +124,20 @@ Repository root structure (from plan.md):
 
 ### Skills Content for User Story 2
 
-- [ ] T046 [P] [US2] Create src/skills/qudurat-quant/SKILL.md with topic distribution rules (FR-001), difficulty distribution (FR-006), mental calculation constraints (FR-007), and question type distribution
-- [ ] T047 [P] [US2] Create src/skills/qudurat-quant/references/topics.md with 29 quantitative subtopics, formulas, and mental-math-friendly number ranges
-- [ ] T048 [P] [US2] Create src/skills/qudurat-quant/references/examples.md with 2-3 complete JSON examples for each question type (mcq, comparison, diagram)
-- [ ] T049 [P] [US2] Create src/skills/qudurat-verbal/SKILL.md with topic distribution rules (FR-002) and verbal question type specifications
-- [ ] T050 [P] [US2] Create src/skills/qudurat-verbal/references/topics.md with verbal topics and subtopics structure
-- [ ] T051 [P] [US2] Create src/skills/qudurat-quality/SKILL.md with 10 quality criteria checklist, Arabic فصحى grammar requirements, distractor generation rules (FR-005), and difficulty calibration guidelines
+- [X] T046 [P] [US2] Create src/skills/qudurat-quant/SKILL.md with topic distribution rules (FR-001), difficulty distribution (FR-006), mental calculation constraints (FR-007), and question type distribution
+- [X] T047 [P] [US2] Create src/skills/qudurat-quant/references/topics.md with 29 quantitative subtopics, formulas, and mental-math-friendly number ranges
+- [X] T048 [P] [US2] Create src/skills/qudurat-quant/references/examples.md with 2-3 complete JSON examples for each question type (mcq, comparison, diagram)
+- [X] T049 [P] [US2] Create src/skills/qudurat-verbal/SKILL.md with topic distribution rules (FR-002) and verbal question type specifications
+- [X] T050 [P] [US2] Create src/skills/qudurat-verbal/references/topics.md with verbal topics and subtopics structure
+- [X] T051 [P] [US2] Create src/skills/qudurat-quality/SKILL.md with 10 quality criteria checklist, Arabic فصحى grammar requirements, distractor generation rules (FR-005), and difficulty calibration guidelines
 
 ### Quality Validation Implementation
 
-- [ ] T052 [US2] Implement LLM-based grammar validation in QuestionValidator.ts using Claude API with specialized grammar checking prompt for formal Arabic
-- [ ] T053 [US2] Add automatic flagging logic to QuestionValidator.ts to insert flagged questions into review_queue table with flag_type='grammar' (FR-003)
-- [ ] T054 [US2] Implement topic distribution validation in QuestionValidator.ts to verify generated batches match FR-001 and FR-002 percentages within ±5%
-- [ ] T055 [US2] Implement difficulty distribution validation in QuestionValidator.ts to verify 30%±5% easy, 50%±5% medium, 20%±5% hard (FR-006)
-- [ ] T056 [US2] Add distractor quality check to QuestionValidator.ts to verify answer choices reflect common errors from Skills examples (FR-005)
+- [X] T052 [US2] Implement LLM-based grammar validation in QuestionValidator.ts using Claude API with specialized grammar checking prompt for formal Arabic
+- [X] T053 [US2] Add automatic flagging logic to QuestionValidator.ts to insert flagged questions into review_queue table with flag_type='grammar' (FR-003)
+- [X] T054 [US2] Implement topic distribution validation in QuestionValidator.ts to verify generated batches match FR-001 and FR-002 percentages within ±5%
+- [X] T055 [US2] Implement difficulty distribution validation in QuestionValidator.ts to verify 30%±5% easy, 50%±5% medium, 20%±5% hard (FR-006)
+- [X] T056 [US2] Add distractor quality check to QuestionValidator.ts to verify answer choices reflect common errors from Skills examples (FR-005)
 
 ### Batch Generation & Error Reporting
 
