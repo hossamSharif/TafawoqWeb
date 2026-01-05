@@ -48,36 +48,36 @@ Repository root structure (from plan.md):
 
 ### Database Schema
 
-- [ ] T011 Run Migration 1: Extend questions table with shape_type, pattern_id, diagram_config, comparison_values, relationship_type, generation_metadata, quality_flags, corrected_at, error_count columns using mcp__supabase__apply_migration
-- [ ] T012 Run Migration 2: Create question_errors table with RLS policies using mcp__supabase__apply_migration
-- [ ] T013 Run Migration 3: Create review_queue table with RLS policies using mcp__supabase__apply_migration
-- [ ] T014 Run Migration 4: Create exam_configs table with RLS policies using mcp__supabase__apply_migration
-- [ ] T015 Generate TypeScript types from Supabase schema using mcp__supabase__generate_typescript_types
-- [ ] T016 Verify all new tables and indexes created successfully using mcp__supabase__list_tables
+- [X] T011 Run Migration 1: Extend questions table with shape_type, pattern_id, diagram_config, comparison_values, relationship_type, generation_metadata, quality_flags, corrected_at, error_count columns using base schema migration
+- [X] T012 Run Migration 2: Create question_errors table with RLS policies using base schema migration
+- [X] T013 Run Migration 3: Create review_queue table with RLS policies using base schema migration
+- [X] T014 Run Migration 4: Create exam_configs table with RLS policies using base schema migration
+- [X] T015 Generate TypeScript types from Supabase schema (manually generated from base schema)
+- [X] T016 Verify all new tables and indexes created successfully (verified via Supabase dashboard)
 
 ### Skills Architecture Foundation
 
-- [ ] T017 Implement SkillLoader.ts in src/services/skills/ with methods to read SKILL.md files and concatenate with references/ subdirectories
-- [ ] T018 Implement SkillValidator.ts in src/services/skills/ with validation for skill file format and token count estimation
-- [ ] T019 Create topic hierarchy constants in src/lib/constants/topics.ts with QUANTITATIVE_TOPICS and VERBAL_TOPICS structures from data-model.md
-- [ ] T020 Create analogy relationship constants in src/lib/constants/analogy-relationships.ts with all 22 relationship types from data-model.md
+- [X] T017 Implement SkillLoader.ts in src/services/skills/ with methods to read SKILL.md files and concatenate with references/ subdirectories
+- [X] T018 Implement SkillValidator.ts in src/services/skills/ with validation for skill file format and token count estimation
+- [X] T019 Create topic hierarchy constants in src/lib/constants/topics.ts with QUANTITATIVE_TOPICS and VERBAL_TOPICS structures from data-model.md
+- [X] T020 Create analogy relationship constants in src/lib/constants/analogy-relationships.ts with all 22 relationship types from data-model.md
 
 ### AI Generation Core Services
 
-- [ ] T021 Implement PromptCacheManager.ts in src/services/cache/ with cache control configuration for Claude API ephemeral caching
-- [ ] T022 Implement PromptBuilder.ts in src/services/generation/ with methods to build system prompts from Skills and user prompts for question generation
-- [ ] T023 Implement ResponseParser.ts in src/services/generation/ with JSON parsing and validation for Claude API responses
-- [ ] T024 Implement QuestionValidator.ts in src/services/generation/ with Zod schema validation from data-model.md and LLM-based grammar validation
-- [ ] T025 Implement QuduratGenerator.ts in src/services/generation/ with generateWithRetry method using exponential backoff (max 3 retries, 1s/2s/4s delays)
+- [X] T021 Implement PromptCacheManager.ts in src/services/cache/ with cache control configuration for Claude API ephemeral caching
+- [X] T022 Implement PromptBuilder.ts in src/services/generation/ with methods to build system prompts from Skills and user prompts for question generation
+- [X] T023 Implement ResponseParser.ts in src/services/generation/ with JSON parsing and validation for Claude API responses
+- [X] T024 Implement QuestionValidator.ts in src/services/generation/ with Zod schema validation from data-model.md and LLM-based grammar validation
+- [X] T025 Implement QuduratGenerator.ts in src/services/generation/ with generateWithRetry method using exponential backoff (max 3 retries, 1s/2s/4s delays)
 
 ### Diagram Rendering Foundation
 
-- [ ] T026 Implement SVGRenderer.tsx in src/services/diagrams/ for simple shapes (18 types) with Arabic RTL text support
-- [ ] T027 Implement JSXGraphRenderer.tsx in src/services/diagrams/ with lazy loading for overlapping shapes (8 patterns) including shading and intersection calculations
-- [ ] T028 Implement ChartRenderer.tsx in src/services/diagrams/ with lazy loading for Chart.js statistical charts (9 types) with Arabic i18n
-- [ ] T029 Implement DiagramRenderer.tsx in src/services/diagrams/ with routing logic based on renderHint field (SVG/JSXGraph/Chart.js)
-- [ ] T030 Implement DiagramContainer.tsx in src/components/diagrams/ with responsive scaling (320px-1920px), clamp-based font sizing, and aspect ratio support
-- [ ] T031 Implement AccessibleDiagram.tsx in src/components/diagrams/ with figure/figcaption semantic HTML, ARIA labels, and WCAG 2.1 AA contrast validation
+- [X] T026 Implement SVGRenderer.tsx in src/services/diagrams/ for simple shapes (18 types) with Arabic RTL text support
+- [X] T027 Implement JSXGraphRenderer.tsx in src/services/diagrams/ with lazy loading for overlapping shapes (8 patterns) including shading and intersection calculations
+- [X] T028 Implement ChartRenderer.tsx in src/services/diagrams/ with lazy loading for Chart.js statistical charts (9 types) with Arabic i18n
+- [X] T029 Implement DiagramRenderer.tsx in src/services/diagrams/ with routing logic based on renderHint field (SVG/JSXGraph/Chart.js)
+- [X] T030 Implement DiagramContainer.tsx in src/components/diagrams/ with responsive scaling (320px-1920px), clamp-based font sizing, and aspect ratio support
+- [X] T031 Implement AccessibleDiagram.tsx in src/components/diagrams/ with figure/figcaption semantic HTML, ARIA labels, and WCAG 2.1 AA contrast validation
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
