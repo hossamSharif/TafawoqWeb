@@ -498,6 +498,130 @@ export class QuduratGenerator {
     this.cacheManager.resetMetrics();
   }
 
+  /**
+   * Generate analogy questions with balanced distribution across relationship types
+   * Ensures diverse coverage of all 22 relationship types (User Story 5)
+   *
+   * @param count - Total number of analogy questions to generate
+   * @param track - Scientific or literary track
+   * @param difficulty - Difficulty distribution (default: 30% easy, 50% medium, 20% hard)
+   * @returns Generation result with balanced relationship types
+   */
+  async generateAnalogyQuestionsBalanced(
+    count: number,
+    track: 'scientific' | 'literary',
+    difficulty?: { easy: number; medium: number; hard: number }
+  ): Promise<GenerationResult> {
+    // Import relationship types
+    const { getAllAnalogyRelationshipIds } = await import('@/lib/constants/analogy-relationships');
+    const allRelationshipTypes = getAllAnalogyRelationshipIds();
+
+    // Default difficulty distribution: 30% easy, 50% medium, 20% hard
+    const difficultyDist = difficulty || { easy: 0.3, medium: 0.5, hard: 0.2 };
+
+    // Calculate how many questions per relationship type
+    const questionsPerType = Math.floor(count / allRelationshipTypes.length);
+    const remainder = count % allRelationshipTypes.length;
+
+    // Create generation params for each relationship type
+    const paramsArray: QuestionGenerationParams[] = [];
+
+    // Distribute questions across all 22 relationship types
+    for (let i = 0; i < allRelationshipTypes.length; i++) {
+      const relationshipType = allRelationshipTypes[i];
+
+      // Add base questions for this type
+      let questionsForThisType = questionsPerType;
+
+      // Add remainder to first few types
+      if (i < remainder) {
+        questionsForThisType += 1;
+      }
+
+      // Distribute difficulty for this type
+      for (let j = 0; j < questionsForThisType; j++) {
+        // Determine difficulty based on distribution
+        let questionDifficulty: 'easy' | 'medium' | 'hard';
+        const rand = Math.random();
+
+        if (rand < difficultyDist.easy) {
+          questionDifficulty = 'easy';
+        } else if (rand < difficultyDist.easy + difficultyDist.medium) {
+          questionDifficulty = 'medium';
+        } else {
+          questionDifficulty = 'hard';
+        }
+
+        paramsArray.push({
+          section: 'verbal',
+          track,
+          questionType: 'analogy',
+          topic: 'analogy',
+          subtopic: relationshipType,
+          difficulty: questionDifficulty,
+          relationshipType, // Specify the exact relationship type
+        });
+      }
+    }
+
+    // Shuffle params to avoid sequential relationship types
+    const shuffledParams = this.shuffleArray(paramsArray);
+
+    // Generate in batches of 20 for optimal caching
+    const batchSize = 20;
+    const batches: QuestionGenerationParams[][] = [];
+
+    for (let i = 0; i < shuffledParams.length; i += batchSize) {
+      batches.push(shuffledParams.slice(i, i + batchSize));
+    }
+
+    // Generate each batch
+    const allQuestions: QuestionData[] = [];
+    const allFailed: Array<{ data: any; validation: ValidationResult }> = [];
+    let totalCost = 0;
+    let totalTokens = 0;
+    const batchId = this.generateBatchId();
+
+    for (let i = 0; i < batches.length; i++) {
+      console.log(`Generating batch ${i + 1}/${batches.length} for analogy questions...`);
+
+      const result = await this.generateBatch(batches[i]);
+
+      allQuestions.push(...result.questions);
+      allFailed.push(...result.failed);
+      totalCost += result.metadata.estimatedCost;
+      totalTokens += result.metadata.totalTokens;
+    }
+
+    return {
+      questions: allQuestions,
+      failed: allFailed,
+      success: allQuestions.length > 0,
+      error: allQuestions.length === 0 ? 'No valid questions generated' : undefined,
+      metadata: {
+        model: this.config.model,
+        batchId,
+        cacheHit: true, // Batches should benefit from caching
+        retriesAttempted: 0,
+        generatedAt: new Date().toISOString(),
+        estimatedCost: totalCost,
+        totalTokens,
+      },
+    };
+  }
+
+  /**
+   * Shuffle array using Fisher-Yates algorithm
+   */
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
   // ========================================================================
   // Private Helper Methods
   // ========================================================================

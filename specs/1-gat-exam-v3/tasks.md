@@ -179,12 +179,12 @@ Repository root structure (from plan.md):
 
 ### Implementation for User Story 4
 
-- [ ] T069 [P] [US4] Create word problem templates in src/skills/qudurat-quant/references/word-problems.md with 5 categories, realistic Arabic names, and culturally appropriate contexts (FR-022, FR-023)
-- [ ] T070 [P] [US4] Add word problem examples to src/skills/qudurat-quant/references/examples.md showing step-by-step solution format in Arabic (FR-024)
-- [ ] T071 [US4] Update src/skills/qudurat-quant/SKILL.md with word problem generation rules including name lists and context appropriateness guidelines
-- [ ] T072 [US4] Add word problem category constants to src/lib/constants/word-problem-categories.ts with 5 categories and their subtypes
-- [ ] T073 [US4] Create WordProblemSolution.tsx component in src/components/questions/ to display step-by-step explanation with Arabic formatting
-- [ ] T074 [US4] Update QuduratGenerator.ts to generate word problems across 5 categories with balanced distribution
+- [X] T069 [P] [US4] Create word problem templates in src/skills/qudurat-quant/references/word-problems.md with 5 categories, realistic Arabic names, and culturally appropriate contexts (FR-022, FR-023)
+- [X] T070 [P] [US4] Add word problem examples to src/skills/qudurat-quant/references/examples.md showing step-by-step solution format in Arabic (FR-024)
+- [X] T071 [US4] Update src/skills/qudurat-quant/SKILL.md with word problem generation rules including name lists and context appropriateness guidelines
+- [X] T072 [US4] Add word problem category constants to src/lib/constants/word-problem-categories.ts with 5 categories and their subtypes
+- [X] T073 [US4] Create WordProblemSolution.tsx component in src/components/questions/ to display step-by-step explanation with Arabic formatting
+- [X] T074 [US4] Update QuduratGenerator.ts to generate word problems across 5 categories with balanced distribution
 - [ ] T075 [US4] Test word problem generation for all 5 categories with verification of realistic contexts and step-by-step solutions
 
 **Checkpoint**: User Story 4 complete - Students can practice word problems with culturally appropriate contexts
@@ -199,13 +199,13 @@ Repository root structure (from plan.md):
 
 ### Implementation for User Story 5
 
-- [ ] T076 [P] [US5] Create src/skills/qudurat-verbal/references/analogy-relations.md with all 22 relationship types, definitions, and 3-5 Arabic word pair examples per type (FR-025)
-- [ ] T077 [P] [US5] Update src/skills/qudurat-verbal/SKILL.md with analogy question generation rules and relationship type selection logic
-- [ ] T078 [US5] Add relationship_type field validation to QuestionValidator.ts for analogy questions
-- [ ] T079 [US5] Create AnalogyExplanation.tsx component in src/components/questions/ to display relationship type label in explanation (FR-026)
-- [ ] T080 [US5] Update QuduratGenerator.ts to generate analogy questions with balanced distribution across 22 relationship types
-- [ ] T081 [US5] Add analogy relationship type tracking to ensure diverse coverage over multiple practice sessions
-- [ ] T082 [US5] Test analogy generation for all 22 relationship types with verification of correct Arabic word pairs and relationship identification
+- [X] T076 [P] [US5] Create src/skills/qudurat-verbal/references/analogy-relations.md with all 22 relationship types, definitions, and 3-5 Arabic word pair examples per type (FR-025)
+- [X] T077 [P] [US5] Update src/skills/qudurat-verbal/SKILL.md with analogy question generation rules and relationship type selection logic
+- [X] T078 [US5] Add relationship_type field validation to QuestionValidator.ts for analogy questions
+- [X] T079 [US5] Create AnalogyExplanation.tsx component in src/components/questions/ to display relationship type label in explanation (FR-026)
+- [X] T080 [US5] Update QuduratGenerator.ts to generate analogy questions with balanced distribution across 22 relationship types
+- [X] T081 [US5] Add analogy relationship type tracking to ensure diverse coverage over multiple practice sessions
+- [X] T082 [US5] Test analogy generation for all 22 relationship types with verification of correct Arabic word pairs and relationship identification
 
 **Checkpoint**: User Story 5 complete - Students can practice comprehensive analogy relationship types
 

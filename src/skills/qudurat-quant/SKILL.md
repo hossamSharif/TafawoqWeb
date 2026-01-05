@@ -129,3 +129,187 @@ description: توليد أسئلة القسم الكمي لاختبار القد
 فيثاغورس: a² + b² = c²
 النسبة المئوية: (الجزء/الكل) × 100
 ```
+
+## Word Problems (المسائل اللفظية)
+
+**Purpose**: Generate realistic word problems in Arabic contexts that test applied mathematics skills.
+
+### Categories and Distribution
+
+Word problems MUST be distributed across these 5 categories:
+- **Speed-Time-Distance** (السرعة والمسافة والزمن): 25%
+- **Work Problems** (مسائل العمل): 20%
+- **Age Problems** (مسائل الأعمار): 20%
+- **Profit/Loss** (الربح والخسارة): 20%
+- **Mixture** (مسائل الخلط والمزج): 15%
+
+### Cultural Appropriateness Rules
+
+**REQUIRED - Use Realistic Arabic Names**:
+- **Male names**: أحمد، محمد، خالد، عبدالله، سعود، فهد، ناصر، علي، عمر، يوسف
+- **Female names**: فاطمة، نورة، سارة، مريم، عائشة، هدى، ريم، منى، لمى، شهد
+
+**REQUIRED - Use Saudi/Gulf Contexts**:
+- **Cities**: الرياض، جدة، مكة المكرمة، المدينة المنورة، الدمام، الطائف، تبوك، أبها
+- **Currency**: ريال (not dollars or other currencies)
+- **Common products**: كتاب، هاتف، ساعة، حقيبة، قهوة، شاي، أرز
+
+**FORBIDDEN - Avoid These**:
+- ❌ Interest/riba (الربا) - use profit/loss instead
+- ❌ Alcohol in mixture problems - use medical alcohol (كحول طبي), juice, or other substances
+- ❌ Non-Arabic names or foreign contexts
+- ❌ Culturally inappropriate scenarios
+
+### Mental Math Number Ranges
+
+**Speed-Time-Distance**:
+- Speeds: 40, 50, 60, 80, 100, 120 km/h (cars); 500-900 km/h (planes)
+- Distances: 100, 120, 150, 200, 240, 300, 400, 600, 800, 960 km
+- Times: 1, 1.5, 2, 2.5, 3, 4, 5, 6 hours
+
+**Work Problems**:
+- Days to complete: 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30
+- Work rates: 1/2, 1/3, 1/4, 1/5, 1/6, 1/8, 1/10, 1/12 (use fractions that allow mental calculation)
+
+**Age Problems**:
+- Current ages: 5, 8, 10, 12, 15, 18, 20, 24, 25, 30, 32, 36, 40, 45, 48, 50, 60 years
+- Years ago/from now: 2, 3, 4, 5, 8, 10, 12, 15, 20
+- Ratios: 2:1, 3:1, 3:2, 4:1, 5:2, 2:3, 3:4
+
+**Profit/Loss**:
+- Cost prices: 100, 120, 150, 200, 240, 300, 400, 500, 600, 800, 1000 ريال
+- Profit percentages: 5%, 10%, 15%, 20%, 25%, 30%, 40%, 50%
+- Loss percentages: 5%, 10%, 15%, 20%, 25%
+- Discounts: 10%, 15%, 20%, 25%, 30%, 40%, 50%
+
+**Mixture**:
+- Quantities: 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30 kg or liters
+- Concentrations: 5%, 10%, 15%, 20%, 25%, 30%, 40%, 50%, 60%, 75%, 80%, 100%
+- Prices per kg: 10, 12, 15, 20, 24, 25, 30, 40, 50 ريال
+
+### Word Problem JSON Format
+
+```json
+{
+  "id": "exam_quant_word_speed_01",
+  "section": "quantitative",
+  "topic": "applied-math",
+  "subtopic": "speed-time-distance",
+  "difficulty": "medium",
+  "questionType": "mcq",
+  "problemType": "word-problem",
+  "wordProblemCategory": "speed-time-distance",
+  "stem": "انطلق أحمد من الرياض متجهاً إلى جدة بسرعة 80 كم/ساعة. إذا قطع مسافة 960 كم، فكم ساعة استغرقت الرحلة؟",
+  "choices": ["10 ساعات", "11 ساعة", "12 ساعة", "13 ساعة"],
+  "answerIndex": 2,
+  "explanation": "**المعطيات:**\n- السرعة = 80 كم/ساعة\n- المسافة = 960 كم\n\n**المطلوب:** إيجاد الزمن\n\n**الحل:**\n**الخطوة 1:** نستخدم القانون: الزمن = المسافة ÷ السرعة\n\n**الخطوة 2:** نعوض القيم:\nالزمن = 960 ÷ 80\n\n**الخطوة 3:** نحسب:\nالزمن = 12 ساعة\n\n**الإجابة النهائية:** 12 ساعة",
+  "stepByStep": true,
+  "arabicNames": ["أحمد"],
+  "saudiContext": ["الرياض", "جدة"],
+  "tags": ["word-problem", "speed", "distance", "time", "realistic-context"]
+}
+```
+
+### Required Fields for Word Problems
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `problemType` | string | ✓ | MUST be `"word-problem"` |
+| `wordProblemCategory` | string | ✓ | One of: `"speed-time-distance"`, `"work"`, `"age"`, `"profit-loss"`, `"mixture"` |
+| `stepByStep` | boolean | ✓ | MUST be `true` - all word problems require detailed steps |
+| `arabicNames` | array | ✓ if names used | List of Arabic names used in problem |
+| `saudiContext` | array | optional | Saudi-specific context elements (cities, products) |
+
+### Step-by-Step Solution Format (MANDATORY)
+
+**Every word problem explanation MUST follow this exact structure**:
+
+```markdown
+**المعطيات:**
+- [list all given information with clear labels]
+
+**المطلوب:** [clearly state what needs to be found]
+
+**الحل:**
+**الخطوة 1:** [identify formula or approach]
+
+**الخطوة 2:** [substitute values]
+
+**الخطوة 3:** [perform calculation]
+
+**الخطوة 4 (if needed):** [additional steps or verification]
+
+**الإجابة النهائية:** [final answer with units]
+```
+
+### Template Selection Guide
+
+For complete templates and examples, refer to:
+- **Templates**: [references/word-problems.md](references/word-problems.md)
+- **Examples**: [references/examples.md](references/examples.md) (Word Problem Examples section)
+
+**Category-Specific Templates**:
+
+1. **Speed-Time-Distance**:
+   - Simple travel (one direction)
+   - Meeting problems (two objects approaching)
+   - Catching up problems (one object chasing another)
+   - Relative speed scenarios
+
+2. **Work Problems**:
+   - Joint work (two workers/machines together)
+   - Pipes and tanks (filling/emptying)
+   - Partial work then joint work
+   - Work with different rates
+
+3. **Age Problems**:
+   - Age ratios (now)
+   - Age relationships over time (past/future)
+   - Sum of ages
+   - Age differences
+
+4. **Profit/Loss**:
+   - Simple profit/loss percentage
+   - Finding cost given selling price and profit
+   - Successive discounts
+   - Break-even analysis
+
+5. **Mixture**:
+   - Mixing by price (weighted average)
+   - Mixing by concentration
+   - Dilution problems
+   - Alligation (mixing to achieve target average)
+
+### Distractor Generation for Word Problems
+
+For each correct answer, generate 3 distractors based on these common errors:
+
+1. **Formula Error**: Using wrong formula
+   - Example: Adding instead of multiplying for distance
+   - Example: Using simple average instead of weighted average
+
+2. **Calculation Error**: Arithmetic mistake
+   - Example: 960 ÷ 80 = 10 instead of 12
+   - Example: 6 + 4 = 9 instead of 10
+
+3. **Unit/Conversion Error**: Partial calculation or wrong units
+   - Example: Forgetting to add both parts in mixture
+   - Example: Using hours when answer should be in days
+
+4. **Conceptual Error**: Misunderstanding problem setup
+   - Example: Using sum instead of difference for age problems
+   - Example: Treating successive discounts as additive
+
+### Quality Checklist for Word Problems
+
+Before finalizing, verify:
+- [x] Uses realistic Arabic name(s) from approved list
+- [x] Context is culturally appropriate (no riba, alcohol, etc.)
+- [x] Numbers allow mental calculation
+- [x] Answer is whole number or simple fraction
+- [x] All 4 answer choices are plausible
+- [x] Step-by-step solution follows required format
+- [x] Solution uses proper Arabic mathematical terminology
+- [x] Units are consistent and clearly stated
+- [x] Problem statement is unambiguous
+- [x] Difficulty appropriate for GAT (high school level)
