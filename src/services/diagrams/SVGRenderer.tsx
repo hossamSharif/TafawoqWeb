@@ -49,6 +49,8 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
         return renderSquare(data);
       case 'polygon':
         return renderPolygon(data);
+      case 'composite-shape':
+        return renderCompositeShape(data);
       default:
         return null;
     }
@@ -209,6 +211,86 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
             </text>
           );
         })}
+      </g>
+    );
+  };
+
+  const renderCompositeShape = (data: any) => {
+    const { shapes = [], labels = [], shaded = false } = data;
+
+    return (
+      <g>
+        {/* Render each shape in the composite */}
+        {shapes.map((shape: any, index: number) => {
+          const key = `shape-${index}`;
+          const fillColor = shaded ? 'rgba(59, 130, 246, 0.1)' : 'none';
+
+          switch (shape.type) {
+            case 'rectangle':
+              return (
+                <rect
+                  key={key}
+                  x={shape.x}
+                  y={shape.y}
+                  width={shape.width}
+                  height={shape.height}
+                  fill={fillColor}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+              );
+
+            case 'circle':
+              if (shape.half) {
+                // Render half circle using path
+                const startAngle = -Math.PI / 2; // Start from top
+                const endAngle = Math.PI / 2;    // End at bottom
+                const x1 = shape.cx + shape.radius * Math.cos(startAngle);
+                const y1 = shape.cy + shape.radius * Math.sin(startAngle);
+                const x2 = shape.cx + shape.radius * Math.cos(endAngle);
+                const y2 = shape.cy + shape.radius * Math.sin(endAngle);
+
+                return (
+                  <path
+                    key={key}
+                    d={`M ${x1} ${y1} A ${shape.radius} ${shape.radius} 0 0 1 ${x2} ${y2} L ${shape.cx} ${y2} L ${shape.cx} ${y1} Z`}
+                    fill={fillColor}
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                );
+              } else {
+                return (
+                  <circle
+                    key={key}
+                    cx={shape.cx}
+                    cy={shape.cy}
+                    r={shape.radius}
+                    fill={fillColor}
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                );
+              }
+
+            default:
+              return null;
+          }
+        })}
+
+        {/* Render labels */}
+        {labels.map((label: string, index: number) => (
+          <text
+            key={`label-${index}`}
+            x={width / 2}
+            y={height - 10 - (index * 20)}
+            textAnchor="middle"
+            className="text-sm"
+            direction="rtl"
+          >
+            {label}
+          </text>
+        ))}
       </g>
     );
   };
