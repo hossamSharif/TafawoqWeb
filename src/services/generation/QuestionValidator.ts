@@ -98,7 +98,7 @@ const QuestionSchemaBase = z.object({
   comparison_values: ComparisonValuesSchema.optional().nullable(),
   shape_type: z.string().optional().nullable(),
   pattern_id: z.string().optional().nullable(),
-  diagram_config: DiagramConfigSchema.optional().nullable(),
+  diagram: DiagramConfigSchema.optional().nullable(),
   relationship_type: z.string().optional().nullable(),
 
   // Metadata (will be added by system)
@@ -266,13 +266,13 @@ export class QuestionValidator {
       }
     }
 
-    // Diagram questions require diagram_config
+    // Diagram questions require diagram
     if (question.question_type === 'diagram') {
-      if (!question.diagram_config) {
+      if (!question.diagram) {
         errors.push({
-          field: 'diagram_config',
-          message: 'Diagram questions must have diagram_config field',
-          code: 'MISSING_DIAGRAM_CONFIG',
+          field: 'diagram',
+          message: 'Diagram questions must have diagram field',
+          code: 'MISSING_DIAGRAM',
         });
       }
     }
@@ -304,10 +304,10 @@ export class QuestionValidator {
     const errors: ValidationError[] = [];
 
     // Diagram-related validations
-    if (question.shape_type && !question.diagram_config) {
+    if (question.shape_type && !question.diagram) {
       errors.push({
-        field: 'diagram_config',
-        message: 'If shape_type is set, diagram_config must also be set',
+        field: 'diagram',
+        message: 'If shape_type is set, diagram must also be set',
         code: 'INCONSISTENT_DIAGRAM_FIELDS',
       });
     }
@@ -321,19 +321,19 @@ export class QuestionValidator {
     }
 
     // Diagram config validations
-    if (question.diagram_config) {
-      if (!question.diagram_config.caption) {
+    if (question.diagram) {
+      if (!question.diagram.caption) {
         errors.push({
-          field: 'diagram_config.caption',
+          field: 'diagram.caption',
           message: 'Diagram must have accessibility caption',
           code: 'MISSING_DIAGRAM_CAPTION',
         });
       }
 
       // Shading requires overlap
-      if (question.diagram_config.shading && !question.diagram_config.overlap) {
+      if (question.diagram.shading && !question.diagram.overlap) {
         errors.push({
-          field: 'diagram_config.overlap',
+          field: 'diagram.overlap',
           message: 'If shading exists, overlap must also exist',
           code: 'SHADING_WITHOUT_OVERLAP',
         });
@@ -627,8 +627,8 @@ ${question.choices && question.choices.length > 0 ? `**الخيارات:**\n${qu
     }
 
     // Flag 4: Diagram issues
-    if (question.diagram_config) {
-      if (!question.diagram_config.caption || question.diagram_config.caption.length < 10) {
+    if (question.diagram) {
+      if (!question.diagram.caption || question.diagram.caption.length < 10) {
         flags.push('diagram_accessibility');
       }
     }
