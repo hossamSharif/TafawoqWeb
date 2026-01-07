@@ -65,7 +65,9 @@ export function QuestionCard({
   }, [])
 
   // Determine if we should show the diagram
-  const showDiagram = diagram && (questionType === 'diagram' || questionType === 'chart')
+  // Fix: Show diagram whenever diagram data exists, regardless of questionType
+  // This handles cases where API returns questionType: "mcq" with diagram data
+  const showDiagram = diagram && diagram.type
 
   return (
     <div
