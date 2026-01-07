@@ -303,7 +303,7 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
       className={`inline-block ${className}`}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label={config.caption || 'Geometric diagram'}
+      aria-label={config?.caption || 'Geometric diagram'}
     >
       {renderShape()}
     </svg>

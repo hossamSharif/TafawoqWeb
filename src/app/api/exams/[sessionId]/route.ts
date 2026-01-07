@@ -99,6 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           stem: q.stem,
           choices: q.choices,
           passage: q.passage,
+          diagram: q.diagram, // Include diagram data for rendering
           // Only show answer info if already answered
           ...(isAnswered && {
             answerIndex: q.answerIndex,
