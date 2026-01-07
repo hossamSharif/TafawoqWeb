@@ -117,6 +117,18 @@ export class DiagramErrorBoundary extends Component<
             <p className="text-xs text-gray-600 max-w-sm">
               عذراً، لا يمكن عرض هذا الرسم في الوقت الحالي. يمكنك المتابعة مع الأسئلة الأخرى.
             </p>
+
+            {/* NEW: Show diagram type */}
+            <p className="text-xs text-gray-600">
+              نوع الرسم: {this.props.diagram?.type || 'غير معروف'}
+            </p>
+
+            {/* NEW: Always show error message (not just in development) */}
+            {error && (
+              <p className="text-xs text-gray-700 font-mono bg-gray-50 p-2 rounded max-w-md">
+                {error.message}
+              </p>
+            )}
           </div>
 
           {/* Development error details */}

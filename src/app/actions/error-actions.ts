@@ -13,7 +13,7 @@
 
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 export type ErrorType = 'mathematical' | 'grammatical' | 'diagram' | 'other';
@@ -42,7 +42,7 @@ export async function reportQuestionError(
   params: ReportQuestionErrorParams
 ): Promise<ReportQuestionErrorResult> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // Verify question exists
     const { data: question, error: questionError } = await supabase
@@ -143,7 +143,7 @@ async function addToReviewQueue(
  */
 export async function getQuestionErrors(questionId: string) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await supabase
       .from('question_errors')
@@ -174,7 +174,7 @@ export async function flagQuestionsForReview(
   }>
 ): Promise<{ success: boolean; flaggedCount: number; error?: string }> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     let flaggedCount = 0;
 

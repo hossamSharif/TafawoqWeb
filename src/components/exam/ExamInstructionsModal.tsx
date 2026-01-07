@@ -56,19 +56,27 @@ export function ExamInstructionsModal({ open, onOpenChange }: ExamInstructionsMo
       const response = await fetch('/api/subscription/limits')
       if (response.ok) {
         const data = await response.json()
+        // Calculate eligibility from the new response structure
+        const examsRemaining = data.generation?.exams?.remaining ?? 0
+        const examCredits = data.rewards?.examCredits ?? 0
+        const examsUsed = data.generation?.exams?.used ?? 0
+        const maxExams = data.generation?.exams?.limit ?? 3
+
         setEligibility({
-          canCreate: data.limits.examsRemaining > 0 || data.limits.examCredits > 0,
-          examsTaken: data.limits.examsTaken || 0,
-          maxExams: data.limits.maxExamsPerWeek || 3,
-          nextEligibleAt: data.limits.nextExamEligibleAt,
-          creditsAvailable: data.limits.examCredits || 0,
+          canCreate: examsRemaining > 0 || examCredits > 0,
+          examsTaken: examsUsed,
+          maxExams: maxExams,
+          nextEligibleAt: undefined, // Not provided by new API
+          creditsAvailable: examCredits,
         })
       } else {
         const errorData = await response.json()
+        console.error('Eligibility API error:', errorData)
         setError(errorData.error || 'فشل في التحقق من الأهلية')
       }
     } catch (err) {
-      setError('خطأ في الاتصال بالخادم')
+      console.error('Eligibility fetch error:', err)
+      setError(err instanceof Error ? err.message : 'خطأ في الاتصال بالخادم')
     } finally {
       setIsLoading(false)
     }

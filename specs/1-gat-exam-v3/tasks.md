@@ -238,10 +238,10 @@ Repository root structure (from plan.md):
 
 ### Documentation & Validation
 
-- [ ] T091 [P] Update quickstart.md with actual environment setup steps verified against implementation
-- [ ] T092 [P] Create Skills module documentation in src/skills/README.md explaining architecture and how to extend
-- [ ] T093 [P] Document diagram rendering system in src/services/diagrams/README.md with library selection guide
-- [ ] T094 Run through quickstart.md validation end-to-end to verify all setup steps work correctly
+- [X] T091 [P] Update quickstart.md with actual environment setup steps verified against implementation
+- [X] T092 [P] Create Skills module documentation in src/skills/README.md explaining architecture and how to extend
+- [X] T093 [P] Document diagram rendering system in src/services/diagrams/README.md with library selection guide
+- [X] T094 Run through quickstart.md validation end-to-end to verify all setup steps work correctly
 
 ### Performance & Accessibility
 
@@ -251,16 +251,16 @@ Repository root structure (from plan.md):
 
 ### Admin Tools & Monitoring
 
-- [ ] T098 [P] Create admin metrics dashboard in src/app/admin/metrics/page.tsx showing cache hit rate, cost savings, error rates, and generation statistics
-- [ ] T099 [P] Create error correction workflow page in src/app/admin/errors/page.tsx for reviewing and fixing reported question errors
-- [ ] T100 [P] Add generation logging to track batch performance, API costs, and quality metrics in database
+- [X] T098 [P] Create admin metrics dashboard in src/app/admin/metrics/page.tsx showing cache hit rate, cost savings, error rates, and generation statistics
+- [X] T099 [P] Create error correction workflow page in src/app/admin/errors/page.tsx for reviewing and fixing reported question errors
+- [X] T100 [P] Add generation logging to track batch performance, API costs, and quality metrics in database
 
 ### Code Quality
 
-- [ ] T101 Run TypeScript type checking: npm run type-check and fix any type errors
-- [ ] T102 Run linting: npm run lint and address any issues
-- [ ] T103 Code cleanup: Remove commented code, add JSDoc comments to public APIs, ensure consistent formatting
-- [ ] T104 Security review: Verify ANTHROPIC_API_KEY and Supabase credentials only in environment variables, no hard-coded secrets in Skills files
+- [X] T101 Run TypeScript type checking: npm run type-check and fix any type errors
+- [X] T102 Run linting: npm run lint and address any issues
+- [X] T103 Code cleanup: Remove commented code, add JSDoc comments to public APIs, ensure consistent formatting
+- [X] T104 Security review: Verify ANTHROPIC_API_KEY and Supabase credentials only in environment variables, no hard-coded secrets in Skills files
 
 ---
 

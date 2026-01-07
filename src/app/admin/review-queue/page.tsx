@@ -13,13 +13,13 @@
  * @see specs/1-gat-exam-v3/data-model.md - review_queue schema
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase/server';
 import { ReviewQueueTable } from './ReviewQueueTable';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ReviewQueuePage() {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
 
   // Fetch flagged questions with question details
   const { data: reviewQueue, error } = await supabase
@@ -63,14 +63,14 @@ export default async function ReviewQueuePage() {
   // Get statistics
   const stats = {
     total: reviewQueue?.length || 0,
-    pending: reviewQueue?.filter((q) => q.status === 'pending').length || 0,
-    reviewed: reviewQueue?.filter((q) => q.status === 'reviewed').length || 0,
-    approved: reviewQueue?.filter((q) => q.status === 'approved').length || 0,
-    rejected: reviewQueue?.filter((q) => q.status === 'rejected').length || 0,
+    pending: reviewQueue?.filter((q: any) => q.status === 'pending').length || 0,
+    reviewed: reviewQueue?.filter((q: any) => q.status === 'reviewed').length || 0,
+    approved: reviewQueue?.filter((q: any) => q.status === 'approved').length || 0,
+    rejected: reviewQueue?.filter((q: any) => q.status === 'rejected').length || 0,
   };
 
   const flagTypeStats = reviewQueue?.reduce(
-    (acc, item) => {
+    (acc: Record<string, number>, item: any) => {
       acc[item.flag_type] = (acc[item.flag_type] || 0) + 1;
       return acc;
     },

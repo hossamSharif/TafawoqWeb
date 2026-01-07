@@ -91,18 +91,58 @@ export function SVGDiagram({
         case 'composite-shape': {
           const compositeData = sanitizedData as unknown as any
 
+          // DEBUG: Log composite shape data for troubleshooting
+          console.log('[SVGDiagram] Rendering composite-shape:', {
+            hasShapes: !!compositeData.shapes,
+            shapesCount: compositeData.shapes?.length,
+            shapesTypes: compositeData.shapes?.map((s: any) => s.type),
+            data: compositeData,
+          })
+
           // Validate composite data structure
           if (!compositeData.shapes || !Array.isArray(compositeData.shapes) || compositeData.shapes.length === 0) {
+            console.warn('[SVGDiagram] Composite shape validation failed:', {
+              shapes: compositeData.shapes,
+              hasShapes: !!compositeData.shapes,
+              isArray: Array.isArray(compositeData.shapes),
+              length: compositeData.shapes?.length,
+            })
             throw new Error('Composite shape must have at least one shape')
           }
 
           const shaded = compositeData.shaded || false
           const fillColor = shaded ? 'rgba(59, 130, 246, 0.1)' : 'none'
 
+          // Filter valid shapes before rendering (partial rendering support)
+          const validShapes = compositeData.shapes.filter((shape: any, index: number) => {
+            try {
+              const shapeData = shape.data || shape
+
+              // Basic validation: check if required fields exist
+              if (shape.type === 'circle') {
+                return shapeData.cx !== undefined && shapeData.cy !== undefined && shapeData.radius !== undefined
+              } else if (shape.type === 'rectangle') {
+                return shapeData.x !== undefined && shapeData.y !== undefined && shapeData.width !== undefined && shapeData.height !== undefined
+              } else if (shape.type === 'triangle') {
+                return shapeData.points && shapeData.points.length === 3
+              }
+
+              return false
+            } catch (err) {
+              console.warn(`[SVGDiagram] Shape ${index} validation failed:`, err)
+              return false
+            }
+          })
+
+          const invalidCount = compositeData.shapes.length - validShapes.length
+          if (invalidCount > 0) {
+            console.warn(`[SVGDiagram] Filtered out ${invalidCount} invalid shape(s) from composite`)
+          }
+
           return (
             <g>
-              {/* Render all shapes with raw SVG for proper positioning */}
-              {compositeData.shapes.map((shape: any, index: number) => {
+              {/* Render all valid shapes with raw SVG for proper positioning */}
+              {validShapes.map((shape: any, index: number) => {
                 try {
                   // Use flat structure directly
                   const shapeData = shape.data || shape
@@ -165,6 +205,12 @@ export function SVGDiagram({
                       return null
                   }
                 } catch (err) {
+                  // DEBUG: Log shape rendering failure with details
+                  console.warn(`[SVGDiagram] Shape ${index} rendering failed:`, {
+                    shapeType: shape.type,
+                    shapeData: shape.data || shape,
+                    error: err,
+                  })
                   // Log and skip invalid shape
                   logDiagramError('render-failed', type, err as Error, { shapeIndex: index })
                   return null

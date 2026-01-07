@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { ZoomIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QuestionHeader } from './QuestionHeader'
-import { DiagramRenderer } from '@/components/diagrams/DiagramRenderer'
+import { DiagramRenderer } from '@/services/diagrams/DiagramRenderer'
 import type { DiagramData, QuestionSection, QuestionDifficulty, QuestionCategory, QuestionType } from '@/types/question'
 
 export interface QuestionCardProps {

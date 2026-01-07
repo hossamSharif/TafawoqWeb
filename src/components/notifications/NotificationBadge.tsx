@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, memo } from 'react'
 import Link from 'next/link'
 import { Bell, Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ interface NotificationBadgeProps {
   showRewardIndicator?: boolean
 }
 
-export function NotificationBadge({ className, showRewardIndicator = true }: NotificationBadgeProps) {
+export const NotificationBadge = memo(function NotificationBadge({ className, showRewardIndicator = true }: NotificationBadgeProps) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [rewardCount, setRewardCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -105,4 +105,4 @@ export function NotificationBadge({ className, showRewardIndicator = true }: Not
   }
 
   return badgeContent
-}
+})

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { ZoomIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QuestionHeader, type QuestionHeaderProps } from './QuestionHeader'
-import { DiagramRenderer } from '@/components/diagrams/DiagramRenderer'
+import { DiagramRenderer } from '@/services/diagrams/DiagramRenderer'
 import type { DiagramData } from '@/types/question'
 
 export interface ImageQuestionProps extends Omit<QuestionHeaderProps, 'className'> {

@@ -68,22 +68,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, newSession: Session | null) => {
-        console.log('[AuthContext] Auth state changed:', event, { hasSession: !!newSession })
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[AuthContext] Auth state changed:', event, { hasSession: !!newSession })
+        }
 
         // Update session in cache
         queryClient.setQueryData(queryKeys.auth.session(), newSession)
 
         if (event === 'SIGNED_IN' && newSession?.user) {
-          console.log('[AuthContext] User signed in, invalidating queries...')
           // Invalidate profile and subscription to force refetch
           queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile(newSession.user.id) })
           queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(newSession.user.id) })
         } else if (event === 'SIGNED_OUT') {
-          console.log('[AuthContext] User signed out, clearing cache...')
           // Clear all cached data
           queryClient.clear()
         } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
-          console.log('[AuthContext] Token refreshed, revalidating queries...')
           // Revalidate to ensure data is current
           queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile(newSession.user.id) })
           queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(newSession.user.id) })

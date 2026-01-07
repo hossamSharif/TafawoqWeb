@@ -61,7 +61,7 @@ export class SkillValidator {
 
     // Check main content has proper structure (should have headers)
     if (skill.mainContent && !this.hasProperStructure(skill.mainContent)) {
-      warnings.push({
+      errors.push({
         type: 'invalid_format',
         message: `SKILL.md for '${skill.name}' should contain markdown headers (##)`,
         file: 'SKILL.md',

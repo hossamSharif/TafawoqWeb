@@ -1,7 +1,6 @@
 'use client'
 
 import { AppShowcaseSection } from './AppShowcaseSection'
-// import { AnimatedBackground } from './AnimatedBackground'
 
 export function HeroSection() {
 
@@ -9,9 +8,6 @@ export function HeroSection() {
     <section className="relative min-h-[85vh] flex flex-col items-center justify-center overflow-hidden">
       {/* White background base - z-0 (lowest layer) */}
       <div className="absolute inset-0 bg-white z-0" />
-
-      {/* Top Animated Green Particles - z-[1] (above white, below content) */}
-      {/* <AnimatedBackground /> */}
 
       {/* Subtle decorative elements - z-[2] */}
       <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl z-[2]" />

@@ -68,7 +68,6 @@ const ComparisonValuesSchema = z.object({
     label: z.string().min(1, 'value2.label must not be empty'),
   }),
 });
-});
 
 /** Base question schema */
 const QuestionSchemaBase = z.object({

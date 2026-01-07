@@ -14,7 +14,7 @@
 
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase/server';
 import { QuduratGenerator, type GenerationConfig } from '@/services/generation/QuduratGenerator';
 import type { QuestionGenerationParams } from '@/services/generation/PromptBuilder';
 import type { QuestionData } from '@/services/generation/QuestionValidator';
@@ -105,7 +105,7 @@ export async function generateFullExamAction(
 
   try {
     // Initialize Supabase client
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // Verify user is authenticated and authorized (admin only)
     const {
@@ -262,7 +262,7 @@ export async function generateQuestionBatchAction(
 
   try {
     // Initialize Supabase client
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // Verify authentication
     const {
@@ -361,7 +361,7 @@ export async function generateQuestionBatchAction(
  */
 export async function getExamConfigAction(configId: string): Promise<ExamConfiguration | null> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await supabase
       .from('exam_configs')
@@ -396,7 +396,7 @@ export async function getExamConfigAction(configId: string): Promise<ExamConfigu
  */
 export async function listExamConfigsAction(): Promise<ExamConfiguration[]> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await supabase
       .from('exam_configs')
@@ -409,7 +409,7 @@ export async function listExamConfigsAction(): Promise<ExamConfiguration[]> {
     }
 
     return (
-      data?.map((config) => ({
+      data?.map((config: any) => ({
         configId: config.id,
         name: config.name,
         track: config.track,

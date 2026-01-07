@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HeroSection } from '@/components/landing/HeroSection'
 import { FeatureSection } from '@/components/landing/FeatureSection'
@@ -19,34 +19,15 @@ export const dynamic = 'force-dynamic'
 export default function LandingPage() {
   const { isAuthenticated, isPremium, isLoading } = useAuth()
   const router = useRouter()
-  const [showContent, setShowContent] = useState(false)
 
-  // Redirect authenticated premium users to dashboard
+  // Non-blocking redirect: only redirect after auth is loaded, but show content immediately
   useEffect(() => {
     if (!isLoading && isAuthenticated && isPremium) {
       router.push('/dashboard')
     }
   }, [isAuthenticated, isPremium, isLoading, router])
 
-  // Add a timeout to prevent infinite loading
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      console.log('[LandingPage] Loading timeout reached, showing content')
-      setShowContent(true)
-    }, 3000) // Show content after 3 seconds max
-
-    return () => clearTimeout(timeout)
-  }, [])
-
-  // Show loading while checking auth status (max 3 seconds)
-  if (isLoading && !showContent) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
+  // Don't block rendering - show content immediately
   return (
     <main className="min-h-screen">
       {/* Navigation */}
