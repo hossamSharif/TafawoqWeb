@@ -228,12 +228,13 @@ COMPARISON INSTRUCTIONS:
 
       diagram: `
 DIAGRAM INSTRUCTIONS:
-- Include complete diagram_config with type, renderHint, and data
+- REQUIRED: Include complete "diagram" object with type, renderHint, data, and caption
 - Choose appropriate renderHint: "SVG" for simple shapes, "JSXGraph" for overlapping, "Chart.js" for statistics
 - Provide Arabic labels for all diagram elements
-- Include formula_used field for geometric calculations
-- Add accessibility caption describing the diagram
-- For overlapping shapes: specify shading configuration`,
+- Include formulaUsed field for geometric calculations
+- Add accessibility caption describing the diagram in Arabic
+- For overlapping shapes: specify shading configuration
+- IMPORTANT: Field name must be "diagram" (not "diagram_config")`,
 
       analogy: `
 ANALOGY INSTRUCTIONS:

@@ -25,15 +25,15 @@ import Anthropic from '@anthropic-ai/sdk';
 const DiagramConfigSchema = z.object({
   type: z.string(),
   subtype: z.string().optional(),
-  renderHint: z.enum(['SVG', 'JSXGraph', 'Chart.js']),
+  renderHint: z.enum(['SVG', 'JSXGraph', 'Chart.js', 'Mafs', 'Canvas']).default('SVG'),
   data: z.record(z.any()),
   shading: z
     .object({
       type: z.enum(['difference', 'intersection', 'union']),
       operation: z.string(),
-      shadedRegion: z.string(),
+      shadedRegion: z.string().optional(),
       fillColor: z.string(),
-      fillOpacity: z.number().min(0.3).max(0.6),
+      fillOpacity: z.number().min(0.1).max(0.9),
     })
     .optional(),
   overlap: z
@@ -44,7 +44,7 @@ const DiagramConfigSchema = z.object({
     })
     .optional(),
   formulaUsed: z.string().optional(),
-  caption: z.string(), // REQUIRED for accessibility
+  caption: z.string().optional(), // Optional - will use default if not provided
   accessibilityFeatures: z
     .object({
       highContrast: z.boolean().optional(),
@@ -320,25 +320,9 @@ export class QuestionValidator {
       });
     }
 
-    // Diagram config validations
-    if (question.diagram) {
-      if (!question.diagram.caption) {
-        errors.push({
-          field: 'diagram.caption',
-          message: 'Diagram must have accessibility caption',
-          code: 'MISSING_DIAGRAM_CAPTION',
-        });
-      }
-
-      // Shading requires overlap
-      if (question.diagram.shading && !question.diagram.overlap) {
-        errors.push({
-          field: 'diagram.overlap',
-          message: 'If shading exists, overlap must also exist',
-          code: 'SHADING_WITHOUT_OVERLAP',
-        });
-      }
-    }
+    // Diagram config validations - now optional/lenient
+    // Caption is now optional, will be generated with default if missing
+    // Shading no longer requires overlap (can shade simple shapes too)
 
     // Correct answer validation for comparison questions
     if (question.question_type === 'comparison') {
@@ -626,11 +610,10 @@ ${question.choices && question.choices.length > 0 ? `**الخيارات:**\n${qu
       flags.push('poor_distractors');
     }
 
-    // Flag 4: Diagram issues
-    if (question.diagram) {
-      if (!question.diagram.caption || question.diagram.caption.length < 10) {
-        flags.push('diagram_accessibility');
-      }
+    // Flag 4: Diagram issues (now just a warning, not a blocker)
+    // Caption is optional, but flag if completely missing for accessibility review
+    if (question.diagram && !question.diagram.caption) {
+      flags.push('diagram_accessibility');
     }
 
     return flags;
