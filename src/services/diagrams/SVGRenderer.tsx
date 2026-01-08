@@ -27,6 +27,42 @@ export interface SVGRendererProps {
   className?: string;
 }
 
+// Helper to normalize point from array [x,y] or object {x,y}
+function normalizePoint(point: any): { x: number; y: number } {
+  if (Array.isArray(point)) {
+    return { x: point[0] || 0, y: point[1] || 0 };
+  }
+  if (point && typeof point === 'object') {
+    return { x: point.x || 0, y: point.y || 0 };
+  }
+  return { x: 0, y: 0 };
+}
+
+// Helper to normalize vertices array
+function normalizeVertices(vertices: any): Array<{ x: number; y: number }> {
+  if (!Array.isArray(vertices)) return [];
+  return vertices.map(normalizePoint);
+}
+
+// Helper to normalize labels (can be object or array)
+function normalizeLabels(labels: any, vertexLabels?: string[]): Record<string, string> {
+  // If it's already an object, return it
+  if (labels && typeof labels === 'object' && !Array.isArray(labels)) {
+    return labels;
+  }
+
+  // If vertexLabels provided (e.g., ["أ", "ب", "ج"]), convert to object
+  if (Array.isArray(vertexLabels)) {
+    const result: Record<string, string> = {};
+    vertexLabels.forEach((label, i) => {
+      result[`vertex${i}`] = label;
+    });
+    return result;
+  }
+
+  return {};
+}
+
 export const SVGRenderer: React.FC<SVGRendererProps> = ({
   config,
   width,
@@ -36,7 +72,9 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
   const viewBox = `0 0 ${width} ${height}`;
 
   const renderShape = () => {
+    if (!config) return null;
     const { type, data } = config;
+    if (!data) return null;
 
     switch (type) {
       case 'circle':
@@ -57,36 +95,71 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
   };
 
   const renderCircle = (data: any) => {
-    const { center, radius, features = [], labels = {} } = data;
+    // Normalize center point (can be [x,y] or {x,y})
+    const center = normalizePoint(data.center);
+    // Handle both 'radius' number and scaled radius
+    const radius = typeof data.radius === 'number' ? data.radius * 10 : 50; // Scale up for visibility
+    const features = data.features || [];
+    const normalizedLabels = normalizeLabels(data.labels);
+
+    // Handle label from data.label (string like "نق = 7 سم")
+    const labelText = data.label || '';
 
     return (
       <g>
         {/* Main circle */}
         <circle
-          cx={center.x}
-          cy={center.y}
+          cx={center.x || width / 2}
+          cy={center.y || height / 2}
           r={radius}
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
         />
 
-        {/* Features (diameter, chord, etc.) */}
-        {features.includes('diameter') && (
+        {/* Show radius line if showRadius is true */}
+        {data.showRadius && (
           <line
-            x1={center.x - radius}
-            y1={center.y}
-            x2={center.x + radius}
-            y2={center.y}
+            x1={center.x || width / 2}
+            y1={center.y || height / 2}
+            x2={(center.x || width / 2) + radius}
+            y2={center.y || height / 2}
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeDasharray="4,4"
+          />
+        )}
+
+        {/* Features (diameter, chord, etc.) */}
+        {(features.includes('diameter') || data.showDiameter) && (
+          <line
+            x1={(center.x || width / 2) - radius}
+            y1={center.y || height / 2}
+            x2={(center.x || width / 2) + radius}
+            y2={center.y || height / 2}
             stroke="currentColor"
             strokeWidth="1"
             strokeDasharray="4,4"
           />
         )}
 
-        {/* Labels */}
-        {Object.entries(labels).map(([key, value]) => {
-          const labelPos = getLabelPosition(key, center, radius);
+        {/* Main label (e.g., "نق = 7 سم") */}
+        {labelText && (
+          <text
+            x={(center.x || width / 2) + radius / 2}
+            y={(center.y || height / 2) - 10}
+            textAnchor="middle"
+            className="text-sm"
+            direction="rtl"
+            fill="currentColor"
+          >
+            {labelText}
+          </text>
+        )}
+
+        {/* Labels from labels object */}
+        {Object.entries(normalizedLabels).map(([key, value]) => {
+          const labelPos = getLabelPosition(key, center.x ? center : { x: width / 2, y: height / 2 }, radius);
           return (
             <text
               key={key}
@@ -95,6 +168,7 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
               textAnchor="middle"
               className="text-sm"
               direction="rtl"
+              fill="currentColor"
             >
               {String(value)}
             </text>
@@ -105,8 +179,25 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
   };
 
   const renderTriangle = (data: any) => {
-    const { vertices, labels = {} } = data;
-    const points = vertices.map((v: any) => `${v.x},${v.y}`).join(' ');
+    // Normalize vertices - Claude generates [[x,y], ...] but we need [{x,y}, ...]
+    const rawVertices = data.vertices || [];
+    const normalizedVertices = normalizeVertices(rawVertices);
+
+    // If no vertices, create default right triangle
+    const vertices = normalizedVertices.length >= 3
+      ? normalizedVertices
+      : [
+          { x: width * 0.2, y: height * 0.8 },
+          { x: width * 0.8, y: height * 0.8 },
+          { x: width * 0.2, y: height * 0.2 }
+        ];
+
+    const points = vertices.map(v => `${v.x},${v.y}`).join(' ');
+
+    // Handle labels - can be array ["أ", "ب", "ج"] or object
+    const labelArray = Array.isArray(data.labels) ? data.labels : [];
+    const sides = Array.isArray(data.sides) ? data.sides : [];
+    const angles = Array.isArray(data.angles) ? data.angles : [];
 
     return (
       <g>
@@ -117,31 +208,95 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
           strokeWidth="2"
         />
 
-        {/* Vertex labels */}
-        {vertices.map((vertex: any, index: number) => {
-          const labelKey = `vertex${index}`;
-          const label = labels[labelKey];
-          if (!label) return null;
+        {/* Vertex labels from array */}
+        {labelArray.map((label: string, index: number) => {
+          const vertex = vertices[index];
+          if (!vertex || !label) return null;
+
+          // Position label outside the triangle
+          const offsetY = index === 2 ? -15 : 20;
+          const offsetX = index === 0 ? -10 : (index === 1 ? 10 : 0);
 
           return (
             <text
-              key={labelKey}
-              x={vertex.x}
-              y={vertex.y - 10}
+              key={`vertex-${index}`}
+              x={vertex.x + offsetX}
+              y={vertex.y + offsetY}
               textAnchor="middle"
               className="text-sm font-bold"
               direction="rtl"
+              fill="currentColor"
             >
               {label}
             </text>
           );
         })}
+
+        {/* Side labels */}
+        {sides.map((side: string, index: number) => {
+          if (!side) return null;
+          const v1 = vertices[index];
+          const v2 = vertices[(index + 1) % vertices.length];
+          if (!v1 || !v2) return null;
+
+          const midX = (v1.x + v2.x) / 2;
+          const midY = (v1.y + v2.y) / 2;
+
+          // Offset label away from line
+          const dx = v2.x - v1.x;
+          const dy = v2.y - v1.y;
+          const len = Math.sqrt(dx * dx + dy * dy) || 1;
+          const offsetX = (-dy / len) * 15;
+          const offsetY = (dx / len) * 15;
+
+          return (
+            <text
+              key={`side-${index}`}
+              x={midX + offsetX}
+              y={midY + offsetY}
+              textAnchor="middle"
+              className="text-xs"
+              direction="rtl"
+              fill="currentColor"
+            >
+              {side}
+            </text>
+          );
+        })}
+
+        {/* Right angle marker */}
+        {angles.some((a: any) => a === '90°' || a === 90) && (
+          <rect
+            x={vertices[0].x}
+            y={vertices[0].y - 15}
+            width={15}
+            height={15}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+          />
+        )}
       </g>
     );
   };
 
   const renderRectangle = (data: any) => {
-    const { x, y, width: w, height: h, labels = {} } = data;
+    // Scale dimensions for visibility
+    const w = (data.width || 100) * 15;
+    const h = (data.height || 60) * 15;
+    const x = data.x ?? (width - w) / 2;
+    const y = data.y ?? (height - h) / 2;
+
+    // Handle labels - can be array ["أ", "ب", "ج", "د"] or object
+    const labelArray = Array.isArray(data.labels) ? data.labels : [];
+
+    // Corner positions for 4 labels
+    const corners = [
+      { x: x, y: y - 10 },           // Top left
+      { x: x + w, y: y - 10 },       // Top right
+      { x: x + w, y: y + h + 15 },   // Bottom right
+      { x: x, y: y + h + 15 }        // Bottom left
+    ];
 
     return (
       <g>
@@ -155,22 +310,67 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
           strokeWidth="2"
         />
 
-        {/* Corner labels */}
-        {Object.entries(labels).map(([key, value]) => {
-          const labelPos = getRectLabelPosition(key, x, y, w, h);
+        {/* Corner labels from array */}
+        {labelArray.map((label: string, index: number) => {
+          const corner = corners[index];
+          if (!corner || !label) return null;
+
           return (
             <text
-              key={key}
-              x={labelPos.x}
-              y={labelPos.y}
+              key={`corner-${index}`}
+              x={corner.x}
+              y={corner.y}
               textAnchor="middle"
               className="text-sm font-bold"
               direction="rtl"
+              fill="currentColor"
             >
-              {String(value)}
+              {label}
             </text>
           );
         })}
+
+        {/* Show dimensions if requested */}
+        {data.showDimensions && (
+          <>
+            {/* Width label */}
+            <text
+              x={x + w / 2}
+              y={y + h + 30}
+              textAnchor="middle"
+              className="text-xs"
+              direction="rtl"
+              fill="currentColor"
+            >
+              {data.width} سم
+            </text>
+            {/* Height label */}
+            <text
+              x={x - 20}
+              y={y + h / 2}
+              textAnchor="middle"
+              className="text-xs"
+              direction="rtl"
+              fill="currentColor"
+              transform={`rotate(-90, ${x - 20}, ${y + h / 2})`}
+            >
+              {data.height} سم
+            </text>
+          </>
+        )}
+
+        {/* Show diagonal if requested */}
+        {data.showDiagonal && (
+          <line
+            x1={x}
+            y1={y}
+            x2={x + w}
+            y2={y + h}
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeDasharray="4,4"
+          />
+        )}
       </g>
     );
   };
