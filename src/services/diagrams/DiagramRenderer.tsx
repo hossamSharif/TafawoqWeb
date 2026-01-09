@@ -34,6 +34,8 @@ export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
   width = 400,
   height = 400,
   className = '',
+  onLoadSuccess,
+  onLoadError,
 }) => {
   // Support both config and diagram prop names
   const diagramConfig = config || diagram;
@@ -76,6 +78,8 @@ export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
           width={width}
           height={height}
           className={className}
+          onLoadSuccess={onLoadSuccess}
+          onLoadError={onLoadError}
         />
       );
 
