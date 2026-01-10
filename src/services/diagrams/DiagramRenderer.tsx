@@ -16,6 +16,7 @@ import React from 'react';
 import { SVGRenderer } from './SVGRenderer';
 import { JSXGraphRenderer } from './JSXGraphRenderer';
 import { ChartRenderer } from './ChartRenderer';
+import { OverlappingShapesSVG } from './OverlappingShapesSVG';
 
 export interface DiagramRendererProps {
   config?: any;
@@ -62,6 +63,19 @@ export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
       );
 
     case 'JSXGraph':
+      // Use pure SVG for overlapping-shapes to avoid JSXGraph bundling issues
+      if (diagramConfig.type === 'overlapping-shapes') {
+        return (
+          <OverlappingShapesSVG
+            config={diagramConfig}
+            width={width}
+            height={height}
+            className={className}
+            onLoadSuccess={onLoadSuccess}
+            onLoadError={onLoadError}
+          />
+        );
+      }
       return (
         <JSXGraphRenderer
           config={diagramConfig}
