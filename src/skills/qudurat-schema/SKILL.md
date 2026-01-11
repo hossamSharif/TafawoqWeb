@@ -1,27 +1,38 @@
 ---
 name: qudurat-schema
-description: هيكل JSON المطلوب لأسئلة اختبار القدرات. يُستخدم لضمان صحة تنسيق الأسئلة المُولَّدة. يحدد: (1) الحقول المطلوبة والاختيارية لكل نوع سؤال، (2) القيم المسموحة لكل حقل، (3) قواعد التحقق والتوافق. يجب الرجوع إليه عند توليد أي سؤال للتأكد من صحة الهيكل.
+description: هيكل JSON المطلوب لأسئلة اختبار القدرات (الإصدار 3.0). يُستخدم لضمان صحة تنسيق الأسئلة المُولَّدة. يحدد: (1) الحقول المطلوبة والاختيارية لكل نوع سؤال، (2) القيم المسموحة لكل حقل، (3) قواعد التحقق والتوافق. يجب الرجوع إليه عند توليد أي سؤال للتأكد من صحة الهيكل.
 ---
 
-# Qudurat JSON Schema
+# Qudurat JSON Schema v3.0
 
 ## Base Question Schema
 
+**CRITICAL: Use these exact field names (v3.0 format):**
+
 ```json
 {
-  "id": "string (required)",
+  "id": "string (optional - will be auto-generated if not provided)",
+  "version": "3.0 (default)",
+  "language": "ar (default)",
   "section": "quantitative | verbal (required)",
+  "track": "scientific | literary (required)",
+  "question_type": "mcq | comparison | diagram | reading | analogy | completion | error | odd-word (required)",
   "topic": "string (required)",
   "subtopic": "string (required)",
   "difficulty": "easy | medium | hard (required)",
-  "questionType": "string (required)",
-  "stem": "string (required)",
-  "choices": ["string", "string", "string", "string"] (required, exactly 4),
-  "answerIndex": 0 | 1 | 2 | 3 (required),
-  "explanation": "string (required)",
-  "tags": ["string"] (optional)
+  "question_text": "string (required - the actual question in Arabic)",
+  "choices": ["string", "string", "string", "string"] (required for MCQ, exactly 4),
+  "correct_answer": "string (required - the text of the correct answer)",
+  "explanation": "string (required - detailed explanation in Arabic)"
 }
 ```
+
+**⚠️ IMPORTANT FIELD CHANGES FROM v2.0:**
+- `stem` → `question_text` (use `question_text`, NOT `stem`)
+- `questionType` → `question_type` (use `question_type`, NOT `questionType`)
+- `answerIndex` → `correct_answer` (provide the actual answer text, NOT the index)
+- **NEW:** `track` field is now REQUIRED (scientific or literary)
+- **NEW:** `version` and `language` fields (will default if not provided)
 
 ## ID Format
 
@@ -48,16 +59,25 @@ description: هيكل JSON المطلوب لأسئلة اختبار القدرا
 
 ```json
 {
-  "questionType": "comparison",
-  "stem": "قارن بين:",
-  "value1": "string (required)",
-  "value2": "string (required)",
+  "question_type": "comparison",
+  "question_text": "قارن بين القيمة الأولى والقيمة الثانية:",
+  "comparison_values": {
+    "value1": {
+      "expression": "mathematical expression or value",
+      "label": "القيمة الأولى"
+    },
+    "value2": {
+      "expression": "mathematical expression or value",
+      "label": "القيمة الثانية"
+    }
+  },
   "choices": [
     "القيمة الأولى أكبر",
     "القيمة الثانية أكبر",
     "القيمتان متساويتان",
     "المعطيات غير كافية للمقارنة"
-  ]
+  ],
+  "correct_answer": "one of the choices above (exact text)"
 }
 ```
 
@@ -67,7 +87,8 @@ description: هيكل JSON المطلوب لأسئلة اختبار القدرا
 
 ```json
 {
-  "questionType": "diagram | chart | overlapping-diagram",
+  "question_type": "diagram",
+  "question_text": "السؤال عن الرسم",
   "diagram": {
     "type": "string (required)",
     "subtype": "string (for overlapping only)",
@@ -76,7 +97,9 @@ description: هيكل JSON المطلوب لأسئلة اختبار القدرا
     "caption": "string",
     "shading": { },
     "formulaUsed": "string"
-  }
+  },
+  "choices": ["خيار أ", "خيار ب", "خيار ج", "خيار د"],
+  "correct_answer": "خيار [the correct one]"
 }
 ```
 
@@ -84,10 +107,11 @@ description: هيكل JSON المطلوب لأسئلة اختبار القدرا
 
 ```json
 {
-  "questionType": "reading-passage",
-  "passageId": "string (required)",
-  "passage": "string (first question only)",
-  "stem": "السؤال"
+  "question_type": "reading",
+  "question_text": "السؤال عن النص",
+  "passage": "النص المقروء (if applicable)",
+  "choices": ["خيار أ", "خيار ب", "خيار ج", "خيار د"],
+  "correct_answer": "خيار [the correct one]"
 }
 ```
 
@@ -95,10 +119,13 @@ description: هيكل JSON المطلوب لأسئلة اختبار القدرا
 
 ```json
 {
+  "question_type": "analogy",
   "topic": "analogy",
-  "subtopic": "string",
-  "analogyType": "string (required)",
-  "stem": "كلمة1 : كلمة2"
+  "subtopic": "relationship type",
+  "relationship_type": "string (required)",
+  "question_text": "كلمة1 : كلمة2",
+  "choices": ["خيار أ : خيار أ", "خيار ب : خيار ب", "خيار ج : خيار ج", "خيار د : خيار د"],
+  "correct_answer": "خيار [the correct pair]"
 }
 ```
 
@@ -158,9 +185,33 @@ For complete validation rules: **[references/full-schema.md](references/full-sch
 
 ## Validation Rules
 
-1. **4 choices exactly** - no more, no less
-2. **answerIndex 0-3** - must match choices array
-3. **Arabic text** - all strings in Arabic
-4. **Unique ID** - no duplicates
+1. **4 choices exactly** - no more, no less (for MCQ questions)
+2. **correct_answer as text** - must be the EXACT text from one of the choices
+3. **Arabic text** - all strings in Arabic (formal MSA)
+4. **Required fields** - check by question_type:
+   - All: section, track, question_type, topic, subtopic, difficulty, question_text, correct_answer, explanation
+   - MCQ: also requires choices array
+   - Comparison: also requires comparison_values
+   - Diagram: also requires diagram object
+   - Analogy: also requires relationship_type
 5. **Valid topic/subtopic** - must be from allowed lists
-6. **Required fields** - check by questionType
+6. **Track consistency** - scientific/literary must match section requirements
+
+## Example Complete Question (MCQ)
+
+```json
+{
+  "version": "3.0",
+  "language": "ar",
+  "section": "quantitative",
+  "track": "scientific",
+  "question_type": "mcq",
+  "topic": "algebra",
+  "subtopic": "linear-equations",
+  "difficulty": "easy",
+  "question_text": "إذا كان 2س + 5 = 13، فما قيمة س؟",
+  "choices": ["2", "4", "6", "8"],
+  "correct_answer": "4",
+  "explanation": "نطرح 5 من الطرفين: 2س = 8، ثم نقسم على 2: س = 4"
+}
+```
