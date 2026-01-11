@@ -9,6 +9,7 @@ import type {
   ValidatedCircleData,
   ValidatedTriangleData,
   ValidatedRectangleData,
+  ValidatedCompositeShapeData,
 } from './validation'
 
 // ============================================================================
@@ -134,6 +135,42 @@ export function createFallbackRectangle(): ValidatedRectangleData {
 }
 
 /**
+ * Create a default composite shape (rectangle + circle)
+ * Used as fallback when composite-shape data is invalid
+ */
+export function createFallbackCompositeShape(): ValidatedCompositeShapeData {
+  return {
+    shapes: [
+      {
+        type: 'rectangle',
+        data: {
+          width: 120,
+          height: 60,
+          cornerLabels: ['أ', 'ب', 'ج', 'د'],
+          widthLabel: '12 سم',
+          heightLabel: '6 سم',
+        },
+      },
+      {
+        type: 'circle',
+        data: {
+          radius: 20,
+          centerLabel: 'م',
+          radiusLabel: 'نق = 2 سم',
+        },
+      },
+    ],
+    connections: [
+      {
+        from: { x: 120, y: 30 },
+        to: { x: 120, y: 30 },
+        style: 'solid',
+      },
+    ],
+  }
+}
+
+/**
  * Get fallback shape data based on type
  */
 export function getFallbackShapeData(
@@ -166,6 +203,10 @@ export function createFallbackDiagram(type: DiagramType, caption?: string): Diag
   if (type === 'bar-chart' || type === 'pie-chart' || type === 'line-graph') {
     data = getFallbackChartData(type)
     renderHint = 'Chart.js'
+  } else if (type === 'composite-shape') {
+    // Handle composite-shape properly
+    data = createFallbackCompositeShape()
+    renderHint = 'SVG'
   } else if (type === 'circle' || type === 'triangle' || type === 'rectangle') {
     data = getFallbackShapeData(type)
     renderHint = 'SVG'

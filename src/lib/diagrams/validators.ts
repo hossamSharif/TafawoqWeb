@@ -275,6 +275,71 @@ export function validateDiagramData(diagram: unknown): ValidationResult<DiagramD
 }
 
 /**
+ * Normalizes composite-shape data to handle both flat and nested structures
+ * Converts flat structure {cx, cy, radius} to nested {type: 'circle', data: {cx, cy, radius}}
+ */
+function normalizeCompositeShapeData(data: any): any {
+  if (!data.shapes || !Array.isArray(data.shapes)) {
+    return null
+  }
+
+  const normalizedShapes = data.shapes.map((shape: any) => {
+    // If shape already has nested structure, keep it
+    if (shape.type && shape.data) {
+      return shape
+    }
+
+    // If shape has flat structure, convert to nested
+    if (shape.type === 'circle' && shape.cx !== undefined) {
+      return {
+        type: 'circle',
+        data: {
+          cx: shape.cx,
+          cy: shape.cy,
+          radius: shape.radius,
+          centerLabel: shape.centerLabel,
+          radiusLabel: shape.radiusLabel,
+        },
+      }
+    }
+
+    if (shape.type === 'rectangle' && shape.x !== undefined) {
+      return {
+        type: 'rectangle',
+        data: {
+          x: shape.x,
+          y: shape.y,
+          width: shape.width,
+          height: shape.height,
+          cornerLabels: shape.cornerLabels,
+          widthLabel: shape.widthLabel,
+          heightLabel: shape.heightLabel,
+        },
+      }
+    }
+
+    if (shape.type === 'triangle' && shape.points !== undefined) {
+      return {
+        type: 'triangle',
+        data: {
+          points: shape.points,
+          labels: shape.labels,
+          type: shape.triangleType || 'scalene',
+        },
+      }
+    }
+
+    // Keep as-is if format is unclear
+    return shape
+  })
+
+  return {
+    shapes: normalizedShapes,
+    connections: data.connections || [],
+  }
+}
+
+/**
  * Sanitize diagram data by validating and applying fallbacks
  * Returns sanitized data or null if unrecoverable
  */
@@ -300,7 +365,21 @@ export function sanitizeDiagramData(diagram: DiagramData): DiagramData | null {
       }
     }
 
-    // For shapes, we can't safely auto-fix, so return null
+    // For composite-shape, try normalization
+    if (type === 'composite-shape') {
+      const normalized = normalizeCompositeShapeData(data)
+      if (normalized) {
+        const revalidated = validateDiagramData({
+          ...diagram,
+          data: normalized,
+        })
+        if (revalidated.success) {
+          return revalidated.data
+        }
+      }
+    }
+
+    // For other shapes, we can't safely auto-fix, so return null
     return null
   } catch {
     return null

@@ -52,3 +52,6 @@ next-env.d.ts
 
 # Sentry
 .sentryclirc
+
+# Google OAuth secrets
+client_secret*.json

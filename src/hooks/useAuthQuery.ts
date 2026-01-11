@@ -15,7 +15,9 @@ export function useAuthSession() {
   return useQuery({
     queryKey: queryKeys.auth.session(),
     queryFn: async () => {
-      console.log('[useAuthSession] Fetching session...')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useAuthSession] Fetching session...')
+      }
 
       // Add timeout to prevent infinite loading
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -28,14 +30,17 @@ export function useAuthSession() {
         const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise])
 
         if (error) {
-          console.error('[useAuthSession] Error fetching session:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[useAuthSession] Error fetching session:', error)
+          }
           throw error
         }
 
-        console.log('[useAuthSession] Session fetched:', { hasSession: !!session })
         return session
       } catch (error) {
-        console.error('[useAuthSession] Failed to fetch session:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[useAuthSession] Failed to fetch session:', error)
+        }
         // Return null instead of throwing to prevent infinite loading
         return null
       }
@@ -56,7 +61,9 @@ export function useUserProfile(userId?: string) {
   return useQuery({
     queryKey: queryKeys.auth.profile(userId!),
     queryFn: async (): Promise<UserProfile | null> => {
-      console.log('[useUserProfile] Fetching profile for user:', userId)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useUserProfile] Fetching profile for user:', userId)
+      }
 
       try {
         const { data, error } = await supabase
@@ -66,14 +73,17 @@ export function useUserProfile(userId?: string) {
           .single()
 
         if (error) {
-          console.error('[useUserProfile] Error fetching profile:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[useUserProfile] Error fetching profile:', error)
+          }
           return null
         }
 
-        console.log('[useUserProfile] Profile fetched successfully')
         return data
       } catch (error) {
-        console.error('[useUserProfile] Exception fetching profile:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[useUserProfile] Exception fetching profile:', error)
+        }
         return null
       }
     },
@@ -88,13 +98,16 @@ export function useUserProfile(userId?: string) {
 /**
  * Hook to fetch and cache user subscription
  * Only fetches if userId is provided (session exists)
- * CRITICAL: Short stale time to ensure subscription updates (e.g., after payment) are reflected quickly
+ * OPTIMIZED: Longer cache time to prevent excessive refetching on navigation
+ * Use invalidateQueries after payment/subscription changes to update immediately
  */
 export function useUserSubscription(userId?: string) {
   return useQuery({
     queryKey: queryKeys.subscription.current(userId!),
     queryFn: async (): Promise<UserSubscription | null> => {
-      console.log('[useUserSubscription] Fetching subscription for user:', userId)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useUserSubscription] Fetching subscription for user:', userId)
+      }
 
       try {
         const { data, error } = await supabase
@@ -105,27 +118,26 @@ export function useUserSubscription(userId?: string) {
 
         if (error) {
           // No subscription is not necessarily an error - user might be on free tier
-          if (error.code !== 'PGRST116') {
+          if (error.code !== 'PGRST116' && process.env.NODE_ENV === 'development') {
             console.error('[useUserSubscription] Error fetching subscription:', error)
-          } else {
-            console.log('[useUserSubscription] No subscription found (free tier)')
           }
           return null
         }
 
-        console.log('[useUserSubscription] Subscription data:', data)
         return data
       } catch (error) {
-        console.error('[useUserSubscription] Exception fetching subscription:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[useUserSubscription] Exception fetching subscription:', error)
+        }
         return null
       }
     },
     enabled: !!userId,
-    staleTime: 1000 * 5, // 5 seconds - short enough to catch updates quickly
+    staleTime: 1000 * 60 * 5, // 5 minutes - balanced for performance and freshness
     gcTime: 1000 * 60 * 30, // 30 minutes cache
-    refetchOnMount: true, // Refetch on mount to ensure fresh data
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
-    refetchOnReconnect: true, // Refetch when network reconnects
+    refetchOnMount: false, // Don't refetch on every mount - use cache
+    refetchOnWindowFocus: false, // Don't refetch on window focus - use cache
+    refetchOnReconnect: true, // Only refetch on network reconnect
     retry: false, // Don't retry on error
   })
 }
@@ -139,27 +151,28 @@ export function useRefreshSession() {
 
   return useMutation({
     mutationFn: async (): Promise<Session | null> => {
-      console.log('[useRefreshSession] Attempting to refresh session...')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useRefreshSession] Attempting to refresh session...')
+      }
 
       // Try to refresh the current session
       const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
 
       if (error) {
-        console.error('[useRefreshSession] Session refresh error:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[useRefreshSession] Session refresh error:', error)
+        }
 
         // If refresh fails, try to get session from storage
         const { data: { session: storedSession } } = await supabase.auth.getSession()
 
         if (storedSession) {
-          console.log('[useRefreshSession] Session recovered from storage')
           return storedSession
         }
 
-        console.log('[useRefreshSession] Session refresh failed - no valid session')
         throw new Error('Failed to refresh session')
       }
 
-      console.log('[useRefreshSession] Session refreshed successfully')
       return refreshedSession
     },
     onSuccess: (session) => {
@@ -207,7 +220,9 @@ export function useRefreshSubscription() {
 
   return useMutation({
     mutationFn: async (userId: string): Promise<UserSubscription | null> => {
-      console.log('[useRefreshSubscription] Forcing subscription refetch for user:', userId)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useRefreshSubscription] Forcing subscription refetch for user:', userId)
+      }
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select('*')
@@ -215,15 +230,15 @@ export function useRefreshSubscription() {
         .single()
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[useRefreshSubscription] Error fetching subscription:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[useRefreshSubscription] Error fetching subscription:', error)
+        }
         return null
       }
-      console.log('[useRefreshSubscription] Fresh subscription data:', data)
       return data || null
     },
     onSuccess: async (freshData, userId) => {
       // CRITICAL: Use refetchQueries to force immediate refetch, ignoring stale time
-      console.log('[useRefreshSubscription] Invalidating and refetching subscription queries...')
 
       // Invalidate first to mark as stale
       await queryClient.invalidateQueries({ queryKey: queryKeys.subscription.current(userId) })
@@ -236,8 +251,6 @@ export function useRefreshSubscription() {
 
       // Also invalidate any subscription-related queries (limits, usage, etc.)
       await queryClient.invalidateQueries({ queryKey: queryKeys.subscription.all })
-
-      console.log('[useRefreshSubscription] Subscription refresh complete')
     },
   })
 }

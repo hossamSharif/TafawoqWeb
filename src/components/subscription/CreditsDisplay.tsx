@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import {
   GraduationCap,
   BookOpen,
@@ -28,7 +29,7 @@ interface CompactCreditItemProps {
   iconTextClass: string
 }
 
-function CompactCreditItem({ icon, label, used, limit, iconBgClass, iconTextClass }: CompactCreditItemProps) {
+const CompactCreditItem = memo(function CompactCreditItem({ icon, label, used, limit, iconBgClass, iconTextClass }: CompactCreditItemProps) {
   const remaining = limit !== null ? limit - used : null
   const isUnlimited = limit === null
   const isLow = !isUnlimited && remaining !== null && remaining <= 1
@@ -60,9 +61,9 @@ function CompactCreditItem({ icon, label, used, limit, iconBgClass, iconTextClas
       </div>
     </div>
   )
-}
+})
 
-export function CreditsDisplay({
+export const CreditsDisplay = memo(function CreditsDisplay({
   limits,
   isLoading,
   showShareCredits = true,
@@ -161,7 +162,7 @@ export function CreditsDisplay({
       </CardContent>
     </Card>
   )
-}
+})
 
 // Compact inline version for dashboard widgets
 interface CreditsInlineProps {
@@ -261,7 +262,7 @@ function SkeletonBadgeItem() {
   )
 }
 
-export function CreditsBadge({
+export const CreditsBadge = memo(function CreditsBadge({
   limits,
   isLoading,
   showShareCredits = true,
@@ -333,4 +334,4 @@ export function CreditsBadge({
       </div>
     </div>
   )
-}
+})

@@ -323,6 +323,118 @@ const DIAGRAM_GENERATION_PROMPT = `═══════════════
   "caption": "مستطيل متصل بنصف دائرة"
 }
 
+【أشكال متداخلة - Overlapping Shapes (renderHint: "JSXGraph")】
+
+أسئلة المناطق المظللة في الأشكال المتداخلة تتطلب استخدام JSXGraph للعرض التفاعلي.
+هذه الأسئلة شائعة جداً في اختبار القدرات وتتطلب حساب مساحة المنطقة المظللة.
+
+الأنماط المدعومة (8 أنماط):
+
+أ) دائرة داخل مربع (inscribed-circle-in-square) - سهل:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "inscribed-circle-in-square",
+    "dimensions": { "side": 10 },
+    "shading": { "region": "outer", "color": "#3B82F6", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "دائرة مماسة لأضلاع مربع من الداخل - المنطقة المظللة خارج الدائرة"
+}
+
+ب) مربع داخل دائرة (inscribed-square-in-circle) - سهل:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "inscribed-square-in-circle",
+    "dimensions": { "radius": 7 },
+    "shading": { "region": "outer", "color": "#10B981", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "مربع رؤوسه على الدائرة - المنطقة المظللة خارج المربع"
+}
+
+ج) مربع مع أرباع دوائر في الزوايا (square-with-corner-circles) - متوسط:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "square-with-corner-circles",
+    "dimensions": { "side": 8 },
+    "shading": { "region": "petals", "color": "#8B5CF6", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "مربع مع أرباع دوائر مركزها في الزوايا - المنطقة المظللة هي البتلات"
+}
+
+د) مربع رأسه على مركز دائرة (square-vertex-at-circle-center) - متوسط:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "square-vertex-at-circle-center",
+    "dimensions": { "side": 6, "radius": 6 },
+    "shading": { "region": "intersection", "color": "#F59E0B", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "أحد رؤوس المربع هو مركز الدائرة - المنطقة المظللة هي التقاطع"
+}
+
+هـ) نمط الوردة داخل مربع (rose-pattern-in-square) - صعب:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "rose-pattern-in-square",
+    "dimensions": { "side": 10 },
+    "shading": { "region": "petals", "color": "#EC4899", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "نمط وردة مكون من 4 أنصاف دوائر متقاطعة - المنطقة المظللة هي البتلات الأربع"
+}
+
+و) ثلاث دوائر متماسة (three-tangent-circles) - صعب:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "three-tangent-circles",
+    "dimensions": { "radius": 5 },
+    "shading": { "region": "intersection", "color": "#06B6D4", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "ثلاث دوائر متماسة خارجياً - المنطقة المظللة هي المثلث المتكون بينها"
+}
+
+ز) نصفا دائرة متداخلان (overlapping-semicircles) - صعب:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "overlapping-semicircles",
+    "dimensions": { "diameter": 12 },
+    "shading": { "region": "lens", "color": "#EF4444", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "نصفا دائرة متداخلان - المنطقة المظللة هي العدسة المشتركة"
+}
+
+ح) أرباع دوائر في مربع (quarter-circles-in-square) - صعب:
+{
+  "type": "overlapping-shapes",
+  "data": {
+    "subtype": "quarter-circles-in-square",
+    "dimensions": { "side": 10 },
+    "shading": { "region": "intersection", "color": "#84CC16", "opacity": 0.4 }
+  },
+  "renderHint": "JSXGraph",
+  "caption": "أربعة أرباع دوائر مراكزها في زوايا المربع - المنطقة المظللة هي التقاطع"
+}
+
+【متطلبات أسئلة الأشكال المتداخلة】
+- يجب أن يكون النوع type = "overlapping-shapes"
+- يجب أن يكون renderHint = "JSXGraph" (مهم جداً للعرض)
+- يجب تحديد subtype من الأنماط الثمانية المذكورة أعلاه
+- يجب تضمين dimensions مع القياسات المناسبة
+- يجب تضمين shading مع المنطقة واللون والشفافية
+- يجب أن يسأل السؤال عن مساحة المنطقة المظللة أو محيطها
+- يجب تضمين الصيغة المستخدمة في الشرح (formulaUsed)
+
 【أنواع الرسوم البيانية (renderHint: "Chart.js")】
 
 1. رسم بياني بالأعمدة (bar-chart):
@@ -482,6 +594,9 @@ export function buildUserPrompt(
 【متطلبات الأسئلة المصورة لهذه الدفعة】
 - يجب أن تتضمن هذه الدفعة 2 سؤال على الأقل من نوع "diagram" (أسئلة هندسية مع رسم)
 - يجب أن تتضمن هذه الدفعة 1 سؤال على الأقل من نوع "chart" (أسئلة إحصائية مع رسم بياني)
+- يجب أن تتضمن هذه الدفعة 1 سؤال على الأقل من نوع "overlapping-diagram" (أشكال متداخلة مع منطقة مظللة)
+  * استخدم type = "overlapping-shapes" و renderHint = "JSXGraph"
+  * اختر subtype من الأنماط الثمانية حسب الصعوبة المطلوبة
 - تأكد من تضمين كائن diagram مع بيانات الرسم الكاملة لكل سؤال مصور`
     : ''
 
@@ -509,15 +624,15 @@ ${diagramRequirements}
       "section": "${config.section}",
       "topic": "category_key",
       "difficulty": "easy" | "medium" | "hard",
-      "questionType": "mcq" | "diagram" | "chart",
+      "questionType": "mcq" | "diagram" | "chart" | "overlapping-diagram",
       "stem": "نص السؤال باللغة العربية",
       "choices": ["الخيار أ", "الخيار ب", "الخيار ج", "الخيار د"],
       "answerIndex": 0,
       "explanation": "شرح مفصل للإجابة الصحيحة مع خطوات الحل",
       "diagram": {
-        "type": "circle" | "triangle" | "rectangle" | "composite-shape" | "bar-chart" | "line-graph" | "pie-chart",
+        "type": "circle" | "triangle" | "rectangle" | "composite-shape" | "overlapping-shapes" | "bar-chart" | "line-graph" | "pie-chart",
         "data": { ... بيانات الرسم حسب النوع ... },
-        "renderHint": "SVG" | "Chart.js",
+        "renderHint": "SVG" | "Chart.js" | "JSXGraph",
         "caption": "وصف مختصر للرسم"
       },
       "tags": ["tag1", "tag2"]
@@ -525,7 +640,7 @@ ${diagramRequirements}
   ]
 }
 
-ملاحظة: كائن diagram مطلوب فقط للأسئلة من نوع "diagram" أو "chart".`
+ملاحظة: كائن diagram مطلوب فقط للأسئلة من نوع "diagram" أو "chart" أو "overlapping-diagram".`
 }
 
 /**
@@ -567,10 +682,10 @@ export function parseQuestionResponse(
 
   // Valid diagram types for validation
   const validDiagramTypes = [
-    'circle', 'triangle', 'rectangle', 'composite-shape',
+    'circle', 'triangle', 'rectangle', 'composite-shape', 'overlapping-shapes',
     'bar-chart', 'pie-chart', 'line-graph', 'custom'
   ]
-  const validRenderHints = ['SVG', 'Canvas', 'Chart.js']
+  const validRenderHints = ['SVG', 'Canvas', 'Chart.js', 'JSXGraph']
 
   // Validate and normalize questions
   return parsed.questions.map((q, index) => {
@@ -592,7 +707,7 @@ export function parseQuestionResponse(
 
     // Validate and normalize diagram for visual questions
     let diagram: DiagramData | undefined = undefined
-    if ((questionType === 'diagram' || questionType === 'chart') && q.diagram) {
+    if ((questionType === 'diagram' || questionType === 'chart' || questionType === 'overlapping-diagram') && q.diagram) {
       const d = q.diagram as Partial<DiagramData>
 
       // Validate diagram structure
@@ -603,9 +718,13 @@ export function parseQuestionResponse(
 
       if (!d.renderHint || !validRenderHints.includes(d.renderHint)) {
         // Auto-assign renderHint based on diagram type
-        d.renderHint = ['bar-chart', 'pie-chart', 'line-graph'].includes(d.type)
-          ? 'Chart.js'
-          : 'SVG'
+        if (['bar-chart', 'pie-chart', 'line-graph'].includes(d.type)) {
+          d.renderHint = 'Chart.js'
+        } else if (d.type === 'overlapping-shapes') {
+          d.renderHint = 'JSXGraph'
+        } else {
+          d.renderHint = 'SVG'
+        }
       }
 
       diagram = {

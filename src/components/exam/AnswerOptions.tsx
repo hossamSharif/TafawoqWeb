@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Check, X } from 'lucide-react'
+import { Check, X, Loader2 } from 'lucide-react'
 
 export interface AnswerOptionsProps {
   choices: [string, string, string, string]
@@ -10,6 +10,7 @@ export interface AnswerOptionsProps {
   correctAnswer?: number | null
   showResult?: boolean
   disabled?: boolean
+  isLoading?: boolean
   onSelect?: (index: number) => void
   className?: string
 }
@@ -17,7 +18,7 @@ export interface AnswerOptionsProps {
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'] as const
 
 /**
- * AnswerOptions - 4-option MCQ layout with RTL support
+ * AnswerOptions - 4-option MCQ layout with RTL support and loading states
  */
 export function AnswerOptions({
   choices,
@@ -25,13 +26,14 @@ export function AnswerOptions({
   correctAnswer,
   showResult = false,
   disabled = false,
+  isLoading = false,
   onSelect,
   className,
 }: AnswerOptionsProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   const handleSelect = (index: number) => {
-    if (disabled) return
+    if (disabled || isLoading) return
     onSelect?.(index)
   }
 
@@ -55,7 +57,8 @@ export function AnswerOptions({
       {choices.map((choice, index) => {
         const state = getOptionState(index)
         const isSelected = selectedAnswer === index
-        const isHovered = hoveredIndex === index && !disabled
+        const isHovered = hoveredIndex === index && !disabled && !isLoading
+        const showLoadingOnThis = isLoading && isSelected
 
         return (
           <button
@@ -64,14 +67,15 @@ export function AnswerOptions({
             onClick={() => handleSelect(index)}
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
-            disabled={disabled}
+            disabled={disabled || isLoading}
             className={cn(
-              'w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all duration-200 text-right',
+              'w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all duration-200 text-right relative overflow-hidden',
               // Default state
               state === 'default' && [
                 'border-gray-200 bg-white',
-                !disabled && 'hover:border-primary/50 hover:bg-primary/5',
-                isSelected && 'border-primary bg-primary/10',
+                !disabled && !isLoading && 'hover:border-primary/50 hover:bg-primary/5',
+                isSelected && !isLoading && 'border-primary bg-primary/10',
+                showLoadingOnThis && 'border-primary bg-primary/5 animate-pulse',
               ],
               // Correct answer
               state === 'correct' && [
@@ -84,9 +88,19 @@ export function AnswerOptions({
                 'cursor-default',
               ],
               // Disabled state
-              disabled && !showResult && 'cursor-not-allowed opacity-70'
+              (disabled || isLoading) && !showResult && 'cursor-not-allowed opacity-70'
             )}
           >
+            {/* Loading overlay */}
+            {showLoadingOnThis && (
+              <div className="absolute inset-0 bg-primary/5 flex items-center justify-center">
+                <div className="flex items-center gap-2 text-primary">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm font-medium">جاري التحقق...</span>
+                </div>
+              </div>
+            )}
+
             {/* Option Label */}
             <span
               className={cn(
@@ -95,6 +109,7 @@ export function AnswerOptions({
                   'bg-gray-100 text-gray-600',
                   isSelected && 'bg-primary text-white',
                   isHovered && !isSelected && 'bg-gray-200',
+                  showLoadingOnThis && 'bg-primary text-white',
                 ],
                 state === 'correct' && 'bg-green-500 text-white',
                 state === 'incorrect' && 'bg-red-500 text-white'
@@ -104,6 +119,8 @@ export function AnswerOptions({
                 <Check className="w-5 h-5" />
               ) : state === 'incorrect' ? (
                 <X className="w-5 h-5" />
+              ) : showLoadingOnThis ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 OPTION_LABELS[index]
               )}
@@ -115,7 +132,8 @@ export function AnswerOptions({
                 'flex-1 text-base leading-relaxed',
                 state === 'default' && 'text-gray-800',
                 state === 'correct' && 'text-green-800 font-medium',
-                state === 'incorrect' && 'text-red-800'
+                state === 'incorrect' && 'text-red-800',
+                showLoadingOnThis && 'opacity-50'
               )}
             >
               {choice}

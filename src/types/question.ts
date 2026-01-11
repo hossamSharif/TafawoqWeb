@@ -6,7 +6,7 @@ export type QuestionSection = 'quantitative' | 'verbal'
 
 export type QuestionDifficulty = 'easy' | 'medium' | 'hard'
 
-export type QuestionType = 'mcq' | 'diagram' | 'chart' | 'text-only' | 'reading-passage'
+export type QuestionType = 'mcq' | 'diagram' | 'chart' | 'overlapping-diagram' | 'text-only' | 'reading-passage'
 
 // Quantitative categories
 export type QuantitativeCategory =
@@ -79,12 +79,13 @@ export type DiagramType =
   | 'triangle'
   | 'rectangle'
   | 'composite-shape'
+  | 'overlapping-shapes'
   | 'bar-chart'
   | 'pie-chart'
   | 'line-graph'
   | 'custom'
 
-export type RenderHint = 'SVG' | 'Canvas' | 'Chart.js'
+export type RenderHint = 'SVG' | 'Canvas' | 'Chart.js' | 'JSXGraph'
 
 export interface DiagramData {
   type: DiagramType

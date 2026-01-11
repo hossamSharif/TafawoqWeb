@@ -7,7 +7,7 @@ import {
   QuestionCard,
   AnswerOptions,
   ExamTimer,
-  ExplanationPanel,
+  CompactExplanation,
   GenerationError,
 } from '@/components/exam'
 import { QuestionNavigator } from '@/components/exam/QuestionNavigator'
@@ -327,21 +327,39 @@ function ExamContent() {
             difficulty={currentQuestion.difficulty}
             diagram={currentQuestion.diagram}
             questionType={currentQuestion.questionType}
+            isLoadingBatch={isLoadingBatch}
             className="mb-6 shadow-md"
           />
 
-          {/* Answer Options */}
+          {/* Answer Options Card with Compact Explanation */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-md p-6 mb-6">
-            <h3 className="text-sm font-semibold text-gray-500 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary"></span>
-              اختر الإجابة الصحيحة
-            </h3>
+            <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+              {/* Left: Title */}
+              <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2 flex-shrink-0">
+                <span className="w-2 h-2 rounded-full bg-primary"></span>
+                اختر الإجابة الصحيحة
+              </h3>
+
+              {/* Right: Compact Explanation (shown after answering) */}
+              {showResult && currentResult && (
+                <div className="flex-1 min-w-[280px]">
+                  <CompactExplanation
+                    explanation={currentResult.explanation || 'لا يوجد شرح متاح'}
+                    solvingStrategy={currentResult.solvingStrategy}
+                    tip={currentResult.tip}
+                    isCorrect={currentResult.isCorrect}
+                  />
+                </div>
+              )}
+            </div>
+
             <AnswerOptions
               choices={currentQuestion.choices}
               selectedAnswer={selectedAnswer}
               correctAnswer={showResult ? currentResult?.correctAnswer : undefined}
               showResult={showResult}
               disabled={isCurrentAnswered || isSubmitting}
+              isLoading={isSubmitting}
               onSelect={handleSelectAnswer}
             />
 
@@ -368,24 +386,13 @@ function ExamContent() {
                     <XCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
                     <div>
                       <p className="font-semibold text-red-800">إجابة خاطئة</p>
-                      <p className="text-sm text-red-600">راجع الشرح أدناه لفهم الحل الصحيح</p>
+                      <p className="text-sm text-red-600">راجع الشرح أعلاه لفهم الحل الصحيح</p>
                     </div>
                   </>
                 )}
               </div>
             )}
           </div>
-
-          {/* Explanation (shown after answering) */}
-          {showResult && currentResult && (
-            <ExplanationPanel
-              explanation={currentResult.explanation || 'لا يوجد شرح متاح'}
-              solvingStrategy={currentResult.solvingStrategy}
-              tip={currentResult.tip}
-              isCorrect={currentResult.isCorrect}
-              className="mb-6 shadow-md"
-            />
-          )}
 
           {/* Batch Loading Indicator */}
           {isLoadingBatch && currentIndex >= questions.length - 3 && (

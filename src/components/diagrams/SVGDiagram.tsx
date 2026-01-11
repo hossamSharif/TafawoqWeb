@@ -89,53 +89,128 @@ export function SVGDiagram({
           return <Rectangle data={sanitizedData as unknown as RectangleData} viewBox={viewBox} />
 
         case 'composite-shape': {
-          const compositeData = sanitizedData as unknown as CompositeShapeData
+          const compositeData = sanitizedData as unknown as any
+
+          // DEBUG: Log composite shape data for troubleshooting
+          console.log('[SVGDiagram] Rendering composite-shape:', {
+            hasShapes: !!compositeData.shapes,
+            shapesCount: compositeData.shapes?.length,
+            shapesTypes: compositeData.shapes?.map((s: any) => s.type),
+            data: compositeData,
+          })
 
           // Validate composite data structure
           if (!compositeData.shapes || !Array.isArray(compositeData.shapes) || compositeData.shapes.length === 0) {
+            console.warn('[SVGDiagram] Composite shape validation failed:', {
+              shapes: compositeData.shapes,
+              hasShapes: !!compositeData.shapes,
+              isArray: Array.isArray(compositeData.shapes),
+              length: compositeData.shapes?.length,
+            })
             throw new Error('Composite shape must have at least one shape')
+          }
+
+          const shaded = compositeData.shaded || false
+          const fillColor = shaded ? 'rgba(59, 130, 246, 0.1)' : 'none'
+
+          // Filter valid shapes before rendering (partial rendering support)
+          const validShapes = compositeData.shapes.filter((shape: any, index: number) => {
+            try {
+              const shapeData = shape.data || shape
+
+              // Basic validation: check if required fields exist
+              if (shape.type === 'circle') {
+                return shapeData.cx !== undefined && shapeData.cy !== undefined && shapeData.radius !== undefined
+              } else if (shape.type === 'rectangle') {
+                return shapeData.x !== undefined && shapeData.y !== undefined && shapeData.width !== undefined && shapeData.height !== undefined
+              } else if (shape.type === 'triangle') {
+                return shapeData.points && shapeData.points.length === 3
+              }
+
+              return false
+            } catch (err) {
+              console.warn(`[SVGDiagram] Shape ${index} validation failed:`, err)
+              return false
+            }
+          })
+
+          const invalidCount = compositeData.shapes.length - validShapes.length
+          if (invalidCount > 0) {
+            console.warn(`[SVGDiagram] Filtered out ${invalidCount} invalid shape(s) from composite`)
           }
 
           return (
             <g>
-              {/* Render all shapes with error handling for each */}
-              {compositeData.shapes.map((shape, index) => {
+              {/* Render all valid shapes with raw SVG for proper positioning */}
+              {validShapes.map((shape: any, index: number) => {
                 try {
-                  // Validate individual shape
-                  const shapeValidation = validateShapeData(shape.type as DiagramType, shape.data)
-                  const shapeData = shapeValidation.success
-                    ? shapeValidation.data
-                    : getFallbackShapeData(shape.type)
+                  // Use flat structure directly
+                  const shapeData = shape.data || shape
+
+                  // Scale coordinates to viewBox
+                  const scale = Math.min(viewBox.width / 20, viewBox.height / 20)
 
                   switch (shape.type) {
-                    case 'circle':
-                      return (
-                        <Circle
-                          key={`shape-${index}`}
-                          data={shapeData as CircleData}
-                          viewBox={viewBox}
-                        />
-                      )
-                    case 'triangle':
-                      return (
-                        <Triangle
-                          key={`shape-${index}`}
-                          data={shapeData as TriangleData}
-                          viewBox={viewBox}
-                        />
-                      )
                     case 'rectangle':
                       return (
-                        <Rectangle
+                        <rect
                           key={`shape-${index}`}
-                          data={shapeData as RectangleData}
-                          viewBox={viewBox}
+                          x={shapeData.x * scale}
+                          y={shapeData.y * scale}
+                          width={shapeData.width * scale}
+                          height={shapeData.height * scale}
+                          fill={fillColor}
+                          stroke="#1E5631"
+                          strokeWidth={2}
                         />
                       )
+
+                    case 'circle':
+                      if (shapeData.half) {
+                        // Render half circle using path
+                        const scaledCx = shapeData.cx * scale
+                        const scaledCy = shapeData.cy * scale
+                        const scaledR = shapeData.radius * scale
+                        const startAngle = -Math.PI / 2
+                        const endAngle = Math.PI / 2
+                        const x1 = scaledCx + scaledR * Math.cos(startAngle)
+                        const y1 = scaledCy + scaledR * Math.sin(startAngle)
+                        const x2 = scaledCx + scaledR * Math.cos(endAngle)
+                        const y2 = scaledCy + scaledR * Math.sin(endAngle)
+
+                        return (
+                          <path
+                            key={`shape-${index}`}
+                            d={`M ${x1} ${y1} A ${scaledR} ${scaledR} 0 0 1 ${x2} ${y2} L ${scaledCx} ${y2} L ${scaledCx} ${y1} Z`}
+                            fill={fillColor}
+                            stroke="#1E5631"
+                            strokeWidth={2}
+                          />
+                        )
+                      } else {
+                        return (
+                          <circle
+                            key={`shape-${index}`}
+                            cx={shapeData.cx * scale}
+                            cy={shapeData.cy * scale}
+                            r={shapeData.radius * scale}
+                            fill={fillColor}
+                            stroke="#1E5631"
+                            strokeWidth={2}
+                          />
+                        )
+                      }
+
                     default:
                       return null
                   }
                 } catch (err) {
+                  // DEBUG: Log shape rendering failure with details
+                  console.warn(`[SVGDiagram] Shape ${index} rendering failed:`, {
+                    shapeType: shape.type,
+                    shapeData: shape.data || shape,
+                    error: err,
+                  })
                   // Log and skip invalid shape
                   logDiagramError('render-failed', type, err as Error, { shapeIndex: index })
                   return null

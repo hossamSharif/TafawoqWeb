@@ -66,20 +66,18 @@ export function logDiagramError(
     context,
   }
 
-  // Console logging for development
-  if (process.env.NODE_ENV === 'development') {
-    console.error('[Diagram Error]', {
-      ...errorData,
-      details: typeof error === 'string' ? undefined : {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      },
-    })
-  }
+  // CHANGED: Always log to console, not just in development
+  console.error('[Diagram Error]', {
+    ...errorData,
+    details: typeof error === 'string' ? undefined : {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    },
+  })
 
   // TODO: Send to error tracking service in production
-  // Example: Sentry.captureException(error, { extra: errorData })
+  // Example: Sentry.captureException(error, { contexts: { diagram: errorData } })
 }
 
 /**
