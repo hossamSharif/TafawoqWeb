@@ -197,7 +197,7 @@ async function testAnalogyGeneration() {
   console.log(`  Cache hits: ${cacheMetrics.cacheHits}`);
   console.log(`  Cache misses: ${cacheMetrics.cacheMisses}`);
   console.log(`  Hit rate: ${(cacheMetrics.hitRate * 100).toFixed(1)}%`);
-  console.log(`  Total cost saved: $${cacheMetrics.totalCostSaved.toFixed(4)}`);
+  console.log(`  Total cost saved: $${cacheMetrics.costSavings.toFixed(4)}`);
   console.log('');
 
   // Export results to JSON

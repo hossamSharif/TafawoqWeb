@@ -297,8 +297,8 @@ function normalizeCompositeShapeData(data: any): any {
           cx: shape.cx,
           cy: shape.cy,
           radius: shape.radius,
-          centerLabel: shape.centerLabel,
-          radiusLabel: shape.radiusLabel,
+          label: shape.centerLabel || shape.label, // Map centerLabel to label
+          showRadius: shape.radiusLabel ? true : shape.showRadius, // radiusLabel implies showRadius
         },
       }
     }

@@ -155,8 +155,8 @@ export function createFallbackCompositeShape(): ValidatedCompositeShapeData {
         type: 'circle',
         data: {
           radius: 20,
-          centerLabel: 'م',
-          radiusLabel: 'نق = 2 سم',
+          label: 'م', // Center label
+          showRadius: true, // Show radius annotation
         },
       },
     ],

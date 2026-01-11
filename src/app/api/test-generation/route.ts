@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
     // Log first question if any
     if (result.questions.length > 0) {
       console.log('First question preview:', {
-        id: result.questions[0].id,
+        topic: result.questions[0].topic,
+        question_type: result.questions[0].question_type,
         question_text: result.questions[0].question_text?.substring(0, 100),
         choices: result.questions[0].choices,
       })
