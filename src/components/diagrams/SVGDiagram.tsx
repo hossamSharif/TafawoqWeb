@@ -218,7 +218,12 @@ export function SVGDiagram({
               })}
 
               {/* Render connections between shapes */}
-              {compositeData.connections?.map((connection, index) => {
+              {compositeData.connections?.map((connection: {
+                from: { x: number; y: number }
+                to: { x: number; y: number }
+                style?: 'solid' | 'dashed'
+                label?: string
+              }, index: number) => {
                 // Validate connection coordinates
                 if (
                   typeof connection?.from?.x !== 'number' ||
