@@ -55,7 +55,7 @@ function parseExplanation(explanation: string) {
   // Split by bold markers
   const lines = explanation.split('\n');
   let currentSection: 'given' | 'required' | 'steps' | 'final' | null = null;
-  let stepContent: string[] = [];
+  const stepContent: string[] = [];
 
   lines.forEach((line) => {
     const trimmed = line.trim();
