@@ -120,7 +120,7 @@ export class DiagramErrorBoundary extends Component<
 
             {/* NEW: Show diagram type */}
             <p className="text-xs text-gray-600">
-              نوع الرسم: {this.props.diagram?.type || 'غير معروف'}
+              نوع الرسم: {this.props.diagramType || 'غير معروف'}
             </p>
 
             {/* NEW: Always show error message (not just in development) */}
