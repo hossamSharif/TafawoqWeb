@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { QuestionCard, AnswerOptions, ProgressIndicator, ExplanationPanel } from '@/components/exam'
+import { QuestionCard, AnswerOptions, ProgressIndicator, CompactExplanation } from '@/components/exam'
 import { PageLoadingSkeleton } from '@/components/shared'
 import {
   AlertDialog,
@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Pause, Loader2, AlertTriangle, Minimize2, Maximize2, ChevronRight, ChevronLeft, Flag } from 'lucide-react'
+import { Pause, Loader2, AlertTriangle, Minimize2, Maximize2, ChevronRight, ChevronLeft, Flag, CheckCircle2, XCircle } from 'lucide-react'
 import type { Question } from '@/types/question'
 import { cn } from '@/lib/utils'
 
@@ -423,9 +423,9 @@ export default function PracticeSessionPage() {
           />
         </div>
 
-      {/* Question */}
+      {/* Question Card */}
       {currentQuestion && (
-        <Card className="p-6 mb-6">
+        <>
           <QuestionCard
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={questions.length}
@@ -436,70 +436,112 @@ export default function PracticeSessionPage() {
             difficulty={currentQuestion.difficulty}
             diagram={currentQuestion.diagram}
             questionType={currentQuestion.questionType}
+            className="mb-6 shadow-md"
           />
 
-          <div className="mt-6">
+          {/* Answer Options Card with Compact Explanation */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-md p-6 mb-6">
+            <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+              {/* Left: Title */}
+              <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2 flex-shrink-0">
+                <span className="w-2 h-2 rounded-full bg-primary"></span>
+                اختر الإجابة الصحيحة
+              </h3>
+
+              {/* Right: Compact Explanation (shown after answering) */}
+              {showExplanation && currentFullQuestion && (
+                <div className="flex-1 min-w-[280px]">
+                  <CompactExplanation
+                    explanation={currentFullQuestion.explanation || 'لا يوجد شرح متاح'}
+                    solvingStrategy={currentFullQuestion.solvingStrategy}
+                    tip={currentFullQuestion.tip}
+                    isCorrect={currentAnswer?.isCorrect}
+                  />
+                </div>
+              )}
+            </div>
+
             <AnswerOptions
               choices={currentQuestion.choices}
               selectedAnswer={selectedAnswer}
               onSelect={setSelectedAnswer}
               disabled={showExplanation}
+              isLoading={isSubmitting}
               correctAnswer={showExplanation ? currentFullQuestion?.answerIndex : undefined}
               showResult={showExplanation}
             />
-          </div>
 
-          {/* Error Display */}
-          {submitError && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>خطأ في الإجابة</AlertTitle>
-              <AlertDescription className="flex flex-col gap-2">
-                <span>{submitError}</span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push('/dashboard')}
-                  >
-                    العودة للوحة التحكم
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSubmitError(null)}
-                  >
-                    إغلاق
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+            {/* Error Display */}
+            {submitError && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>خطأ في الإجابة</AlertTitle>
+                <AlertDescription className="flex flex-col gap-2">
+                  <span>{submitError}</span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push('/dashboard')}
+                    >
+                      العودة للوحة التحكم
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSubmitError(null)}
+                    >
+                      إغلاق
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
-          {/* Submit or feedback */}
-          {!showExplanation ? (
-            <div className="mt-6">
-              <Button
-                onClick={handleSubmitAnswer}
-                disabled={selectedAnswer === null || isSubmitting}
-                className="w-full"
+            {/* Answer Feedback */}
+            {showExplanation && currentAnswer && (
+              <div
+                className={cn(
+                  'mt-4 p-4 rounded-lg flex items-center gap-3',
+                  currentAnswer.isCorrect
+                    ? 'bg-green-50 border border-green-200'
+                    : 'bg-red-50 border border-red-200'
+                )}
               >
-                {isSubmitting ? 'جاري الحفظ...' : 'تأكيد الإجابة'}
-              </Button>
-            </div>
-          ) : (
-            currentFullQuestion && (
-              <div className="mt-6">
-                <ExplanationPanel
-                  isCorrect={currentAnswer?.isCorrect || false}
-                  explanation={currentFullQuestion.explanation}
-                  solvingStrategy={currentFullQuestion.solvingStrategy}
-                  tip={currentFullQuestion.tip}
-                />
+                {currentAnswer.isCorrect ? (
+                  <>
+                    <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-green-800">إجابة صحيحة!</p>
+                      <p className="text-sm text-green-600">أحسنت، استمر بهذا الأداء</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-red-800">إجابة خاطئة</p>
+                      <p className="text-sm text-red-600">راجع الشرح أعلاه لفهم الحل الصحيح</p>
+                    </div>
+                  </>
+                )}
               </div>
-            )
-          )}
-        </Card>
+            )}
+
+            {/* Submit Button (before answering) */}
+            {!showExplanation && (
+              <div className="mt-6">
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={selectedAnswer === null || isSubmitting}
+                  className="w-full"
+                >
+                  {isSubmitting ? 'جاري الحفظ...' : 'تأكيد الإجابة'}
+                </Button>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
         {/* Stats */}
