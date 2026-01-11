@@ -15,10 +15,10 @@ This guide provides comprehensive instructions for completing Phase 9 testing ta
 ### Prerequisites
 ```bash
 # Ensure API key is set
-export ANTHROPIC_API_KEY="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"
+export ANTHROPIC_API_KEY="your-api-key-here"
 
 # Or add to .env.local
-echo 'ANTHROPIC_API_KEY="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"' >> .env.local
+echo 'ANTHROPIC_API_KEY="your-api-key-here"' >> .env.local
 ```
 
 ### Test Procedure
