@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { QuduratGenerator } from '@/services/generation/QuduratGenerator'
 import type { QuestionGenerationParams } from '@/services/generation/PromptBuilder'
 import { canUseExamCredit, consumeExamCredit } from '@/lib/rewards/calculator'
+import { isAuthenticationError } from '@/lib/api-key-validator'
 
 type AcademicTrack = 'scientific' | 'literary'
 
@@ -173,6 +174,19 @@ export async function POST(request: NextRequest) {
         .from('exam_sessions')
         .update({ generation_in_progress: false })
         .eq('id', session.id)
+
+      // Check for authentication errors (invalid API key)
+      if (isAuthenticationError(genError)) {
+        console.error('Authentication error detected - invalid ANTHROPIC_API_KEY')
+        return NextResponse.json(
+          {
+            error: 'خطأ في إعدادات النظام. يرجى التواصل مع الدعم الفني.',
+            errorCode: 'API_KEY_INVALID',
+            details: 'تكوين مفتاح API غير صحيح'
+          },
+          { status: 500 }
+        )
+      }
 
       return NextResponse.json(
         { error: 'فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.' },

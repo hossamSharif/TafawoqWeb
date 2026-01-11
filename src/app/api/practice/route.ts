@@ -6,6 +6,7 @@ import type { QuestionGenerationParams } from '@/services/generation/PromptBuild
 import { canUsePracticeCredit, consumePracticeCredit } from '@/lib/rewards/calculator'
 import { calculatePracticeLimit, type AcademicTrack } from '@/lib/practice'
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
+import { isAuthenticationError } from '@/lib/api-key-validator'
 
 /**
  * Practice batch size (smaller than exam)
@@ -194,6 +195,19 @@ export async function POST(request: NextRequest) {
         .from('practice_sessions')
         .update({ status: 'failed' })
         .eq('id', session.id)
+
+      // Check for authentication errors (invalid API key)
+      if (isAuthenticationError(genError)) {
+        console.error('Authentication error detected - invalid ANTHROPIC_API_KEY')
+        return NextResponse.json(
+          {
+            error: 'خطأ في إعدادات النظام. يرجى التواصل مع الدعم الفني.',
+            errorCode: 'API_KEY_INVALID',
+            details: 'تكوين مفتاح API غير صحيح'
+          },
+          { status: 500 }
+        )
+      }
 
       return NextResponse.json(
         { error: 'فشل في إنشاء الأسئلة. يرجى المحاولة مرة أخرى.' },

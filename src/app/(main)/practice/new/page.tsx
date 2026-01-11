@@ -169,6 +169,10 @@ export default function NewPracticePage() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Check for API configuration error
+        if (data.errorCode === 'API_KEY_INVALID') {
+          throw new Error('⚠️ خطأ في إعدادات النظام. يرجى التواصل مع الدعم الفني لإصلاح تكوين API.')
+        }
         throw new Error(data.error || 'فشل في إنشاء جلسة التمرين')
       }
 

@@ -9,6 +9,10 @@ export async function register() {
       environment: process.env.NODE_ENV,
       release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
     })
+
+    // Validate API keys on startup
+    const { logAPIKeyStatus } = await import('./lib/api-key-validator')
+    logAPIKeyStatus()
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
