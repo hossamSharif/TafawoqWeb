@@ -18,6 +18,7 @@ export interface QuestionCardProps {
   questionType?: QuestionType
   diagram?: DiagramData
   showCategory?: boolean
+  isLoadingBatch?: boolean
   className?: string
 }
 
@@ -35,7 +36,8 @@ export function QuestionCard({
   difficulty,
   questionType = 'text-only',
   diagram,
-  showCategory = false,
+  showCategory = true,
+  isLoadingBatch = false,
   className,
 }: QuestionCardProps) {
   // Event-based loading state for diagrams
@@ -77,7 +79,7 @@ export function QuestionCard({
       )}
       dir="rtl"
     >
-      {/* Question Header */}
+      {/* Question Header - with category and loading indicator */}
       <QuestionHeader
         questionNumber={questionNumber}
         totalQuestions={totalQuestions}
@@ -85,6 +87,7 @@ export function QuestionCard({
         difficulty={difficulty}
         category={topic}
         showCategory={showCategory}
+        isLoadingBatch={isLoadingBatch}
         className="mb-4"
       />
 
@@ -140,13 +143,6 @@ export function QuestionCard({
       <div className="text-lg text-gray-900 leading-loose">
         <p className="whitespace-pre-wrap">{stem}</p>
       </div>
-
-      {/* Topic hint (optional, shown at bottom if not in header) */}
-      {topic && !showCategory && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <span className="text-xs text-gray-400">التصنيف: {topic}</span>
-        </div>
-      )}
     </div>
   )
 }

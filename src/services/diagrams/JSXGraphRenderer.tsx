@@ -1,6 +1,6 @@
 /**
  * JSXGraphRenderer.tsx
- * Renders overlapping shapes with shading using JSXGraph (lazy loaded)
+ * Renders overlapping shapes with shading using JSXGraph (loaded via CDN)
  *
  * Supports:
  * - 8 overlapping shape patterns
@@ -14,8 +14,67 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getPatternBySubtype, DEFAULT_SHADING_CONFIG } from '@/lib/constants/diagram-patterns';
+
+// CDN URL for JSXGraph
+const JSXGRAPH_CDN_URL = 'https://cdn.jsdelivr.net/npm/jsxgraph@1.8.0/distrib/jsxgraphcore.js';
+const JSXGRAPH_CSS_URL = 'https://cdn.jsdelivr.net/npm/jsxgraph@1.8.0/distrib/jsxgraph.css';
+
+// Track if JSXGraph is loaded globally
+let jsxGraphLoadPromise: Promise<void> | null = null;
+let jsxGraphLoaded = false;
+
+// Load JSXGraph from CDN
+function loadJSXGraphFromCDN(): Promise<void> {
+  if (jsxGraphLoaded && (window as any).JXG) {
+    return Promise.resolve();
+  }
+
+  if (jsxGraphLoadPromise) {
+    return jsxGraphLoadPromise;
+  }
+
+  jsxGraphLoadPromise = new Promise((resolve, reject) => {
+    // Check if already loaded
+    if ((window as any).JXG) {
+      jsxGraphLoaded = true;
+      resolve();
+      return;
+    }
+
+    // Load CSS first
+    if (!document.querySelector('link[href*="jsxgraph.css"]')) {
+      const cssLink = document.createElement('link');
+      cssLink.rel = 'stylesheet';
+      cssLink.href = JSXGRAPH_CSS_URL;
+      document.head.appendChild(cssLink);
+    }
+
+    // Load JS
+    const script = document.createElement('script');
+    script.src = JSXGRAPH_CDN_URL;
+    script.async = true;
+
+    script.onload = () => {
+      if ((window as any).JXG) {
+        jsxGraphLoaded = true;
+        resolve();
+      } else {
+        reject(new Error('JSXGraph loaded but JXG not found on window'));
+      }
+    };
+
+    script.onerror = () => {
+      jsxGraphLoadPromise = null;
+      reject(new Error('Failed to load JSXGraph from CDN'));
+    };
+
+    document.head.appendChild(script);
+  });
+
+  return jsxGraphLoadPromise;
+}
 
 export interface JSXGraphConfig {
   type: string;
@@ -49,67 +108,91 @@ export const JSXGraphRenderer: React.FC<JSXGraphRendererProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Generate unique ID for the board container
+  const boardId = useRef(`jsx-board-${Math.random().toString(36).substring(2, 11)}`);
+
+  const initializeBoard = useCallback(async () => {
     if (!boardRef.current) return;
 
-    let isMounted = true;
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    // Lazy load JSXGraph
-    const loadJSXGraph = async () => {
-      try {
-        setIsLoading(true);
+      // Load JSXGraph from CDN
+      await loadJSXGraphFromCDN();
 
-        // Dynamically import JSXGraph
-        const JSXGraph = await import('jsxgraph');
-
-        if (!isMounted || !boardRef.current) return;
-
-        // Get pattern configuration
-        const pattern = config.subtype ? getPatternBySubtype(config.subtype) : null;
-        const shadingConfig = config.shading || pattern?.shading || DEFAULT_SHADING_CONFIG;
-
-        // Initialize JSXGraph board
-        const board = JSXGraph.JSXGraph.initBoard(boardRef.current, {
-          boundingbox: [-10, 10, 10, -10],
-          axis: false,
-          showCopyright: false,
-          showNavigation: false,
-          zoom: false,
-          pan: false,
-          resize: 'auto',
-          keepaspectratio: true,
-        });
-
-        boardInstance.current = board;
-
-        // Render based on subtype
-        if (config.subtype) {
-          renderOverlappingPattern(board, config, shadingConfig);
-        }
-
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Failed to load JSXGraph:', err);
-        setError('فشل تحميل الرسم البياني');
-        setIsLoading(false);
+      const JXG = (window as any).JXG;
+      if (!JXG || !JXG.JSXGraph) {
+        throw new Error('JSXGraph not properly loaded');
       }
-    };
 
-    loadJSXGraph();
-
-    return () => {
-      isMounted = false;
-      // Cleanup board instance
+      // Clean up existing board if any
       if (boardInstance.current) {
         try {
-          JSXGraph.JSXGraph.freeBoard(boardInstance.current);
+          JXG.JSXGraph.freeBoard(boardInstance.current);
         } catch (e) {
           // Ignore cleanup errors
         }
         boardInstance.current = null;
       }
-    };
+
+      // Clear the container
+      boardRef.current.innerHTML = '';
+
+      // Get pattern configuration
+      const pattern = config.data?.subtype ? getPatternBySubtype(config.data.subtype) : null;
+      const shadingConfig = config.data?.shading || pattern?.shading || DEFAULT_SHADING_CONFIG;
+
+      // Initialize JSXGraph board
+      const board = JXG.JSXGraph.initBoard(boardRef.current, {
+        boundingbox: [-12, 12, 12, -12],
+        axis: false,
+        showCopyright: false,
+        showNavigation: false,
+        zoom: { enabled: false },
+        pan: { enabled: false },
+        keepaspectratio: true,
+      });
+
+      boardInstance.current = board;
+
+      // Render based on subtype from data
+      const subtype = config.data?.subtype || config.subtype;
+      if (subtype) {
+        renderOverlappingPattern(board, { ...config, subtype }, shadingConfig);
+      }
+
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Failed to initialize JSXGraph board:', err);
+      setError('فشل تحميل الرسم البياني');
+      setIsLoading(false);
+    }
   }, [config]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    // Initialize board
+    initializeBoard();
+
+    return () => {
+      mounted = false;
+      // Cleanup board instance
+      if (boardInstance.current && (window as any).JXG) {
+        try {
+          (window as any).JXG.JSXGraph.freeBoard(boardInstance.current);
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+        boardInstance.current = null;
+      }
+      // Clear container
+      if (boardRef.current) {
+        boardRef.current.innerHTML = '';
+      }
+    };
+  }, [initializeBoard]);
 
   if (error) {
     return (
@@ -141,32 +224,130 @@ export const JSXGraphRenderer: React.FC<JSXGraphRendererProps> = ({
 };
 
 /**
+ * Normalize data from Claude's format to the expected render format
+ * Handles both new format (dimensions) and legacy format (square, circle, etc.)
+ */
+function normalizePatternData(subtype: string, data: any): any {
+  // If data already has the legacy structure, return as-is
+  if (data.square || data.circle || data.circles) {
+    return data;
+  }
+
+  // Convert from dimensions format to legacy format
+  const dimensions = data.dimensions || data;
+  const side = dimensions.side || 10;
+  const radius = dimensions.radius || side / 5;
+
+  switch (subtype) {
+    case 'square-with-corner-circles':
+      return {
+        square: { side, vertices: ['أ', 'ب', 'ج', 'د'] },
+        circles: [
+          { radius, center: 'corner' },
+          { radius, center: 'corner' },
+          { radius, center: 'corner' },
+          { radius, center: 'corner' }
+        ]
+      };
+
+    case 'square-vertex-at-circle-center':
+      return {
+        circle: { radius: radius || side, center: 'م' },
+        square: { side }
+      };
+
+    case 'rose-pattern-in-square':
+      return {
+        square: { side },
+        semicircles: [
+          { diameter: side },
+          { diameter: side },
+          { diameter: side },
+          { diameter: side }
+        ]
+      };
+
+    case 'three-tangent-circles':
+      return {
+        circles: [
+          { radius: dimensions.radius || 5, center: [0, 0] },
+          { radius: dimensions.radius || 5, center: [0, 0] },
+          { radius: dimensions.radius || 5, center: [0, 0] }
+        ]
+      };
+
+    case 'inscribed-circle-in-square':
+      return {
+        square: { side },
+        circle: { radius: side / 2 }
+      };
+
+    case 'inscribed-square-in-circle':
+      return {
+        circle: { radius: dimensions.radius || 10 },
+        square: { diagonal: (dimensions.radius || 10) * 2 }
+      };
+
+    case 'overlapping-semicircles':
+      return {
+        semicircles: [
+          { radius: dimensions.radius || 6 },
+          { radius: dimensions.radius || 6 }
+        ],
+        distance: dimensions.distance || dimensions.radius || 6
+      };
+
+    case 'quarter-circles-in-square':
+      return {
+        square: { side },
+        quarterCircles: [
+          { radius: side },
+          { radius: side }
+        ]
+      };
+
+    default:
+      return data;
+  }
+}
+
+/**
  * Render overlapping shape patterns using JSXGraph
  */
 function renderOverlappingPattern(board: any, config: JSXGraphConfig, shadingConfig: any) {
   const { subtype, data } = config;
 
+  // Normalize the data format
+  const normalizedData = normalizePatternData(subtype || '', data);
+
   switch (subtype) {
     case 'square-with-corner-circles':
-      renderSquareWithCornerCircles(board, data, shadingConfig);
+      renderSquareWithCornerCircles(board, normalizedData, shadingConfig);
       break;
 
     case 'square-vertex-at-circle-center':
-      renderSquareVertexAtCircleCenter(board, data, shadingConfig);
+      renderSquareVertexAtCircleCenter(board, normalizedData, shadingConfig);
       break;
 
     case 'rose-pattern-in-square':
-      renderRosePattern(board, data, shadingConfig);
+      renderRosePattern(board, normalizedData, shadingConfig);
       break;
 
     case 'three-tangent-circles':
-      renderThreeTangentCircles(board, data, shadingConfig);
+      renderThreeTangentCircles(board, normalizedData, shadingConfig);
       break;
 
     case 'inscribed-circle-in-square':
     case 'inscribed-square-in-circle':
-      // These can be rendered with SVG, but can also use JSXGraph if needed
-      renderInscribedShapes(board, data, shadingConfig, subtype);
+      renderInscribedShapes(board, normalizedData, shadingConfig, subtype);
+      break;
+
+    case 'overlapping-semicircles':
+      renderOverlappingSemicircles(board, normalizedData, shadingConfig);
+      break;
+
+    case 'quarter-circles-in-square':
+      renderQuarterCirclesInSquare(board, normalizedData, shadingConfig);
       break;
 
     default:
@@ -392,7 +573,8 @@ function renderInscribedShapes(board: any, data: any, shadingConfig: any, subtyp
   } else if (subtype === 'inscribed-square-in-circle') {
     const { circle, square } = data;
     const r = typeof circle.radius === 'number' ? circle.radius : parseFloat(circle.radius);
-    const s = square.side;
+    // Side can be provided directly or calculated from diagonal
+    const s = square.side || (square.diagonal ? square.diagonal / Math.sqrt(2) : r * Math.sqrt(2));
     const half = s / 2;
 
     // Draw circle
@@ -416,4 +598,140 @@ function renderInscribedShapes(board: any, data: any, shadingConfig: any, subtyp
       strokeWidth: 2
     });
   }
+}
+
+/**
+ * Pattern 7: Overlapping semicircles
+ */
+function renderOverlappingSemicircles(board: any, data: any, shadingConfig: any) {
+  const { semicircles, distance } = data;
+  const r = semicircles[0].radius;
+  const d = distance || r;
+
+  // Draw two overlapping semicircles
+  // First semicircle centered at (-d/2, 0)
+  board.create('semicircle', [
+    board.create('point', [-d / 2, 0], { visible: false }),
+    board.create('point', [-d / 2 + r, 0], { visible: false })
+  ], {
+    strokeColor: '#2c3e50',
+    strokeWidth: 2,
+    fillColor: '#ffffff',
+    fillOpacity: 0
+  });
+
+  // Second semicircle centered at (d/2, 0)
+  board.create('semicircle', [
+    board.create('point', [d / 2, 0], { visible: false }),
+    board.create('point', [d / 2 + r, 0], { visible: false })
+  ], {
+    strokeColor: '#2c3e50',
+    strokeWidth: 2,
+    fillColor: '#ffffff',
+    fillOpacity: 0
+  });
+
+  // Draw intersection region (lens shape)
+  // This is a simplified representation - actual intersection is complex
+  const intersectionWidth = 2 * r - d;
+  if (intersectionWidth > 0) {
+    board.create('polygon', [
+      [0, -intersectionWidth / 2],
+      [intersectionWidth / 4, 0],
+      [0, intersectionWidth / 2],
+      [-intersectionWidth / 4, 0]
+    ], {
+      fillColor: shadingConfig.fillColor || '#F97316',
+      fillOpacity: shadingConfig.fillOpacity || 0.4,
+      strokeColor: 'transparent'
+    });
+  }
+
+  // Add center points
+  board.create('point', [-d / 2, 0], {
+    name: 'O₁',
+    size: 3,
+    fixed: true,
+    label: { offset: [10, -15], fontSize: 14 }
+  });
+
+  board.create('point', [d / 2, 0], {
+    name: 'O₂',
+    size: 3,
+    fixed: true,
+    label: { offset: [10, -15], fontSize: 14 }
+  });
+}
+
+/**
+ * Pattern 8: Quarter circles in square
+ */
+function renderQuarterCirclesInSquare(board: any, data: any, shadingConfig: any) {
+  const { square, quarterCircles } = data;
+  const s = square.side;
+  const half = s / 2;
+  const r = quarterCircles[0].radius || s;
+
+  // Draw square
+  const vertices = [
+    [-half, -half],
+    [half, -half],
+    [half, half],
+    [-half, half]
+  ];
+
+  board.create('polygon', vertices, {
+    fillColor: '#ffffff',
+    fillOpacity: 0,
+    strokeColor: '#2c3e50',
+    strokeWidth: 2
+  });
+
+  // Draw quarter circle from bottom-left corner
+  board.create('arc', [
+    board.create('point', [-half, -half], { visible: false }),
+    board.create('point', [-half + r, -half], { visible: false }),
+    board.create('point', [-half, -half + r], { visible: false })
+  ], {
+    strokeColor: '#2c3e50',
+    strokeWidth: 2,
+    fillColor: '#ffffff',
+    fillOpacity: 0
+  });
+
+  // Draw quarter circle from bottom-right corner
+  board.create('arc', [
+    board.create('point', [half, -half], { visible: false }),
+    board.create('point', [half, -half + r], { visible: false }),
+    board.create('point', [half - r, -half], { visible: false })
+  ], {
+    strokeColor: '#2c3e50',
+    strokeWidth: 2,
+    fillColor: '#ffffff',
+    fillOpacity: 0
+  });
+
+  // Draw lens-shaped intersection (simplified)
+  // The lens is formed where the two quarter circles overlap
+  board.create('polygon', [
+    [0, -half],
+    [half / 2, 0],
+    [0, half / 2],
+    [-half / 2, 0]
+  ], {
+    fillColor: shadingConfig.fillColor || '#EF4444',
+    fillOpacity: shadingConfig.fillOpacity || 0.4,
+    strokeColor: 'transparent'
+  });
+
+  // Add corner labels
+  const labels = ['أ', 'ب', 'ج', 'د'];
+  vertices.forEach((v, i) => {
+    board.create('point', v, {
+      name: labels[i],
+      size: 3,
+      fixed: true,
+      label: { offset: [i < 2 ? 10 : -15, i % 2 === 0 ? -15 : 10], fontSize: 14 }
+    });
+  });
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { Loader2 } from 'lucide-react'
 import type { QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 import { SECTION_LABELS, DIFFICULTY_LABELS, CATEGORY_LABELS } from '@/types/question'
 
@@ -11,12 +12,14 @@ export interface QuestionHeaderProps {
   difficulty?: QuestionDifficulty
   category?: QuestionCategory
   showCategory?: boolean
+  isLoadingBatch?: boolean
   className?: string
 }
 
 /**
  * QuestionHeader - Displays question metadata (number, section, difficulty, category)
  * Extracted for reuse across different question type components
+ * Now includes loading spinner for batch loading states
  */
 export function QuestionHeader({
   questionNumber,
@@ -24,7 +27,8 @@ export function QuestionHeader({
   section,
   difficulty,
   category,
-  showCategory = false,
+  showCategory = true,
+  isLoadingBatch = false,
   className,
 }: QuestionHeaderProps) {
   return (
@@ -35,16 +39,26 @@ export function QuestionHeader({
       )}
       dir="rtl"
     >
-      {/* Question number and progress */}
+      {/* Question number, progress, and loading indicator */}
       <div className="flex items-center gap-3">
         <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-bold text-lg">
           {questionNumber}
         </span>
         <span className="text-gray-500 text-sm">من {totalQuestions}</span>
+        {isLoadingBatch && (
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+        )}
       </div>
 
-      {/* Badges */}
+      {/* Badges - Section, Difficulty, Category */}
       <div className="flex items-center gap-2 flex-wrap justify-end">
+        {/* Category Badge (moved from footer to header) */}
+        {showCategory && category && (
+          <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+            {CATEGORY_LABELS[category]}
+          </span>
+        )}
+
         {/* Section Badge */}
         <span
           className={cn(
@@ -68,13 +82,6 @@ export function QuestionHeader({
             )}
           >
             {DIFFICULTY_LABELS[difficulty]}
-          </span>
-        )}
-
-        {/* Category Badge (optional) */}
-        {showCategory && category && (
-          <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-            {CATEGORY_LABELS[category]}
           </span>
         )}
       </div>

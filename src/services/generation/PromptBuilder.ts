@@ -20,7 +20,7 @@ export interface QuestionGenerationParams {
   /** Track: scientific or literary */
   track: 'scientific' | 'literary';
   /** Question type */
-  questionType: 'mcq' | 'comparison' | 'diagram' | 'reading' | 'analogy' | 'completion' | 'error' | 'odd-word';
+  questionType: 'mcq' | 'comparison' | 'diagram' | 'overlapping-diagram' | 'reading' | 'analogy' | 'completion' | 'error' | 'odd-word';
   /** Main topic */
   topic: string;
   /** Specific subtopic */
@@ -111,9 +111,10 @@ export class PromptBuilder {
     if (params.section === 'quantitative') {
       skills.push('qudurat-quant');
 
-      // Add diagram skill for diagram questions or geometry topics
+      // Add diagram skill for diagram questions, overlapping-diagram, or geometry topics
       if (
         params.questionType === 'diagram' ||
+        params.questionType === 'overlapping-diagram' ||
         params.topic === 'geometry' ||
         params.topic === 'statistics'
       ) {
@@ -266,6 +267,35 @@ ODD WORD OUT INSTRUCTIONS:
 - Provide 4 words where 3 belong to same category
 - One word should be clearly different
 - Explain the semantic relationship`,
+
+      'overlapping-diagram': `
+OVERLAPPING DIAGRAM INSTRUCTIONS:
+- REQUIRED: Set type = "overlapping-shapes" with specific subtype from the 8 patterns
+- REQUIRED: Set renderHint = "JSXGraph" for all overlapping shapes
+- REQUIRED: Include shading configuration with region, color, and opacity
+- REQUIRED: Include dimensions object with appropriate measurements
+- Choose subtype based on difficulty:
+  * Easy: "inscribed-circle-in-square", "inscribed-square-in-circle"
+  * Medium: "square-with-corner-circles", "square-vertex-at-circle-center"
+  * Hard: "rose-pattern-in-square", "three-tangent-circles", "overlapping-semicircles", "quarter-circles-in-square"
+- REQUIRED structure:
+  {
+    "type": "overlapping-shapes",
+    "renderHint": "JSXGraph",
+    "data": {
+      "subtype": "[pattern-name]",
+      "dimensions": { "side": 10 } or { "radius": 5 },
+      "shading": {
+        "region": "intersection" | "petals" | "outer" | "inner",
+        "color": "#3B82F6",
+        "opacity": 0.4
+      }
+    },
+    "caption": "[Arabic description]"
+  }
+- REQUIRED: Provide Arabic caption describing what is shaded
+- REQUIRED: Include formulaUsed field with the area/perimeter calculation
+- Question must ask about area of shaded region or perimeter`,
     };
 
     let baseInstructions = instructions[questionType] || '';
