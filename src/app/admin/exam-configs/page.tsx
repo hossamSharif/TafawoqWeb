@@ -29,12 +29,13 @@ import {
 } from '@/app/actions/generation-actions';
 import { Loader2, Plus, Sparkles } from 'lucide-react';
 
-// Default topic distributions (from data-model.md)
+// Default topic distributions (from topics.ts - updated for v3.0)
 const DEFAULT_QUANT_DISTRIBUTION = {
-  arithmetic: 0.4,
-  geometry: 0.24,
-  algebra: 0.23,
-  statistics: 0.13,
+  arithmetic: 0.34,
+  geometry: 0.21,
+  algebra: 0.20,
+  statistics: 0.10,
+  comparisons: 0.15, // NEW v3.0 - comparison questions (User Story 3)
 };
 
 const DEFAULT_VERBAL_DISTRIBUTION = {

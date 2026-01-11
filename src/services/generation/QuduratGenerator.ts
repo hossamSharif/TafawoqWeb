@@ -611,8 +611,11 @@ export class QuduratGenerator {
   }
 
   /**
-   * Generate a full 120-question exam in 6 sequential batches (T085, User Story 6)
+   * Generate a full 120-question exam in sequential batches (T085, User Story 6)
    * Sequential execution maximizes cache reuse within 5-minute TTL window
+   *
+   * IMPORTANT: Generates quantitative batches first, then verbal batches separately
+   * to ensure correct skills are loaded for each section type.
    *
    * @param examConfig - Exam configuration with topic/difficulty distribution
    * @param progressCallback - Optional callback for batch progress updates
@@ -641,127 +644,191 @@ export class QuduratGenerator {
     const batchSize = examConfig.batchSize || 20;
     const totalQuestions =
       examConfig.sectionSplit.quantitative + examConfig.sectionSplit.verbal;
-    const totalBatches = Math.ceil(totalQuestions / batchSize);
+
+    // Calculate batches per section (separate quantitative and verbal)
+    const quantBatches = Math.ceil(examConfig.sectionSplit.quantitative / batchSize);
+    const verbalBatches = Math.ceil(examConfig.sectionSplit.verbal / batchSize);
+    const totalBatches = quantBatches + verbalBatches;
 
     console.log(
       `Starting sequential generation of ${totalQuestions} questions in ${totalBatches} batches...`
     );
     console.log(`Batch size: ${batchSize}, Track: ${examConfig.track}`);
+    console.log(`Quantitative: ${examConfig.sectionSplit.quantitative} questions in ${quantBatches} batches`);
+    console.log(`Verbal: ${examConfig.sectionSplit.verbal} questions in ${verbalBatches} batches`);
 
     const allQuestions: QuestionData[] = [];
     const allFailed: Array<{ data: any; validation: ValidationResult }> = [];
     let totalCost = 0;
     let totalTokens = 0;
     let cacheHits = 0;
+    let batchesCompleted = 0;
     const batchId = this.generateBatchId();
 
     // Reset cache metrics for this exam generation
     this.resetCacheMetrics();
 
-    // Generate each batch sequentially (NOT in parallel) to maximize cache reuse
-    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-      const batchStartTime = Date.now();
-      console.log(
-        `\n=== Batch ${batchIndex + 1}/${totalBatches} ===`
-      );
+    // ========================================================================
+    // PHASE 1: Generate ALL quantitative questions first
+    // ========================================================================
+    if (examConfig.sectionSplit.quantitative > 0 && examConfig.topicDistribution.quantitative) {
+      console.log(`\n========== PHASE 1: QUANTITATIVE (${examConfig.sectionSplit.quantitative} questions) ==========`);
 
-      // Calculate how many questions to generate in this batch
-      const questionsGeneratedSoFar = allQuestions.length;
-      const questionsRemaining = totalQuestions - questionsGeneratedSoFar;
-      const questionCountForBatch = Math.min(batchSize, questionsRemaining);
+      let quantQuestionsGenerated = 0;
 
-      // Distribute questions across sections for this batch
-      const quantRatio =
-        examConfig.sectionSplit.quantitative /
-        (examConfig.sectionSplit.quantitative + examConfig.sectionSplit.verbal);
+      for (let i = 0; i < quantBatches; i++) {
+        const batchStartTime = Date.now();
+        batchesCompleted++;
 
-      const quantForBatch = Math.round(questionCountForBatch * quantRatio);
-      const verbalForBatch = questionCountForBatch - quantForBatch;
+        console.log(`\n=== Quantitative Batch ${i + 1}/${quantBatches} (Overall: ${batchesCompleted}/${totalBatches}) ===`);
 
-      // Build params for this batch
-      const batchParams: QuestionGenerationParams[] = [];
+        // Calculate questions for this batch
+        const remaining = examConfig.sectionSplit.quantitative - quantQuestionsGenerated;
+        const questionCountForBatch = Math.min(batchSize, remaining);
 
-      // Add quantitative questions
-      if (quantForBatch > 0 && examConfig.topicDistribution.quantitative) {
-        const quantParams = this.distributeQuestionsByTopicAndDifficulty(
+        // Build params for quantitative batch only
+        const batchParams = this.distributeQuestionsByTopicAndDifficulty(
           'quantitative',
           examConfig.track,
-          quantForBatch,
+          questionCountForBatch,
           examConfig.topicDistribution.quantitative,
           examConfig.difficultyDistribution
         );
-        batchParams.push(...quantParams);
-      }
 
-      // Add verbal questions
-      if (verbalForBatch > 0 && examConfig.topicDistribution.verbal) {
-        const verbalParams = this.distributeQuestionsByTopicAndDifficulty(
+        // Generate this batch
+        try {
+          const result = await this.generateBatch(batchParams);
+
+          allQuestions.push(...result.questions);
+          allFailed.push(...result.failed);
+          totalCost += result.metadata.estimatedCost;
+          totalTokens += result.metadata.totalTokens;
+          quantQuestionsGenerated += result.questions.length;
+
+          if (result.metadata.cacheHit) {
+            cacheHits++;
+          }
+
+          const batchDuration = Date.now() - batchStartTime;
+          const cacheHitRate = cacheHits / batchesCompleted;
+
+          console.log(
+            `Batch complete: ${result.questions.length} valid questions in ${(batchDuration / 1000).toFixed(1)}s`
+          );
+          console.log(`Cache hit: ${result.metadata.cacheHit ? 'YES' : 'NO'}`);
+          console.log(`Cost for batch: $${result.metadata.estimatedCost.toFixed(4)}`);
+          console.log(`Quantitative progress: ${quantQuestionsGenerated}/${examConfig.sectionSplit.quantitative}`);
+
+          // Call progress callback
+          if (progressCallback) {
+            progressCallback({
+              currentBatch: batchesCompleted,
+              totalBatches,
+              questionsGenerated: allQuestions.length,
+              targetQuestions: totalQuestions,
+              cacheHitRate,
+              estimatedCostSoFar: totalCost,
+            });
+          }
+        } catch (error) {
+          console.error(`Quantitative batch ${i + 1} failed:`, error);
+
+          if (this.isNonRetryableError(error)) {
+            console.error('Non-retryable error encountered, aborting exam generation');
+            break;
+          }
+          console.log('Continuing to next batch despite error...');
+        }
+
+        // Small delay between batches
+        if (i < quantBatches - 1) {
+          await this.sleep(500);
+        }
+      }
+    }
+
+    // ========================================================================
+    // PHASE 2: Generate ALL verbal questions
+    // ========================================================================
+    if (examConfig.sectionSplit.verbal > 0 && examConfig.topicDistribution.verbal) {
+      console.log(`\n========== PHASE 2: VERBAL (${examConfig.sectionSplit.verbal} questions) ==========`);
+
+      let verbalQuestionsGenerated = 0;
+
+      for (let i = 0; i < verbalBatches; i++) {
+        const batchStartTime = Date.now();
+        batchesCompleted++;
+
+        console.log(`\n=== Verbal Batch ${i + 1}/${verbalBatches} (Overall: ${batchesCompleted}/${totalBatches}) ===`);
+
+        // Calculate questions for this batch
+        const remaining = examConfig.sectionSplit.verbal - verbalQuestionsGenerated;
+        const questionCountForBatch = Math.min(batchSize, remaining);
+
+        // Build params for verbal batch only
+        const batchParams = this.distributeQuestionsByTopicAndDifficulty(
           'verbal',
           examConfig.track,
-          verbalForBatch,
+          questionCountForBatch,
           examConfig.topicDistribution.verbal,
           examConfig.difficultyDistribution
         );
-        batchParams.push(...verbalParams);
-      }
 
-      // Generate this batch
-      try {
-        const result = await this.generateBatch(batchParams);
+        // Generate this batch
+        try {
+          const result = await this.generateBatch(batchParams);
 
-        allQuestions.push(...result.questions);
-        allFailed.push(...result.failed);
-        totalCost += result.metadata.estimatedCost;
-        totalTokens += result.metadata.totalTokens;
+          allQuestions.push(...result.questions);
+          allFailed.push(...result.failed);
+          totalCost += result.metadata.estimatedCost;
+          totalTokens += result.metadata.totalTokens;
+          verbalQuestionsGenerated += result.questions.length;
 
-        if (result.metadata.cacheHit) {
-          cacheHits++;
+          if (result.metadata.cacheHit) {
+            cacheHits++;
+          }
+
+          const batchDuration = Date.now() - batchStartTime;
+          const cacheHitRate = cacheHits / batchesCompleted;
+
+          console.log(
+            `Batch complete: ${result.questions.length} valid questions in ${(batchDuration / 1000).toFixed(1)}s`
+          );
+          console.log(`Cache hit: ${result.metadata.cacheHit ? 'YES' : 'NO'}`);
+          console.log(`Cost for batch: $${result.metadata.estimatedCost.toFixed(4)}`);
+          console.log(`Verbal progress: ${verbalQuestionsGenerated}/${examConfig.sectionSplit.verbal}`);
+
+          // Call progress callback
+          if (progressCallback) {
+            progressCallback({
+              currentBatch: batchesCompleted,
+              totalBatches,
+              questionsGenerated: allQuestions.length,
+              targetQuestions: totalQuestions,
+              cacheHitRate,
+              estimatedCostSoFar: totalCost,
+            });
+          }
+        } catch (error) {
+          console.error(`Verbal batch ${i + 1} failed:`, error);
+
+          if (this.isNonRetryableError(error)) {
+            console.error('Non-retryable error encountered, aborting exam generation');
+            break;
+          }
+          console.log('Continuing to next batch despite error...');
         }
 
-        const batchDuration = Date.now() - batchStartTime;
-        const cacheHitRate = cacheHits / (batchIndex + 1);
-
-        console.log(
-          `Batch ${batchIndex + 1} complete: ${result.questions.length} valid questions in ${(batchDuration / 1000).toFixed(1)}s`
-        );
-        console.log(`Cache hit: ${result.metadata.cacheHit ? 'YES' : 'NO'}`);
-        console.log(`Cost for batch: $${result.metadata.estimatedCost.toFixed(4)}`);
-        console.log(`Overall cache hit rate: ${(cacheHitRate * 100).toFixed(1)}%`);
-
-        // Call progress callback
-        if (progressCallback) {
-          progressCallback({
-            currentBatch: batchIndex + 1,
-            totalBatches,
-            questionsGenerated: allQuestions.length,
-            targetQuestions: totalQuestions,
-            cacheHitRate,
-            estimatedCostSoFar: totalCost,
-          });
+        // Small delay between batches
+        if (i < verbalBatches - 1) {
+          await this.sleep(500);
         }
-      } catch (error) {
-        console.error(`Batch ${batchIndex + 1} failed:`, error);
-
-        // Decide whether to continue or abort
-        if (this.isNonRetryableError(error)) {
-          console.error('Non-retryable error encountered, aborting exam generation');
-          break;
-        }
-
-        // For retryable errors, continue to next batch
-        console.log('Continuing to next batch despite error...');
-      }
-
-      // Small delay between batches to ensure cache stays warm (within 5min TTL)
-      // But not too long - we want to complete within 3 minutes total
-      if (batchIndex < totalBatches - 1) {
-        await this.sleep(500); // 0.5 second between batches
       }
     }
 
     // Final metrics
-    const finalCacheHitRate = cacheHits / totalBatches;
-    const averageCostPerQuestion = totalCost / allQuestions.length;
+    const finalCacheHitRate = batchesCompleted > 0 ? cacheHits / batchesCompleted : 0;
+    const averageCostPerQuestion = allQuestions.length > 0 ? totalCost / allQuestions.length : 0;
 
     console.log(`\n=== Exam Generation Complete ===`);
     console.log(`Total questions: ${allQuestions.length}/${totalQuestions}`);
@@ -831,35 +898,57 @@ export class QuduratGenerator {
       const hardCount = Math.round(topicCount * difficultyDistribution.hard);
       const mediumCount = topicCount - easyCount - hardCount;
 
+      // For geometry, distribute between regular diagrams and overlapping shapes
+      // ~30% overlapping shapes (User Story 1 requirement)
+      const isGeometry = topic === 'geometry' && section === 'quantitative';
+      const overlappingCount = isGeometry ? Math.max(1, Math.round(topicCount * 0.3)) : 0;
+      let overlappingRemaining = overlappingCount;
+
       // Add easy questions
       for (let i = 0; i < easyCount; i++) {
+        // Overlapping shapes at easy difficulty use simpler patterns
+        const useOverlapping = isGeometry && overlappingRemaining > 0 && i < Math.ceil(overlappingCount * 0.3);
+        const subtopic = useOverlapping ? 'overlapping-shapes' : undefined;
+        if (useOverlapping) overlappingRemaining--;
+
         params.push({
           section,
           track,
-          questionType: this.getDefaultQuestionType(section, topic),
+          questionType: this.getDefaultQuestionType(section, topic, subtopic),
           topic,
+          subtopic,
           difficulty: 'easy',
         });
       }
 
-      // Add medium questions
+      // Add medium questions - most overlapping shapes go here
       for (let i = 0; i < mediumCount; i++) {
+        const useOverlapping = isGeometry && overlappingRemaining > 0 && i < Math.ceil(overlappingCount * 0.5);
+        const subtopic = useOverlapping ? 'overlapping-shapes' : undefined;
+        if (useOverlapping) overlappingRemaining--;
+
         params.push({
           section,
           track,
-          questionType: this.getDefaultQuestionType(section, topic),
+          questionType: this.getDefaultQuestionType(section, topic, subtopic),
           topic,
+          subtopic,
           difficulty: 'medium',
         });
       }
 
-      // Add hard questions
+      // Add hard questions - remaining overlapping shapes
       for (let i = 0; i < hardCount; i++) {
+        const useOverlapping = isGeometry && overlappingRemaining > 0;
+        const subtopic = useOverlapping ? 'overlapping-shapes' : undefined;
+        if (useOverlapping) overlappingRemaining--;
+
         params.push({
           section,
           track,
-          questionType: this.getDefaultQuestionType(section, topic),
+          questionType: this.getDefaultQuestionType(section, topic, subtopic),
           topic,
+          subtopic,
           difficulty: 'hard',
         });
       }
@@ -873,11 +962,16 @@ export class QuduratGenerator {
    */
   private getDefaultQuestionType(
     section: 'quantitative' | 'verbal',
-    topic: string
+    topic: string,
+    subtopic?: string
   ): QuestionGenerationParams['questionType'] {
     if (section === 'quantitative') {
-      // Most quantitative questions are MCQ, some geometry are diagrams
-      return topic === 'geometry' ? 'diagram' : 'mcq';
+      // Geometry questions: use overlapping-diagram for overlapping-shapes subtopic
+      if (topic === 'geometry') {
+        return subtopic === 'overlapping-shapes' ? 'overlapping-diagram' : 'diagram';
+      }
+      // Other quantitative questions are MCQ
+      return 'mcq';
     } else {
       // Verbal question types based on topic
       const verbalTypeMap: Record<string, QuestionGenerationParams['questionType']> = {

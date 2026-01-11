@@ -1,8 +1,8 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { generateQuestionBatch } from '@/lib/anthropic'
-import type { GenerationContext } from '@/lib/anthropic/types'
+import { QuduratGenerator } from '@/services/generation/QuduratGenerator'
+import type { QuestionGenerationParams } from '@/services/generation/PromptBuilder'
 import type { Question, QuestionCategory, QuestionSection, QuestionDifficulty } from '@/types/question'
 
 /**
@@ -24,7 +24,7 @@ interface PracticeSessionRow {
   questions: Question[]
   question_count: number
   generated_batches?: number
-  generation_context?: GenerationContext
+  generation_context?: any
   generation_in_progress?: boolean
 }
 
@@ -121,26 +121,44 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Get generation context
-    const context: GenerationContext = session.generation_context || {
-      generatedIds: [],
-      lastBatchIndex: -1,
-    }
-
-    // Generate questions using the practice session's settings
-    let batchResponse
+    // Generate questions using QuduratGenerator (with section-specific skills)
+    let newQuestions
     try {
-      batchResponse = await generateQuestionBatch(
-        {
-          sessionId,
-          batchIndex,
-          batchSize: PRACTICE_BATCH_SIZE, // T045: Use smaller batch size for practice
+      const generator = new QuduratGenerator({
+        enableCaching: true,
+        maxRetries: 3,
+      })
+
+      // Get user's academic track for accurate question generation
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('academic_track')
+        .eq('user_id', session.user_id)
+        .single()
+
+      const userTrack = (profile?.academic_track as 'scientific' | 'literary') || 'scientific'
+
+      // Build generation params for each question
+      const paramsArray: QuestionGenerationParams[] = []
+      for (let i = 0; i < PRACTICE_BATCH_SIZE; i++) {
+        // Distribute across categories evenly
+        const category = session.categories[i % session.categories.length]
+        paramsArray.push({
           section: session.section,
-          track: 'scientific', // Practice mode doesn't use track, default to scientific
-          categories: session.categories,
-        },
-        context
-      )
+          track: userTrack,
+          topic: category,
+          subtopic: null,
+          difficulty: session.difficulty,
+        })
+      }
+
+      const result = await generator.generateBatch(paramsArray)
+
+      if (!result.success || result.questions.length === 0) {
+        throw new Error('Failed to generate questions')
+      }
+
+      newQuestions = result.questions
     } catch (genError) {
       console.error('Practice batch generation error:', genError)
 
@@ -160,8 +178,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const { questions: newQuestions, updatedContext, usage, meta } = batchResponse
-
     // Append new questions to existing ones
     const existingQuestions = (session.questions || []) as Question[]
     const allQuestions = [...existingQuestions, ...newQuestions]
@@ -172,7 +188,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .update({
         questions: allQuestions as unknown as Record<string, unknown>[],
         generated_batches: batchIndex + 1,
-        generation_context: updatedContext,
+        generation_context: {},
         generation_in_progress: false,
         question_count: allQuestions.length,
         updated_at: new Date().toISOString(),
@@ -196,23 +212,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Log generation metrics
     console.log(`[Practice ${sessionId}] Batch ${batchIndex} generated:`, {
       questionCount: newQuestions.length,
-      provider: meta.provider,
-      cacheHit: meta.cacheHit,
-      durationMs: meta.durationMs,
+      section: session.section,
+      categories: session.categories,
     })
 
-    // Return questions without answers
+    // Return questions without answers (hide correct_answer and explanation for security)
     const questionsWithoutAnswers = newQuestions.map((q, index) => ({
-      id: q.id,
+      id: q.id || `practice_${batchIndex}_${index}`,
       index: existingQuestions.length + index,
       section: q.section,
+      track: q.track,
+      question_type: q.question_type,
       topic: q.topic,
+      subtopic: q.subtopic,
       difficulty: q.difficulty,
-      questionType: q.questionType,
-      stem: q.stem,
+      question_text: q.question_text,
       choices: q.choices,
-      passage: q.passage,
-      diagram: q.diagram, // Include diagram data for rendering geometric shapes and charts
+      diagram_config: q.diagram_config,
+      // Hide correct_answer and explanation until user submits
     }))
 
     return NextResponse.json({
@@ -220,7 +237,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       meta: {
         batchIndex,
         totalLoaded: allQuestions.length,
-        cacheHit: meta.cacheHit,
       },
     })
   } catch (error) {

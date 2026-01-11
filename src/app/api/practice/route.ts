@@ -1,10 +1,10 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { generateQuestionBatch } from '@/lib/anthropic'
+import { QuduratGenerator } from '@/services/generation/QuduratGenerator'
+import type { QuestionGenerationParams } from '@/services/generation/PromptBuilder'
 import { canUsePracticeCredit, consumePracticeCredit } from '@/lib/rewards/calculator'
 import { calculatePracticeLimit, type AcademicTrack } from '@/lib/practice'
-import type { GenerationContext } from '@/lib/anthropic/types'
 import type { Question, QuestionSection, QuestionDifficulty, QuestionCategory } from '@/types/question'
 
 /**
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         time_spent_seconds: 0,
         // T049: New batch generation fields
         generated_batches: 0,
-        generation_context: { generatedIds: [], lastBatchIndex: -1 } as GenerationContext,
+        generation_context: {},
       })
       .select()
       .single()
@@ -157,21 +157,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate first batch using Claude
-    const emptyContext: GenerationContext = { generatedIds: [], lastBatchIndex: -1 }
-    let batchResponse
+    // Generate first batch using QuduratGenerator (with section-specific skills)
+    let questions
     try {
-      batchResponse = await generateQuestionBatch(
-        {
-          sessionId: session.id,
-          batchIndex: 0,
-          batchSize: PRACTICE_BATCH_SIZE,
+      const generator = new QuduratGenerator({
+        enableCaching: true,
+        maxRetries: 3,
+      })
+
+      // Build generation params for each question
+      const paramsArray: QuestionGenerationParams[] = []
+      for (let i = 0; i < PRACTICE_BATCH_SIZE; i++) {
+        // Distribute across categories evenly
+        const category = finalCategories[i % finalCategories.length]
+        paramsArray.push({
           section,
-          track: 'scientific', // Practice doesn't use track, default to scientific
-          categories: finalCategories,
-        },
-        emptyContext
-      )
+          track: userTrack || 'scientific',
+          topic: category,
+          subtopic: null,
+          difficulty,
+        })
+      }
+
+      const result = await generator.generateBatch(paramsArray)
+
+      if (!result.success || result.questions.length === 0) {
+        throw new Error('Failed to generate questions')
+      }
+
+      questions = result.questions
     } catch (genError) {
       console.error('Question generation error:', genError)
 
@@ -187,8 +201,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { questions, updatedContext, usage, meta } = batchResponse
-
     // Update session with generated questions
     const { error: updateError } = await supabase
       .from('practice_sessions')
@@ -196,7 +208,7 @@ export async function POST(request: NextRequest) {
         questions: questions as unknown as Record<string, unknown>[],
         question_count: questions.length,
         generated_batches: 1,
-        generation_context: updatedContext,
+        generation_context: {},
       })
       .eq('id', session.id)
 
@@ -211,24 +223,24 @@ export async function POST(request: NextRequest) {
     // Log generation metrics
     console.log(`[Practice ${session.id}] First batch generated:`, {
       questionCount: questions.length,
-      provider: meta.provider,
-      cacheHit: meta.cacheHit,
-      durationMs: meta.durationMs,
+      section,
+      categories: finalCategories,
     })
 
     // Return session with questions (without answers for security)
     const questionsWithoutAnswers = questions.map((q, index) => ({
-      id: q.id,
+      id: q.id || `practice_0_${index}`,
       index,
       section: q.section,
+      track: q.track,
+      question_type: q.question_type,
       topic: q.topic,
+      subtopic: q.subtopic,
       difficulty: q.difficulty,
-      questionType: q.questionType,
-      stem: q.stem,
+      question_text: q.question_text,
       choices: q.choices,
-      passage: q.passage,
-      diagram: q.diagram, // Include diagram data for rendering geometric shapes and charts
-      // answerIndex, explanation hidden until answered
+      diagram_config: q.diagram_config,
+      // Hide correct_answer and explanation until user submits
     }))
 
     return NextResponse.json({
