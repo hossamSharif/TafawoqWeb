@@ -160,12 +160,27 @@ function ExamContent() {
 
   // Auto-advance to next question after showing result
   const handleContinue = useCallback(() => {
-    if (currentIndex < questions.length - 1) {
-      nextQuestion()
-    } else {
+    const totalExpected = session?.totalQuestions || questions.length
+    const isAtLastLoadedQuestion = currentIndex === questions.length - 1
+    const isTrulyLastQuestion = currentIndex === totalExpected - 1
+
+    if (isTrulyLastQuestion) {
+      // Truly the last question of the exam (question 96)
       setShowFinishDialog(true)
+    } else if (isAtLastLoadedQuestion) {
+      // At end of loaded questions, but more are expected
+      // If batch is loading, button is disabled - but if clicked anyway, do nothing
+      // If batch loaded successfully, nextQuestion() will work
+      if (questions.length < totalExpected) {
+        // More questions should exist - nextQuestion will navigate if loaded
+        nextQuestion()
+      } else {
+        setShowFinishDialog(true)
+      }
+    } else {
+      nextQuestion()
     }
-  }, [currentIndex, questions.length, nextQuestion])
+  }, [currentIndex, questions.length, session?.totalQuestions, nextQuestion])
 
   // Handle question navigation
   const handleQuestionClick = useCallback(
@@ -206,9 +221,14 @@ function ExamContent() {
   }
 
   const unansweredCount = questions.length - answeredQuestions.size
-  const isLastQuestion = session?.totalQuestions
-    ? currentIndex === session.totalQuestions - 1
-    : currentIndex === questions.length - 1
+  const totalExpected = session?.totalQuestions || questions.length
+  const isLastQuestion = currentIndex === totalExpected - 1
+  const nextQuestionAvailable = currentIndex + 1 < questions.length
+  // Disable navigation when:
+  // 1. Next question is NOT available in loaded questions
+  // 2. AND we're NOT at the truly last question of the exam
+  // 3. AND either batch is loading OR more questions are expected (prefetch should trigger)
+  const shouldDisableNext = !nextQuestionAvailable && !isLastQuestion && (isLoadingBatch || questions.length < totalExpected)
 
   return (
     <div
@@ -437,18 +457,27 @@ function ExamContent() {
               {showResult ? (
                 <Button
                   onClick={handleContinue}
-                  disabled={currentIndex >= questions.length - 1 && isLoadingBatch}
+                  disabled={shouldDisableNext}
                   size="sm"
                   className="gap-1 flex-1 bg-primary hover:bg-primary/90"
                 >
-                  <span className="text-xs">{isLastQuestion ? 'النتائج' : 'التالي'}</span>
-                  {!isLastQuestion && <ChevronLeft className="w-4 h-4" />}
+                  {shouldDisableNext ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-xs">جاري التحميل</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs">{isLastQuestion ? 'النتائج' : 'التالي'}</span>
+                      {!isLastQuestion && <ChevronLeft className="w-4 h-4" />}
+                    </>
+                  )}
                 </Button>
               ) : (
                 <Button
                   variant="outline"
                   onClick={nextQuestion}
-                  disabled={isLastQuestion}
+                  disabled={isLastQuestion || shouldDisableNext}
                   size="sm"
                   className="gap-1 flex-1"
                 >
@@ -489,17 +518,26 @@ function ExamContent() {
               {showResult ? (
                 <Button
                   onClick={handleContinue}
-                  disabled={currentIndex >= questions.length - 1 && isLoadingBatch}
+                  disabled={shouldDisableNext}
                   className="gap-2 bg-primary hover:bg-primary/90"
                 >
-                  <span>{isLastQuestion ? 'عرض النتائج' : 'التالي'}</span>
-                  {!isLastQuestion && <ChevronLeft className="w-4 h-4" />}
+                  {shouldDisableNext ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>جاري التحميل</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{isLastQuestion ? 'عرض النتائج' : 'التالي'}</span>
+                      {!isLastQuestion && <ChevronLeft className="w-4 h-4" />}
+                    </>
+                  )}
                 </Button>
               ) : (
                 <Button
                   variant="outline"
                   onClick={nextQuestion}
-                  disabled={isLastQuestion}
+                  disabled={isLastQuestion || shouldDisableNext}
                   className="gap-2"
                 >
                   <span>تخطي</span>
