@@ -153,9 +153,9 @@ export async function POST(request: NextRequest) {
         paramsArray.push({
           section: firstSection,
           track,
-          topic: null, // Let generator choose from topic distribution
-          subtopic: null,
-          difficulty: null, // Let generator choose from difficulty distribution
+          topic: undefined, // Let generator choose from topic distribution
+          subtopic: undefined,
+          difficulty: undefined, // Let generator choose from difficulty distribution
         })
       }
 

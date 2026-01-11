@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
           section,
           track: userTrack || 'scientific',
           topic: category,
-          subtopic: null,
+          subtopic: undefined,
           difficulty,
         })
       }

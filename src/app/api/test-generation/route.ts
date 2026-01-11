@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       section: 'quantitative',
       track: 'scientific',
       topic: 'algebra',
-      subtopic: null,
+      subtopic: undefined,
       difficulty: 'easy',
       questionType: 'mcq',
     }

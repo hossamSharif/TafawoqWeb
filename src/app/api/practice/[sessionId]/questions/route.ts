@@ -147,7 +147,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           section: session.section,
           track: userTrack,
           topic: category,
-          subtopic: null,
+          subtopic: undefined,
           difficulty: session.difficulty,
         })
       }
