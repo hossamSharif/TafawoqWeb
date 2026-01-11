@@ -79,7 +79,7 @@ export function buildCachedSystemPrompt(skillsContent: string): SystemPromptWith
 export interface QuestionGenerationRequest extends MessageCreateParamsNonStreaming {
   model: string;
   max_tokens: number;
-  system: SystemPromptWithCache[];  // Array with single cached prompt
+  system: Array<SystemPromptWithCache | { type: 'text'; text: string }>;  // Array with cached or non-cached prompt
   messages: Array<{
     role: 'user';
     content: string;  // User prompt with batch parameters
