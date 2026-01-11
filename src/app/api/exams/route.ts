@@ -1,9 +1,9 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { generateQuestionBatch } from '@/lib/anthropic'
+import { QuduratGenerator } from '@/services/generation/QuduratGenerator'
+import type { QuestionGenerationParams } from '@/services/generation/PromptBuilder'
 import { canUseExamCredit, consumeExamCredit } from '@/lib/rewards/calculator'
-import type { GenerationContext } from '@/lib/anthropic/types'
 
 type AcademicTrack = 'scientific' | 'literary'
 
@@ -135,22 +135,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate first batch of 10 questions using Claude
+    // Generate first batch of 10 questions using QuduratGenerator (with section-specific skills)
     const firstSection = getFirstBatchSection(track)
-    const emptyContext: GenerationContext = { generatedIds: [], lastBatchIndex: -1 }
 
-    let batchResponse
+    let questions
     try {
-      batchResponse = await generateQuestionBatch(
-        {
-          sessionId: session.id,
-          batchIndex: 0,
-          batchSize: 10,
+      const generator = new QuduratGenerator({
+        enableCaching: true,
+        maxRetries: 3,
+      })
+
+      // Build generation params for each question in the batch
+      // For exam first batch, distribute across common topics
+      const paramsArray: QuestionGenerationParams[] = []
+      for (let i = 0; i < 10; i++) {
+        paramsArray.push({
           section: firstSection,
           track,
-        },
-        emptyContext
-      )
+          topic: null, // Let generator choose from topic distribution
+          subtopic: null,
+          difficulty: null, // Let generator choose from difficulty distribution
+        })
+      }
+
+      const result = await generator.generateBatch(paramsArray)
+
+      if (!result.success || result.questions.length === 0) {
+        throw new Error('Failed to generate questions')
+      }
+
+      questions = result.questions
     } catch (genError) {
       console.error('Question generation error:', genError)
 
@@ -166,15 +180,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { questions, updatedContext, usage, meta } = batchResponse
-
     // Update session with generated questions and release lock
     const { error: updateError } = await supabase
       .from('exam_sessions')
       .update({
         questions: questions as unknown as Record<string, unknown>[],
         generated_batches: 1,
-        generation_context: updatedContext,
+        generation_context: { generatedIds: questions.map((q) => q.id), lastBatchIndex: 0 },
         generation_in_progress: false,
       })
       .eq('id', session.id)
@@ -188,28 +200,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Log generation metrics
-    console.log(`[Exam ${session.id}] First batch generated:`, {
+    console.log(`[Exam ${session.id}] First batch generated using QuduratGenerator:`, {
       questionCount: questions.length,
-      provider: meta.provider,
-      cacheHit: meta.cacheHit,
-      durationMs: meta.durationMs,
-      inputTokens: usage.inputTokens,
-      cacheReadTokens: usage.cacheReadTokens,
+      section: firstSection,
+      track,
     })
 
     // Return session with questions (without answers for security)
+    // Map v3.0 QuestionData format to frontend format
     const questionsWithoutAnswers = questions.map((q, index) => ({
       id: q.id,
       index,
       section: q.section,
+      track: q.track,
       topic: q.topic,
+      subtopic: q.subtopic,
       difficulty: q.difficulty,
-      questionType: q.questionType,
-      stem: q.stem,
+      questionType: q.question_type,
+      stem: q.question_text, // Map question_text to stem for frontend compatibility
       choices: q.choices,
-      passage: q.passage,
-      diagram: q.diagram, // Include diagram data for rendering geometric shapes and charts
-      // answerIndex, explanation hidden until answered
+      passage: null, // v3.0 doesn't have passage field
+      diagram: q.diagram_config, // Map diagram_config to diagram for frontend
+      // correct_answer and explanation hidden until answered
     }))
 
     return NextResponse.json({

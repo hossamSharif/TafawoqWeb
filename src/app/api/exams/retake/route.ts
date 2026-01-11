@@ -1,10 +1,10 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { generateQuestionBatch } from '@/lib/anthropic'
+import { QuduratGenerator } from '@/services/generation/QuduratGenerator'
+import type { QuestionGenerationParams } from '@/services/generation/PromptBuilder'
 import { canUseExamCredit, consumeExamCredit } from '@/lib/rewards/calculator'
 import { getExamConfigForRetake, canRetakeExam } from '@/lib/exams/retake'
-import type { GenerationContext } from '@/lib/anthropic/types'
 import type { AcademicTrack } from '@/types/exam'
 
 /**
@@ -153,22 +153,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate first batch of 10 questions using Claude
+    // Generate first batch of 10 questions using QuduratGenerator (with section-specific skills)
     const firstSection = getFirstBatchSection(track)
-    const emptyContext: GenerationContext = { generatedIds: [], lastBatchIndex: -1 }
 
-    let batchResponse
+    let questions
     try {
-      batchResponse = await generateQuestionBatch(
-        {
-          sessionId: session.id,
-          batchIndex: 0,
-          batchSize: 10,
+      const generator = new QuduratGenerator({
+        enableCaching: true,
+        maxRetries: 3,
+      })
+
+      // Build generation params for each question in the batch
+      const paramsArray: QuestionGenerationParams[] = []
+      for (let i = 0; i < 10; i++) {
+        paramsArray.push({
           section: firstSection,
           track,
-        },
-        emptyContext
-      )
+          topic: null, // Let generator choose from topic distribution
+          subtopic: null,
+          difficulty: null, // Let generator choose from difficulty distribution
+        })
+      }
+
+      const result = await generator.generateBatch(paramsArray)
+
+      if (!result.success || result.questions.length === 0) {
+        throw new Error('Failed to generate questions')
+      }
+
+      questions = result.questions
     } catch (genError) {
       console.error('Question generation error:', genError)
 
@@ -184,15 +197,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { questions, updatedContext, usage, meta } = batchResponse
-
     // Update session with generated questions and release lock
     const { error: updateError } = await supabase
       .from('exam_sessions')
       .update({
         questions: questions as unknown as Record<string, unknown>[],
         generated_batches: 1,
-        generation_context: updatedContext,
+        generation_context: { generatedIds: questions.map((q) => q.id), lastBatchIndex: 0 },
         generation_in_progress: false,
       })
       .eq('id', session.id)
@@ -206,14 +217,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Log generation metrics
-    console.log(`[Retake Exam ${session.id}] First batch generated:`, {
+    console.log(`[Retake Exam ${session.id}] First batch generated using QuduratGenerator:`, {
       sourceExamId,
       questionCount: questions.length,
-      provider: meta.provider,
-      cacheHit: meta.cacheHit,
-      durationMs: meta.durationMs,
-      inputTokens: usage.inputTokens,
-      cacheReadTokens: usage.cacheReadTokens,
+      section: firstSection,
+      track,
     })
 
     // Return session ID for redirect

@@ -1,8 +1,8 @@
 // @ts-nocheck -- Regenerate Supabase types from database schema to fix type errors
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { generateQuestionBatch } from '@/lib/anthropic'
-import type { GenerationContext } from '@/lib/anthropic/types'
+import { QuduratGenerator } from '@/services/generation/QuduratGenerator'
+import type { QuestionGenerationParams } from '@/services/generation/PromptBuilder'
 import type { Question } from '@/types/question'
 
 type AcademicTrack = 'scientific' | 'literary'
@@ -152,25 +152,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const section = getSectionForBatch(batchIndex, track)
     const batchSize = getBatchSize(batchIndex, track)
 
-    // Get generation context from session
-    const context: GenerationContext = session.generation_context || {
-      generatedIds: [],
-      lastBatchIndex: -1,
-    }
-
-    // T025: Generate questions
-    let batchResponse
+    // T025: Generate questions using QuduratGenerator (with section-specific skills)
+    let newQuestions
     try {
-      batchResponse = await generateQuestionBatch(
-        {
-          sessionId,
-          batchIndex,
-          batchSize,
+      const generator = new QuduratGenerator({
+        enableCaching: true,
+        maxRetries: 3,
+      })
+
+      // Build generation params for each question in the batch
+      const paramsArray: QuestionGenerationParams[] = []
+      for (let i = 0; i < batchSize; i++) {
+        paramsArray.push({
           section,
           track,
-        },
-        context
-      )
+          topic: null, // Let generator choose from topic distribution
+          subtopic: null,
+          difficulty: null, // Let generator choose from difficulty distribution
+        })
+      }
+
+      const result = await generator.generateBatch(paramsArray)
+
+      if (!result.success || result.questions.length === 0) {
+        throw new Error('Failed to generate questions')
+      }
+
+      newQuestions = result.questions
     } catch (genError) {
       console.error('Batch generation error:', genError)
 
@@ -191,11 +199,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const { questions: newQuestions, updatedContext, usage, meta } = batchResponse
-
     // Append new questions to existing ones
     const existingQuestions = (session.questions || []) as Question[]
     const allQuestions = [...existingQuestions, ...newQuestions]
+
+    // Build updated context with all generated IDs
+    const updatedContext = {
+      generatedIds: allQuestions.map((q) => q.id),
+      lastBatchIndex: batchIndex,
+    }
 
     // T026: Update session with new questions and release lock
     const { error: updateError } = await supabase
@@ -224,28 +236,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Log generation metrics
-    console.log(`[Exam ${sessionId}] Batch ${batchIndex} generated:`, {
+    console.log(`[Exam ${sessionId}] Batch ${batchIndex} generated using QuduratGenerator:`, {
       questionCount: newQuestions.length,
-      provider: meta.provider,
-      cacheHit: meta.cacheHit,
-      durationMs: meta.durationMs,
-      inputTokens: usage.inputTokens,
-      cacheReadTokens: usage.cacheReadTokens,
+      section,
+      batchSize,
+      totalQuestions: allQuestions.length,
     })
 
     // Return questions without answers for security
+    // Map v3.0 QuestionData format to frontend format
     const questionsWithoutAnswers = newQuestions.map((q, index) => ({
       id: q.id,
       index: existingQuestions.length + index,
       section: q.section,
+      track: q.track,
       topic: q.topic,
+      subtopic: q.subtopic,
       difficulty: q.difficulty,
-      questionType: q.questionType,
-      stem: q.stem,
+      questionType: q.question_type,
+      stem: q.question_text, // Map question_text to stem for frontend compatibility
       choices: q.choices,
-      passage: q.passage,
-      diagram: q.diagram, // Include diagram data for rendering geometric shapes and charts
-      // answerIndex, explanation hidden until answered
+      passage: null, // v3.0 doesn't have passage field
+      diagram: q.diagram_config, // Map diagram_config to diagram for frontend
+      // correct_answer and explanation hidden until answered
     }))
 
     return NextResponse.json({
@@ -253,7 +266,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       meta: {
         batchIndex,
         totalLoaded: allQuestions.length,
-        cacheHit: meta.cacheHit,
+        cacheHit: false, // QuduratGenerator doesn't expose this in same way
       },
     })
   } catch (error) {
