@@ -217,18 +217,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
     // Return questions without answers (hide correct_answer and explanation for security)
+    // Map v3.0 format to frontend format
     const questionsWithoutAnswers = newQuestions.map((q, index) => ({
       id: q.id || `practice_${batchIndex}_${index}`,
       index: existingQuestions.length + index,
       section: q.section,
       track: q.track,
-      question_type: q.question_type,
+      questionType: q.question_type, // Map to frontend format
       topic: q.topic,
       subtopic: q.subtopic,
       difficulty: q.difficulty,
-      question_text: q.question_text,
+      stem: q.question_text, // Map question_text to stem for frontend
       choices: q.choices,
-      diagram_config: q.diagram_config,
+      diagram: q.diagram, // v3.0 uses diagram field
       // Hide correct_answer and explanation until user submits
     }))
 

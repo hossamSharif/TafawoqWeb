@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
       stem: q.question_text, // Map question_text to stem for frontend compatibility
       choices: q.choices,
       passage: null, // v3.0 doesn't have passage field
-      diagram: q.diagram_config, // Map diagram_config to diagram for frontend
+      diagram: q.diagram, // v3.0 uses diagram field
       // correct_answer and explanation hidden until answered
     }))
 

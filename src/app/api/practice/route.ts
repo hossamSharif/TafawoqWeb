@@ -242,20 +242,49 @@ export async function POST(request: NextRequest) {
     })
 
     // Return session with questions (without answers for security)
+    // Map v3.0 format to frontend format
     const questionsWithoutAnswers = questions.map((q, index) => ({
       id: q.id || `practice_0_${index}`,
       index,
       section: q.section,
       track: q.track,
-      question_type: q.question_type,
+      questionType: q.question_type, // Map to frontend format
       topic: q.topic,
       subtopic: q.subtopic,
       difficulty: q.difficulty,
-      question_text: q.question_text,
+      stem: q.question_text, // Map question_text to stem for frontend
       choices: q.choices,
-      diagram_config: q.diagram_config,
+      diagram: q.diagram, // v3.0 uses diagram field
       // Hide correct_answer and explanation until user submits
     }))
+
+    // Also provide full questions with answers for frontend verification
+    const questionsWithAnswers = questions.map((q, index) => {
+      // Calculate answerIndex from correct_answer string
+      let answerIndex = 0
+      if (q.correct_answer && q.choices) {
+        answerIndex = q.choices.findIndex((c: string) => c === q.correct_answer)
+        if (answerIndex === -1) answerIndex = 0 // fallback
+      }
+
+      return {
+        id: q.id || `practice_0_${index}`,
+        index,
+        section: q.section,
+        track: q.track,
+        questionType: q.question_type,
+        topic: q.topic,
+        subtopic: q.subtopic,
+        difficulty: q.difficulty,
+        stem: q.question_text,
+        choices: q.choices,
+        diagram: q.diagram,
+        answerIndex,
+        explanation: q.explanation,
+        solvingStrategy: q.solving_strategy || q.solvingStrategy,
+        tip: q.solving_tip || q.tip,
+      }
+    })
 
     return NextResponse.json({
       session: {
@@ -269,6 +298,7 @@ export async function POST(request: NextRequest) {
         generatedBatches: 1,
       },
       questions: questionsWithoutAnswers,
+      _questionsWithAnswers: questionsWithAnswers,
       restrictions: {
         appliedFreeTierRestrictions: !isPremium && !usedPracticeCredit,
         originalQuestionCount: questionCount,

@@ -62,7 +62,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get question from session
-    const questions = session.questions as unknown as Question[]
+    // Note: Questions are stored in v3.0 format with correct_answer as string
+    const questions = session.questions as unknown as any[]
     if (questionIndex >= questions.length) {
       return NextResponse.json(
         { error: 'رقم السؤال غير صالح' },
@@ -71,7 +72,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const question = questions[questionIndex]
-    const isCorrect = selectedAnswer === question.answerIndex
+
+    // Calculate correct answer index from v3.0 correct_answer string
+    let correctAnswerIndex = question.answerIndex
+    if (correctAnswerIndex === undefined && question.correct_answer && question.choices) {
+      correctAnswerIndex = question.choices.findIndex((c: string) => c === question.correct_answer)
+      if (correctAnswerIndex === -1) correctAnswerIndex = 0 // fallback
+    }
+
+    const isCorrect = selectedAnswer === correctAnswerIndex
 
     // Check if already answered
     const { data: existingAnswer } = await supabase
@@ -133,15 +142,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Return immediate feedback
+    // Map v3.0 field names to frontend format
     return NextResponse.json({
       questionIndex,
       selectedAnswer,
       isCorrect,
-      correctAnswer: question.answerIndex,
+      correctAnswer: correctAnswerIndex,
       // Explanation available immediately after answering
       explanation: question.explanation,
-      tip: question.tip,
-      solvingStrategy: question.solvingStrategy,
+      tip: question.tip || question.solving_tip,
+      solvingStrategy: question.solvingStrategy || question.solving_strategy,
     })
   } catch (error) {
     console.error('Submit answer error:', error)

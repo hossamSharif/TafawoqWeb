@@ -84,10 +84,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const answeredIndexes = new Set(answers.map((a) => a.question_index))
 
     // Format questions - hide answers for unanswered questions
-    const questions = (session.questions as unknown as Question[]).map(
+    // Note: Questions are stored in v3.0 format (question_text, question_type, diagram)
+    // but frontend expects (stem, questionType, diagram) - map accordingly
+    const questions = (session.questions as unknown as any[]).map(
       (q, index) => {
         const isAnswered = answeredIndexes.has(index)
         const answer = answers?.find((a) => a.question_index === index)
+
+        // Calculate answerIndex from correct_answer string by finding it in choices
+        let answerIndex = q.answerIndex
+        if (answerIndex === undefined && q.correct_answer && q.choices) {
+          answerIndex = q.choices.findIndex((c: string) => c === q.correct_answer)
+          if (answerIndex === -1) answerIndex = 0 // fallback
+        }
 
         return {
           id: q.id,
@@ -95,14 +104,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           section: q.section,
           topic: q.topic,
           difficulty: q.difficulty,
-          questionType: q.questionType,
-          stem: q.stem,
+          // Map v3.0 format to frontend format
+          questionType: q.question_type || q.questionType,
+          stem: q.question_text || q.stem, // v3.0 uses question_text
           choices: q.choices,
           passage: q.passage,
-          diagram: q.diagram, // Include diagram data for rendering
+          diagram: q.diagram, // v3.0 uses diagram field
           // Only show answer info if already answered
           ...(isAnswered && {
-            answerIndex: q.answerIndex,
+            answerIndex,
             selectedAnswer: answer?.selected_answer,
             isCorrect: answer?.is_correct,
           }),
