@@ -6,6 +6,30 @@ import type { QuestionGenerationParams } from '@/services/generation/PromptBuild
 import type { Question, QuestionCategory, QuestionSection, QuestionDifficulty } from '@/types/question'
 
 /**
+ * Helper: Get question type based on section and category
+ * Maps practice categories to valid question types for generation
+ */
+function getQuestionTypeForCategory(
+  section: QuestionSection,
+  category: QuestionCategory
+): QuestionGenerationParams['questionType'] {
+  if (section === 'quantitative') {
+    // Geometry questions use diagram type, everything else is MCQ
+    return category === 'geometry' ? 'diagram' : 'mcq'
+  } else {
+    // Verbal section - map category to question type
+    const verbalTypeMap: Record<string, QuestionGenerationParams['questionType']> = {
+      reading: 'reading',
+      analogy: 'analogy',
+      completion: 'completion',
+      error: 'error',
+      'odd-word': 'odd-word',
+    }
+    return verbalTypeMap[category] || 'reading'
+  }
+}
+
+/**
  * Practice batch size (smaller than exam)
  */
 const PRACTICE_BATCH_SIZE = 5
@@ -149,6 +173,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           topic: category,
           subtopic: undefined,
           difficulty: session.difficulty,
+          questionType: getQuestionTypeForCategory(session.section, category),
         })
       }
 
