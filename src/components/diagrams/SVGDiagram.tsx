@@ -254,9 +254,7 @@ export function SVGDiagram({
                         fill="#6B7280"
                         fontFamily="Noto Kufi Arabic, sans-serif"
                       >
-                        {typeof connection.label === 'string'
-                          ? connection.label
-                          : (connection.label?.label || connection.label?.text || '')}
+                        {connection.label}
                       </text>
                     )}
                   </g>

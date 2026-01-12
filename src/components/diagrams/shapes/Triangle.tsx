@@ -70,11 +70,8 @@ export function Triangle({
     const scale = Math.min(scaleX, scaleY)
 
     points = data.vertices.map((v, i) => {
-      // Safely extract label - handle both string and object formats
-      const rawLabel = data.labels?.[i]
-      const label = typeof rawLabel === 'string'
-        ? rawLabel
-        : (rawLabel?.label || rawLabel?.text || rawLabel?.name || undefined)
+      // Get label from labels array (string type)
+      const label = data.labels?.[i]
 
       return {
         x: padding + (v[0] - minX) * scale,
