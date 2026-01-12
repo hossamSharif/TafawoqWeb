@@ -199,9 +199,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Append new questions to existing ones
+    // Append new questions to existing ones, ensuring each has a unique ID
     const existingQuestions = (session.questions || []) as Question[]
-    const allQuestions = [...existingQuestions, ...newQuestions]
+    // Ensure all new questions have IDs before storing in database
+    const newQuestionsWithIds = newQuestions.map((q, index) => ({
+      ...q,
+      id: q.id || `exam_${sessionId}_batch${batchIndex}_q${index}`,
+    }))
+    const allQuestions = [...existingQuestions, ...newQuestionsWithIds]
 
     // Build updated context with all generated IDs
     const updatedContext = {
@@ -245,8 +250,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Return questions without answers for security
     // Map v3.0 QuestionData format to frontend format
-    const questionsWithoutAnswers = newQuestions.map((q, index) => ({
-      id: q.id,
+    const questionsWithoutAnswers = newQuestionsWithIds.map((q, index) => ({
+      id: q.id, // IDs are guaranteed now
       index: existingQuestions.length + index,
       section: q.section,
       track: q.track,

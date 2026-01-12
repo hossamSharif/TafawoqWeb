@@ -40,6 +40,48 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Map v3.0 format to frontend format for questions (without answers)
+    // Ensure each question has a valid ID (fallback for legacy sessions)
+    const questions = (session.questions || []).map((q: any, index: number) => ({
+      id: q.id || `practice_${sessionId}_q${index}`,
+      index,
+      section: q.section,
+      topic: q.topic,
+      difficulty: q.difficulty,
+      questionType: q.question_type || q.questionType,
+      stem: q.question_text || q.stem,
+      choices: q.choices,
+      passage: q.passage,
+      diagram: q.diagram,
+    }))
+
+    // Map v3.0 format to frontend format for full questions with answers
+    // Ensure each question has a valid ID (fallback for legacy sessions)
+    const _questionsWithAnswers = (session.questions || []).map((q: any, index: number) => {
+      let answerIndex = q.answerIndex
+      if (answerIndex === undefined && q.correct_answer && q.choices) {
+        answerIndex = q.choices.findIndex((c: string) => c === q.correct_answer)
+        if (answerIndex === -1) answerIndex = 0
+      }
+
+      return {
+        id: q.id || `practice_${sessionId}_q${index}`,
+        index,
+        section: q.section,
+        topic: q.topic,
+        difficulty: q.difficulty,
+        questionType: q.question_type || q.questionType,
+        stem: q.question_text || q.stem,
+        choices: q.choices,
+        passage: q.passage,
+        diagram: q.diagram,
+        answerIndex,
+        explanation: q.explanation,
+        solvingStrategy: q.solving_strategy || q.solvingStrategy,
+        tip: q.solving_tip || q.tip,
+      }
+    })
+
     return NextResponse.json({
       session: {
         id: session.id,
@@ -57,6 +99,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         // Batch generation info
         generatedBatches: session.generated_batches || 1,
       },
+      // Include questions for navigation
+      questions,
+      // Include full questions with answers for client-side verification
+      _questionsWithAnswers,
     })
   } catch (error) {
     console.error('Practice session fetch error:', error)

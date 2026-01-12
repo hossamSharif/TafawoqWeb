@@ -224,9 +224,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Append new questions to existing ones
+    // Append new questions to existing ones, ensuring each has a unique ID
     const existingQuestions = (session.questions || []) as Question[]
-    const allQuestions = [...existingQuestions, ...newQuestions]
+    // Ensure all new questions have IDs before storing in database
+    const newQuestionsWithIds = newQuestions.map((q, index) => ({
+      ...q,
+      id: q.id || `practice_${sessionId}_batch${batchIndex}_q${index}`,
+    }))
+    const allQuestions = [...existingQuestions, ...newQuestionsWithIds]
 
     // Update session with new questions and release lock
     const { error: updateError } = await supabase
@@ -237,7 +242,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         generation_context: {},
         generation_in_progress: false,
         question_count: allQuestions.length,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', sessionId)
 
@@ -267,8 +271,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Return questions without answers (hide correct_answer and explanation for security)
     // Map v3.0 format to frontend format
-    const questionsWithoutAnswers = newQuestions.map((q, index) => ({
-      id: q.id || `practice_${batchIndex}_${index}`,
+    const questionsWithoutAnswers = newQuestionsWithIds.map((q, index) => ({
+      id: q.id, // IDs are guaranteed now
       index: existingQuestions.length + index,
       section: q.section,
       track: q.track,

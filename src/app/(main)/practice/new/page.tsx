@@ -181,6 +181,7 @@ export default function NewPracticePage() {
         questions: data.questions,
         _questionsWithAnswers: data._questionsWithAnswers,
         targetQuestionCount: data.session.targetQuestionCount || data.questions.length,
+        generatedBatches: 1, // First batch (batch 0) was generated on session creation
       }))
 
       // Navigate to practice session

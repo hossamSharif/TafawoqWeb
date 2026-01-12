@@ -25,6 +25,7 @@ interface PracticeData {
   questions: Omit<Question, 'answerIndex' | 'explanation'>[]
   _questionsWithAnswers: Question[]
   targetQuestionCount?: number // Total questions the user requested
+  generatedBatches?: number // Number of batches already generated
 }
 
 interface Answer {
@@ -56,6 +57,8 @@ export default function PracticeSessionPage() {
   const [isPausing, setIsPausing] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isFullScreen, setIsFullScreen] = useState(true)
+  const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false)
+  const [currentBatch, setCurrentBatch] = useState(1) // Start at batch 1 (batch 0 is initial)
 
   // Load practice data from sessionStorage
   useEffect(() => {
@@ -67,6 +70,10 @@ export default function PracticeSessionPage() {
         setFullQuestions(data._questionsWithAnswers || [])
         // Set target question count (use stored value or fallback to loaded questions length)
         setTargetQuestionCount(data.targetQuestionCount || data.questions.length)
+        // Sync currentBatch from stored generatedBatches
+        if (data.generatedBatches !== undefined) {
+          setCurrentBatch(data.generatedBatches)
+        }
         setIsLoading(false)
       } catch {
         setError('فشل في تحميل بيانات التمرين')
@@ -136,10 +143,16 @@ export default function PracticeSessionPage() {
           // Set elapsed time
           setElapsedTime(resumeData.session.timeSpentSeconds || 0)
 
+          // Sync currentBatch from session's generatedBatches
+          const generatedBatches = resumeData.session.generatedBatches || 1
+          setCurrentBatch(generatedBatches)
+
           // Update sessionStorage with resumed data
           const practiceData: PracticeData = {
             questions: resumeData.questions,
             _questionsWithAnswers: resumeData._questionsWithAnswers || resumeData.questions,
+            targetQuestionCount: resumeData.session.targetQuestionCount,
+            generatedBatches,
           }
           sessionStorage.setItem(`practice_${sessionId}`, JSON.stringify(practiceData))
 
@@ -175,9 +188,101 @@ export default function PracticeSessionPage() {
     }
   }
 
+  // Load next batch of questions when needed
+  const loadNextBatch = async (retryWithBatchIndex?: number): Promise<boolean> => {
+    // Check if we need more questions
+    if (questions.length >= targetQuestionCount) {
+      console.log('[Practice] All questions already loaded')
+      return false
+    }
+
+    setIsLoadingNextBatch(true)
+    const batchToLoad = retryWithBatchIndex ?? currentBatch
+
+    try {
+      // First, trigger batch generation
+      const response = await fetch(`/api/practice/${sessionId}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchIndex: batchToLoad }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('[Practice] Failed to load next batch:', data.error)
+
+        // Handle batch index mismatch error - sync with server's expected batch and retry once
+        if (data.expectedBatchIndex !== undefined && retryWithBatchIndex === undefined) {
+          console.log('[Practice] Syncing batch index and retrying:', data.expectedBatchIndex)
+          setCurrentBatch(data.expectedBatchIndex)
+          // Update sessionStorage with corrected batch count
+          const stored = sessionStorage.getItem(`practice_${sessionId}`)
+          if (stored) {
+            try {
+              const storedData = JSON.parse(stored)
+              storedData.generatedBatches = data.expectedBatchIndex
+              sessionStorage.setItem(`practice_${sessionId}`, JSON.stringify(storedData))
+            } catch { /* ignore parse errors */ }
+          }
+          // Retry with the corrected batch index (only once)
+          setIsLoadingNextBatch(false)
+          return loadNextBatch(data.expectedBatchIndex)
+        }
+        return false
+      }
+
+      // Then fetch the updated session to get all questions with answers
+      const sessionResponse = await fetch(`/api/practice/${sessionId}`)
+      if (!sessionResponse.ok) {
+        console.error('[Practice] Failed to fetch updated session')
+        return false
+      }
+
+      const sessionData = await sessionResponse.json()
+
+      // Update state with all questions from session
+      if (sessionData.questions && sessionData.questions.length > 0) {
+        setQuestions(sessionData.questions)
+      }
+
+      if (sessionData._questionsWithAnswers && sessionData._questionsWithAnswers.length > 0) {
+        setFullQuestions(sessionData._questionsWithAnswers)
+      }
+
+      // Update batch counter (use the actual batch that was loaded)
+      const newBatchCount = batchToLoad + 1
+      setCurrentBatch(newBatchCount)
+
+      // Update sessionStorage with all questions and batch count
+      const updatedPracticeData: PracticeData = {
+        questions: sessionData.questions || questions,
+        _questionsWithAnswers: sessionData._questionsWithAnswers || fullQuestions,
+        targetQuestionCount,
+        generatedBatches: newBatchCount,
+      }
+      sessionStorage.setItem(`practice_${sessionId}`, JSON.stringify(updatedPracticeData))
+
+      console.log('[Practice] Loaded batch', batchToLoad, '- New total:', sessionData.questions?.length || 0)
+      return true
+    } catch (error) {
+      console.error('[Practice] Error loading next batch:', error)
+      return false
+    } finally {
+      setIsLoadingNextBatch(false)
+    }
+  }
+
+  // Check if more questions need to be loaded
+  const needsMoreQuestions = targetQuestionCount > questions.length
+  const isOnLastLoadedQuestion = currentQuestionIndex === questions.length - 1
+  const isOnLastTargetQuestion = currentQuestionIndex === targetQuestionCount - 1
+
   const currentQuestion = questions[currentQuestionIndex]
   const currentFullQuestion = fullQuestions[currentQuestionIndex]
-  const currentAnswer = currentQuestion ? answers.get(currentQuestion.id) : null
+  // Use fallback ID pattern for consistent answer lookup
+  const currentQuestionId = currentQuestion?.id || `practice_${sessionId}_q${currentQuestionIndex}`
+  const currentAnswer = currentQuestion ? answers.get(currentQuestionId) : null
 
   // Update selected answer when navigating to a question with an existing answer
   useEffect(() => {
@@ -203,7 +308,7 @@ export default function PracticeSessionPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          questionId: currentQuestion.id,
+          questionId: currentQuestionId, // Use the computed ID with fallback
           questionIndex: currentQuestionIndex,
           selectedAnswer,
           timeSpentSeconds: timeSpent,
@@ -228,8 +333,8 @@ export default function PracticeSessionPage() {
       // Update local answers
       setAnswers((prev) => {
         const newMap = new Map(prev)
-        newMap.set(currentQuestion.id, {
-          questionId: currentQuestion.id,
+        newMap.set(currentQuestionId, {
+          questionId: currentQuestionId,
           selectedAnswer,
           isCorrect: data.feedback.isCorrect,
           timeSpentSeconds: timeSpent,
@@ -247,7 +352,18 @@ export default function PracticeSessionPage() {
     }
   }
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
+    // If we're on the last loaded question and need more, load them first
+    if (isOnLastLoadedQuestion && needsMoreQuestions) {
+      const loaded = await loadNextBatch()
+      if (loaded) {
+        // Navigate to the next question after loading
+        setCurrentQuestionIndex((prev) => prev + 1)
+      }
+      return
+    }
+
+    // Normal navigation within loaded questions
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1)
     }
@@ -422,7 +538,7 @@ export default function PracticeSessionPage() {
             currentIndex={currentQuestionIndex}
             totalQuestions={questions.length}
             answeredQuestions={Array.from(answers.keys()).map((id) =>
-              questions.findIndex(q => q.id === id)
+              questions.findIndex((q, idx) => (q.id || `practice_${sessionId}_q${idx}`) === id)
             ).filter(i => i >= 0)}
             onQuestionClick={setCurrentQuestionIndex}
             compact
@@ -588,10 +704,11 @@ export default function PracticeSessionPage() {
             <div className="w-full">
               <div className="flex flex-wrap gap-1.5 justify-center">
                 {questions.map((q, index) => {
-                  const answer = answers.get(q.id)
+                  const questionId = q.id || `q_${index}`
+                  const answer = answers.get(questionId)
                   return (
                     <button
-                      key={q.id}
+                      key={questionId}
                       onClick={() => setCurrentQuestionIndex(index)}
                       className={`h-8 w-8 rounded-lg font-medium text-xs transition-colors ${
                         index === currentQuestionIndex
@@ -645,7 +762,7 @@ export default function PracticeSessionPage() {
               </div>
 
               {/* Right: Next/Complete */}
-              {currentQuestionIndex === questions.length - 1 ? (
+              {isOnLastLoadedQuestion && !needsMoreQuestions && questions.length >= targetQuestionCount ? (
                 <Button
                   onClick={handleCompletePractice}
                   disabled={isCompleting || answers.size < questions.length}
@@ -657,12 +774,21 @@ export default function PracticeSessionPage() {
               ) : (
                 <Button
                   onClick={handleNextQuestion}
-                  disabled={!showExplanation}
+                  disabled={!showExplanation || isLoadingNextBatch}
                   size="sm"
                   className="gap-1"
                 >
-                  <span className="text-xs">التالي</span>
-                  <ChevronLeft className="w-4 h-4" />
+                  {isLoadingNextBatch ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-xs">تحميل...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs">التالي</span>
+                      <ChevronLeft className="w-4 h-4" />
+                    </>
+                  )}
                 </Button>
               )}
             </div>
@@ -687,10 +813,11 @@ export default function PracticeSessionPage() {
             <div className="flex-1 flex justify-center min-w-0 overflow-x-auto">
               <div className="flex flex-wrap gap-2 max-w-3xl">
                 {questions.map((q, index) => {
-                  const answer = answers.get(q.id)
+                  const questionId = q.id || `q_${index}`
+                  const answer = answers.get(questionId)
                   return (
                     <button
-                      key={q.id}
+                      key={questionId}
                       onClick={() => setCurrentQuestionIndex(index)}
                       className={`h-10 w-10 rounded-lg font-medium text-sm transition-colors flex-shrink-0 ${
                         index === currentQuestionIndex
@@ -732,7 +859,7 @@ export default function PracticeSessionPage() {
               </Button>
 
               {/* Next/Complete Button */}
-              {currentQuestionIndex === questions.length - 1 ? (
+              {isOnLastLoadedQuestion && !needsMoreQuestions && questions.length >= targetQuestionCount ? (
                 <Button
                   onClick={handleCompletePractice}
                   disabled={isCompleting || answers.size < questions.length}
@@ -743,11 +870,20 @@ export default function PracticeSessionPage() {
               ) : (
                 <Button
                   onClick={handleNextQuestion}
-                  disabled={!showExplanation}
+                  disabled={!showExplanation || isLoadingNextBatch}
                   className="gap-2"
                 >
-                  <span>التالي</span>
-                  <ChevronLeft className="w-4 h-4" />
+                  {isLoadingNextBatch ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>تحميل...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>التالي</span>
+                      <ChevronLeft className="w-4 h-4" />
+                    </>
+                  )}
                 </Button>
               )}
             </div>

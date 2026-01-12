@@ -99,7 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         return {
-          id: q.id,
+          id: q.id || `exam_${sessionId}_q${index}`, // Ensure ID exists for frontend
           index,
           section: q.section,
           topic: q.topic,
