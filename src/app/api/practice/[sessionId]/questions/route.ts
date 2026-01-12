@@ -47,6 +47,7 @@ interface PracticeSessionRow {
   status: 'in_progress' | 'completed' | 'abandoned'
   questions: Question[]
   question_count: number
+  target_question_count?: number // Total questions the user requested
   generated_batches?: number
   generation_context?: any
   generation_in_progress?: boolean
@@ -109,6 +110,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Check if we've already reached the target question count
+    const targetCount = session.target_question_count || session.question_count || PRACTICE_BATCH_SIZE
+    const currentCount = session.question_count || 0
+
+    if (currentCount >= targetCount) {
+      return NextResponse.json(
+        {
+          error: 'تم توليد جميع الأسئلة المطلوبة',
+          message: 'All requested questions have been generated',
+          currentCount,
+          targetCount,
+        },
+        { status: 400 }
+      )
+    }
+
     // Validate batch index is sequential
     const currentBatches = session.generated_batches || 0
     if (batchIndex !== currentBatches) {
@@ -121,6 +138,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 400 }
       )
     }
+
+    // Calculate how many questions to generate (may be less than full batch if near target)
+    const remainingQuestions = targetCount - currentCount
+    const questionsToGenerate = Math.min(PRACTICE_BATCH_SIZE, remainingQuestions)
 
     // T046: Check generation lock
     if (session.generation_in_progress) {
@@ -162,9 +183,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       const userTrack = (profile?.academic_track as 'scientific' | 'literary') || 'scientific'
 
-      // Build generation params for each question
+      // Build generation params for each question (use questionsToGenerate, not fixed batch size)
       const paramsArray: QuestionGenerationParams[] = []
-      for (let i = 0; i < PRACTICE_BATCH_SIZE; i++) {
+      for (let i = 0; i < questionsToGenerate; i++) {
         // Distribute across categories evenly
         const category = session.categories[i % session.categories.length]
         paramsArray.push({
@@ -237,8 +258,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Log generation metrics
     console.log(`[Practice ${sessionId}] Batch ${batchIndex} generated:`, {
       questionCount: newQuestions.length,
+      totalLoaded: allQuestions.length,
+      targetCount,
       section: session.section,
       categories: session.categories,
+      allQuestionsGenerated: allQuestions.length >= targetCount,
     })
 
     // Return questions without answers (hide correct_answer and explanation for security)
@@ -263,6 +287,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       meta: {
         batchIndex,
         totalLoaded: allQuestions.length,
+        targetQuestionCount: targetCount,
+        allQuestionsGenerated: allQuestions.length >= targetCount,
       },
     })
   } catch (error) {

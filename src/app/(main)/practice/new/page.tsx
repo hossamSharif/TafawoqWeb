@@ -176,10 +176,11 @@ export default function NewPracticePage() {
         throw new Error(data.error || 'فشل في إنشاء جلسة التمرين')
       }
 
-      // Store questions in sessionStorage for the practice page
+      // Store questions and session metadata in sessionStorage for the practice page
       sessionStorage.setItem(`practice_${data.session.id}`, JSON.stringify({
         questions: data.questions,
         _questionsWithAnswers: data._questionsWithAnswers,
+        targetQuestionCount: data.session.targetQuestionCount || data.questions.length,
       }))
 
       // Navigate to practice session

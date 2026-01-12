@@ -48,11 +48,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         categories: session.categories,
         difficulty: session.difficulty,
         questionCount: session.question_count,
+        targetQuestionCount: session.target_question_count || session.question_count, // Total requested
         startedAt: session.started_at,
         completedAt: session.completed_at,
         timeSpentSeconds: session.time_spent_seconds,
         // Include pause info for resumed sessions
         pausedAt: session.paused_at,
+        // Batch generation info
+        generatedBatches: session.generated_batches || 1,
       },
     })
   } catch (error) {
@@ -232,9 +235,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         categories: updatedSession.categories,
         difficulty: updatedSession.difficulty,
         questionCount: updatedSession.question_count,
+        targetQuestionCount: updatedSession.target_question_count || updatedSession.question_count,
         startedAt: updatedSession.started_at,
         completedAt: updatedSession.completed_at,
         timeSpentSeconds: updatedSession.time_spent_seconds,
+        generatedBatches: updatedSession.generated_batches || 1,
       },
     })
   } catch (error) {

@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils'
 interface PracticeData {
   questions: Omit<Question, 'answerIndex' | 'explanation'>[]
   _questionsWithAnswers: Question[]
+  targetQuestionCount?: number // Total questions the user requested
 }
 
 interface Answer {
@@ -42,6 +43,7 @@ export default function PracticeSessionPage() {
   const [error, setError] = useState<string | null>(null)
   const [questions, setQuestions] = useState<Omit<Question, 'answerIndex' | 'explanation'>[]>([])
   const [fullQuestions, setFullQuestions] = useState<Question[]>([])
+  const [targetQuestionCount, setTargetQuestionCount] = useState<number>(0) // Total questions requested
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Map<string, Answer>>(new Map())
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
@@ -63,6 +65,8 @@ export default function PracticeSessionPage() {
         const data: PracticeData = JSON.parse(stored)
         setQuestions(data.questions)
         setFullQuestions(data._questionsWithAnswers || [])
+        // Set target question count (use stored value or fallback to loaded questions length)
+        setTargetQuestionCount(data.targetQuestionCount || data.questions.length)
         setIsLoading(false)
       } catch {
         setError('فشل في تحميل بيانات التمرين')
@@ -335,10 +339,12 @@ export default function PracticeSessionPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
+  // Use targetQuestionCount for progress calculation (shows progress towards full target)
+  const totalForProgress = targetQuestionCount || questions.length
   const progress = {
     answered: answers.size,
-    total: questions.length,
-    percentage: questions.length > 0 ? Math.round((answers.size / questions.length) * 100) : 0,
+    total: totalForProgress,
+    percentage: totalForProgress > 0 ? Math.round((answers.size / totalForProgress) * 100) : 0,
   }
 
   if (isLoading) {
@@ -397,7 +403,7 @@ export default function PracticeSessionPage() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">تمرين مخصص</h1>
             <p className="text-gray-600 text-sm">
-              السؤال {currentQuestionIndex + 1} من {questions.length}
+              السؤال {currentQuestionIndex + 1} من {targetQuestionCount || questions.length}
             </p>
           </div>
 
@@ -428,7 +434,7 @@ export default function PracticeSessionPage() {
         <>
           <QuestionCard
             questionNumber={currentQuestionIndex + 1}
-            totalQuestions={questions.length}
+            totalQuestions={targetQuestionCount || questions.length}
             stem={currentQuestion.stem}
             passage={currentQuestion.passage}
             section={currentQuestion.section}
@@ -565,7 +571,7 @@ export default function PracticeSessionPage() {
             </div>
             <div>
               <div className="text-2xl font-bold text-gray-700">
-                {questions.length - progress.answered}
+                {totalForProgress - progress.answered}
               </div>
               <div className="text-sm text-gray-600">متبقية</div>
             </div>

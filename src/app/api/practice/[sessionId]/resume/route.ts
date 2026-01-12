@@ -14,6 +14,7 @@ interface PracticeSessionRow {
   categories: string[]
   difficulty: string
   question_count: number
+  target_question_count: number | null // Total questions the user requested
   questions: Question[]
   paused_at: string | null
   time_spent_seconds: number | null
@@ -172,6 +173,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           categories: session.categories,
           difficulty: session.difficulty,
           questionCount: session.question_count,
+          targetQuestionCount: session.target_question_count || session.question_count, // Total requested
           questionsAnswered: answers.length,
           startedAt: session.started_at,
           timeSpentSeconds: session.time_spent_seconds,
@@ -299,6 +301,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     })
 
+    // Calculate target from session data - use target_question_count if available
+    const targetQuestionCount = session.target_question_count || session.question_count
+
     return NextResponse.json({
       success: true,
       session: {
@@ -308,6 +313,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         categories: updatedSession.categories,
         difficulty: updatedSession.difficulty,
         questionCount: updatedSession.question_count,
+        targetQuestionCount, // Total questions the user requested
         questionsAnswered: answers.length,
         startedAt: session.started_at,
         timeSpentSeconds: updatedSession.time_spent_seconds,

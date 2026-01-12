@@ -26,7 +26,8 @@ export interface PracticeSession {
   section: QuestionSection
   categories: QuestionCategory[]
   difficulty: QuestionDifficulty
-  questionCount: number
+  questionCount: number // Currently loaded questions
+  targetQuestionCount: number // Total questions the user requested
   startedAt: string
   completedAt?: string
   /** Timestamp when session was paused */
@@ -504,13 +505,14 @@ export function usePracticeSession(): UsePracticeSessionReturn {
     }
   }, [state.session, state.questions, state.currentQuestionIndex])
 
-  // Get progress stats
+  // Get progress stats (uses target count as total, not just loaded questions)
   const getProgress = useCallback(() => {
     const answered = state.answers.size
-    const total = state.questions.length
+    // Use target question count as total for accurate progress tracking
+    const total = state.session?.targetQuestionCount || state.questions.length
     const percentage = total > 0 ? Math.round((answered / total) * 100) : 0
     return { answered, total, percentage }
-  }, [state.answers.size, state.questions.length])
+  }, [state.answers.size, state.questions.length, state.session?.targetQuestionCount])
 
   // Get correct answer count
   const getCorrectCount = useCallback(() => {
@@ -528,6 +530,16 @@ export function usePracticeSession(): UsePracticeSessionReturn {
   const prefetchNextBatch = useCallback(async () => {
     if (!state.session || state.session.status !== 'in_progress') return
     if (state.isPrefetching) return
+
+    // Check if we've already reached the target question count
+    const targetCount = state.session.targetQuestionCount || state.questions.length
+    if (state.questions.length >= targetCount) {
+      console.log('[Practice] All questions generated, skipping prefetch', {
+        loaded: state.questions.length,
+        target: targetCount,
+      })
+      return
+    }
 
     const nextBatchIndex = state.generatedBatches
 
@@ -606,10 +618,17 @@ export function usePracticeSession(): UsePracticeSessionReturn {
   /**
    * T048: Auto-prefetch at 70% threshold
    * For practice batch size of 5, triggers at question 3-4 (70% of 5 = 3.5)
+   * Stops prefetching when all target questions have been loaded
    */
   useEffect(() => {
     if (!state.session || state.session.status !== 'in_progress') return
     if (state.questions.length === 0) return
+
+    // Check if all questions have been loaded
+    const targetCount = state.session.targetQuestionCount || state.questions.length
+    if (state.questions.length >= targetCount) {
+      return // All questions loaded, no need to prefetch
+    }
 
     const currentBatch = Math.floor(state.currentQuestionIndex / PRACTICE_BATCH_SIZE)
     const positionInBatch = state.currentQuestionIndex % PRACTICE_BATCH_SIZE

@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
         categories: finalCategories,
         difficulty,
         question_count: 0, // Will update after first batch
+        target_question_count: finalQuestionCount, // Store the user's requested total
         questions: [],
         status: 'in_progress',
         started_at: new Date().toISOString(),
@@ -318,7 +319,8 @@ export async function POST(request: NextRequest) {
         section: session.section,
         categories: session.categories,
         difficulty: session.difficulty,
-        questionCount: questions.length,
+        questionCount: questions.length, // Currently loaded count
+        targetQuestionCount: finalQuestionCount, // Total questions the user requested
         startedAt: session.started_at,
         generatedBatches: 1,
       },
