@@ -69,11 +69,19 @@ export function Triangle({
     const scaleY = (viewBox.height - 2 * padding) / rangeY
     const scale = Math.min(scaleX, scaleY)
 
-    points = data.vertices.map((v, i) => ({
-      x: padding + (v[0] - minX) * scale,
-      y: padding + (v[1] - minY) * scale,
-      label: data.labels?.[i]
-    }))
+    points = data.vertices.map((v, i) => {
+      // Safely extract label - handle both string and object formats
+      const rawLabel = data.labels?.[i]
+      const label = typeof rawLabel === 'string'
+        ? rawLabel
+        : (rawLabel?.label || rawLabel?.text || rawLabel?.name || undefined)
+
+      return {
+        x: padding + (v[0] - minX) * scale,
+        y: padding + (v[1] - minY) * scale,
+        label
+      }
+    })
   } else {
     // Default triangle if no valid data
     points = [

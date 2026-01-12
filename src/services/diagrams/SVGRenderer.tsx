@@ -63,6 +63,20 @@ function normalizeLabels(labels: any, vertexLabels?: string[]): Record<string, s
   return {};
 }
 
+// Helper to safely extract label text from string or object
+function getLabelText(label: any): string | null {
+  if (typeof label === 'string') {
+    return label;
+  }
+  if (label && typeof label === 'object') {
+    // Handle objects with label, text, or name properties
+    if (typeof label.label === 'string') return label.label;
+    if (typeof label.text === 'string') return label.text;
+    if (typeof label.name === 'string') return label.name;
+  }
+  return null;
+}
+
 export const SVGRenderer: React.FC<SVGRendererProps> = ({
   config,
   width,
@@ -209,9 +223,10 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
         />
 
         {/* Vertex labels from array */}
-        {labelArray.map((label: string, index: number) => {
+        {labelArray.map((label: any, index: number) => {
           const vertex = vertices[index];
-          if (!vertex || !label) return null;
+          const labelText = getLabelText(label);
+          if (!vertex || !labelText) return null;
 
           // Position label outside the triangle
           const offsetY = index === 2 ? -15 : 20;
@@ -227,14 +242,19 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
               direction="rtl"
               fill="currentColor"
             >
-              {label}
+              {labelText}
             </text>
           );
         })}
 
         {/* Side labels */}
-        {sides.map((side: string, index: number) => {
+        {sides.map((side: any, index: number) => {
           if (!side) return null;
+
+          // Extract label from side object or use side directly if string
+          const sideLabel = getLabelText(side);
+          if (!sideLabel) return null;
+
           const v1 = vertices[index];
           const v2 = vertices[(index + 1) % vertices.length];
           if (!v1 || !v2) return null;
@@ -259,13 +279,17 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
               direction="rtl"
               fill="currentColor"
             >
-              {side}
+              {sideLabel}
             </text>
           );
         })}
 
         {/* Right angle marker */}
-        {angles.some((a: any) => a === '90°' || a === 90) && (
+        {angles.some((a: any) => {
+          // Handle both direct values and object format {at, value, label}
+          const angleValue = typeof a === 'object' ? (a.value || a.label) : a;
+          return angleValue === '90°' || angleValue === 90 || angleValue === '90';
+        }) && (
           <rect
             x={vertices[0].x}
             y={vertices[0].y - 15}
@@ -311,9 +335,10 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
         />
 
         {/* Corner labels from array */}
-        {labelArray.map((label: string, index: number) => {
+        {labelArray.map((label: any, index: number) => {
           const corner = corners[index];
-          if (!corner || !label) return null;
+          const labelText = getLabelText(label);
+          if (!corner || !labelText) return null;
 
           return (
             <text
@@ -325,7 +350,7 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
               direction="rtl"
               fill="currentColor"
             >
-              {label}
+              {labelText}
             </text>
           );
         })}
@@ -479,18 +504,24 @@ export const SVGRenderer: React.FC<SVGRendererProps> = ({
         })}
 
         {/* Render labels */}
-        {labels.map((label: string, index: number) => (
-          <text
-            key={`label-${index}`}
-            x={width / 2}
-            y={height - 10 - (index * 20)}
-            textAnchor="middle"
-            className="text-sm"
-            direction="rtl"
-          >
-            {label}
-          </text>
-        ))}
+        {labels.map((label: any, index: number) => {
+          // Use helper function to safely extract label text
+          const labelText = getLabelText(label);
+          if (!labelText) return null;
+
+          return (
+            <text
+              key={`label-${index}`}
+              x={width / 2}
+              y={height - 10 - (index * 20)}
+              textAnchor="middle"
+              className="text-sm"
+              direction="rtl"
+            >
+              {labelText}
+            </text>
+          );
+        })}
       </g>
     );
   };

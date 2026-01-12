@@ -48,12 +48,21 @@ export function Rectangle({
     showDiagonal = false,
   } = data
 
+  // Helper to safely extract label text from string or object
+  const getLabel = (labelData: any): string | undefined => {
+    if (typeof labelData === 'string') return labelData
+    if (labelData && typeof labelData === 'object') {
+      return labelData.label || labelData.text || labelData.name || undefined
+    }
+    return undefined
+  }
+
   // Corner positions (clockwise from top-right for RTL)
   const corners = [
-    { x: x + width, y: y, label: cornerLabels?.[0] }, // top-right (أ)
-    { x: x + width, y: y + height, label: cornerLabels?.[1] }, // bottom-right (ب)
-    { x: x, y: y + height, label: cornerLabels?.[2] }, // bottom-left (ج)
-    { x: x, y: y, label: cornerLabels?.[3] }, // top-left (د)
+    { x: x + width, y: y, label: getLabel(cornerLabels?.[0]) }, // top-right (أ)
+    { x: x + width, y: y + height, label: getLabel(cornerLabels?.[1]) }, // bottom-right (ب)
+    { x: x, y: y + height, label: getLabel(cornerLabels?.[2]) }, // bottom-left (ج)
+    { x: x, y: y, label: getLabel(cornerLabels?.[3]) }, // top-left (د)
   ]
 
   // Right angle marker

@@ -151,11 +151,24 @@ export const DiagramContainer: React.FC<DiagramContainerProps> = ({
  * Used when SVG text rendering doesn't properly support Arabic RTL
  */
 function renderArabicLabels(
-  labels: Array<{ text: string; x: number; y: number; type?: 'vertex' | 'center' }>,
+  labels: Array<any>,
   dimensions: { width: number; height: number },
   rtl: boolean
 ) {
   return labels.map((label, index) => {
+    // Safely extract label text from various formats
+    let labelText: string | null = null;
+    if (typeof label === 'string') {
+      labelText = label;
+    } else if (label && typeof label === 'object') {
+      labelText = label.text || label.label || label.name || null;
+    }
+
+    // Skip labels without valid text or position
+    if (!labelText || typeof label.x !== 'number' || typeof label.y !== 'number') {
+      return null;
+    }
+
     const labelClass = label.type === 'center' ? 'center-label' : 'vertex-label';
 
     return (
@@ -171,7 +184,7 @@ function renderArabicLabels(
           direction: rtl ? 'rtl' : 'ltr'
         }}
       >
-        {label.text}
+        {labelText}
       </div>
     );
   });

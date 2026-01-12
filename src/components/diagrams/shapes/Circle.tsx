@@ -105,6 +105,16 @@ export function Circle({
 
       {/* Annotations */}
       {annotations.map((annotation, index) => {
+        // Safely extract label text from string or object
+        const getAnnotationLabel = (labelData: any): string | undefined => {
+          if (typeof labelData === 'string') return labelData
+          if (labelData && typeof labelData === 'object') {
+            return labelData.label || labelData.text || labelData.name || undefined
+          }
+          return undefined
+        }
+        const annotationLabelText = getAnnotationLabel(annotation.label)
+
         if (annotation.type === 'radius') {
           return (
             <g key={`annotation-${index}`}>
@@ -117,7 +127,7 @@ export function Circle({
                 strokeWidth={1}
                 strokeDasharray="4,2"
               />
-              {annotation.label && (
+              {annotationLabelText && (
                 <text
                   x={cx + r / 2}
                   y={cy - 8}
@@ -126,7 +136,7 @@ export function Circle({
                   fill={stroke}
                   fontFamily="Noto Kufi Arabic, sans-serif"
                 >
-                  {annotation.label}
+                  {annotationLabelText}
                 </text>
               )}
             </g>
@@ -145,7 +155,7 @@ export function Circle({
                 strokeWidth={1}
                 strokeDasharray="4,2"
               />
-              {annotation.label && (
+              {annotationLabelText && (
                 <text
                   x={cx}
                   y={cy - 8}
@@ -154,7 +164,7 @@ export function Circle({
                   fill={stroke}
                   fontFamily="Noto Kufi Arabic, sans-serif"
                 >
-                  {annotation.label}
+                  {annotationLabelText}
                 </text>
               )}
             </g>
@@ -170,7 +180,7 @@ export function Circle({
                 r={4}
                 fill={stroke}
               />
-              {annotation.label && (
+              {annotationLabelText && (
                 <text
                   x={annotation.position.x}
                   y={annotation.position.y - 10}
@@ -179,7 +189,7 @@ export function Circle({
                   fill={stroke}
                   fontFamily="Noto Kufi Arabic, sans-serif"
                 >
-                  {annotation.label}
+                  {annotationLabelText}
                 </text>
               )}
             </g>
