@@ -55,3 +55,7 @@ next-env.d.ts
 
 # Google OAuth secrets
 client_secret*.json
+
+# Claude Code temporary files
+tmpclaude-*
+nul
